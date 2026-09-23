@@ -70,6 +70,9 @@ app.get('/register', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/register.html'));
 });
 
+const wbsRoutes = require("./wbs_routes");
+app.use("/api", wbsRoutes(db));
+
 app.listen(PORT, async () => {
   console.log(`===================================================`);
   console.log(`🚀 Backend Quản lý thi công đang chạy tại port ${PORT}`);

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Cây Cơ Cấu Công Việc (WBS) - Quản Lý Thi Công</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+    .container { max-width: 1000px; margin: 0 auto; background: #1e293b; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+    h2 { margin-top: 0; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; }
+    .btn { background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
+    .btn:hover { background: #1d4ed8; }
+    .btn-danger { background: #ef4444; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-success { background: #10b981; }
+    .btn-success:hover { background: #059669; }
+    .tree-node { margin: 8px 0; padding-left: 24px; border-left: 2px dashed #475569; position: relative; }
+    .node-content { display: flex; align-items: center; background: #334155; padding: 8px 12px; border-radius: 6px; gap: 10px; }
+    .node-code { font-weight: bold; color: #fbbf24; font-size: 13px; }
+    .node-name { flex-grow: 1; }
+    .toggle-btn { background: none; border: none; color: #38bdf8; cursor: pointer; font-size: 14px; padding: 0 4px; font-weight: bold; }
+    .actions { display: flex; gap: 6px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>
+      <span>🌳 Cây Cơ Cấu Công Việc (WBS)</span>
+      <button class="btn btn-success" onclick="addItem(null)">+ Thêm hạng mục gốc</button>
+    </h2>
+    <div id="tree-container">Đang tải dữ liệu...</div>
+  </div>
+
+  <script>
+    const projectId = 1;
+
+    async function loadTree() {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/work-items`);
+        const result = await res.json();
+        if (result.success) {
+          renderTree(result.data);
+        } else {
+          document.getElementById('tree-container').innerText = 'Lỗi: ' + result.message;
+        }
+      } catch (e) {
+        document.getElementById('tree-container').innerText = 'Không thể kết nối API!';
+      }
+    }
+
+    function renderTree(items) {
+      const itemMap = {};
+      items.forEach(i => itemMap[i.id] = { ...i, children: [] });
+      const roots = [];
+      items.forEach(i => {
+        if (i.parent_id && itemMap[i.parent_id]) {
+          itemMap[i.parent_id].children.push(itemMap[i.id]);
+        } else {
+          roots.push(itemMap[i.id]);
+        }
+      });
+
+      const container = document.getElementById('tree-container');
+      container.innerHTML = '';
+      if (roots.length === 0) {
+        container.innerHTML = '<p style="color:#94a3b8;">Chưa có hạng mục nào.</p>';
+        return;
+      }
+      roots.forEach(root => container.appendChild(createNodeElement(root)));
+    }
+
+    function createNodeElement(item) {
+      const node = document.createElement('div');
+      node.className = 'tree-node';
+
+      const content = document.createElement('div');
+      content.className = 'node-content';
+
+      const toggle = document.createElement('button');
+      toggle.className = 'toggle-btn';
+      toggle.innerText = item.children.length > 0 ? '▼' : '•';
+      
+      const code = document.createElement('span');
+      code.className = 'node-code';
+      code.innerText = item.code || '[HM]';
+
+      const name = document.createElement('span');
+      name.className = 'node-name';
+      name.innerText = item.name;
+
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      actions.innerHTML = `
+        <button class="btn" onclick="addItem(${item.id})">+ Con</button>
+        <button class="btn" onclick="editInline(${item.id}, '${item.name}')">Sửa</button>
+        <button class="btn btn-danger" onclick="deleteItem(${item.id})">Xóa</button>
+      `;
+
+      content.appendChild(toggle);
+      content.appendChild(code);
+      content.appendChild(name);
+      content.appendChild(actions);
+      node.appendChild(content);
+
+      if (item.children.length > 0) {
+        const childContainer = document.createElement('div');
+        childContainer.className = 'children';
+        item.children.forEach(child => childContainer.appendChild(createNodeElement(child)));
+        node.appendChild(childContainer);
+
+        toggle.onclick = () => {
+          const isHidden = childContainer.style.display === 'none';
+          childContainer.style.display = isHidden ? 'block' : 'none';
+          toggle.innerText = isHidden ? '▼' : '▶';
+        };
+      }
+
+      return node;
+    }
+
+    async function addItem(parentId) {
+      const name = prompt(parentId ? "Nhập tên hạng mục con:" : "Nhập tên hạng mục gốc mới:");
+      if (!name) return;
+      const code = prompt("Nhập mã hạng mục (ví dụ HM-04):", "");
+      const res = await fetch('/api/work-items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_id: projectId, parent_id: parentId, name, code })
+      });
+      const data = await res.json();
+      if (data.success) loadTree();
+      else alert(data.message);
+    }
+
+    function editInline(id, oldName) {
+      const newName = prompt("Sửa tên hạng mục:", oldName);
+      if (newName && newName !== oldName) {
+        fetch(`/api/work-items/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName })
+        }).then(() => loadTree());
+      }
+    }
+
+    async function deleteItem(id) {
+      if (!confirm("Bạn có chắc chắn muốn xóa hạng mục này?")) return;
+      const res = await fetch(`/api/work-items/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        loadTree();
+      } else {
+        alert(data.message);
+      }
+    }
+
+    loadTree();
+  </script>
+</body>
+</html>

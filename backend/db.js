@@ -10,6 +10,7 @@ try {
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || 'secret',
     database: process.env.DB_NAME || 'quanly_thicong',
+  charset: "utf8mb4",
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
