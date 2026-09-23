@@ -1,17 +1,42 @@
-version: '3'
+version: '3.8'
+
 services:
   db:
-    image: postgres:15-alpine
-    container_name: congtrinh_db
-    restart: unless-stopped
+    image: mysql:8.0
+    container_name: quanly_thicong_db
+    restart: always
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=quanly_thicong
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: quanly_thicong
     ports:
-      - "5433:5432"
+      - "3306:3306"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - db_data:/var/lib/mysql
+
+  backend:
+    build: .
+    container_name: quanly_thicong_backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=secret
+      - DB_NAME=quanly_thicong
+    depends_on:
+      - db
+
+  frontend:
+    image: nginx:alpine
+    container_name: quanly_thicong_frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
 
 volumes:
-  postgres_data:
+  db_data:
