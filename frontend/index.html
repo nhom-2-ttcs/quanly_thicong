@@ -3,36 +3,291 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hệ Thống Quản Lý Thi Công</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Trang Chủ | Hệ Thống Quản Lý Thi Công</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f9; }
-    .card { background: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
-    h2 { color: #333; text-align: center; }
-    .btn { background: #007bff; color: white; padding: 10px 16px; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; }
-    .btn:hover { background: #0056b3; }
-    .status { margin-top: 15px; padding: 10px; border-radius: 4px; background: #e9ecef; word-break: break-all; }
+    :root {
+      --bg: #090d16;
+      --card: #1e293b;
+      --border: #334155;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .navbar {
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .brand { font-size: 18px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .brand-sub { font-size: 12px; color: #60a5fa; font-weight: 600; }
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .user-info { text-align: right; }
+    .user-name { font-weight: 700; font-size: 14px; color: #fff; display: block; }
+    .user-role { font-size: 11px; color: #93c5fd; background: rgba(59,130,246,0.15); padding: 2px 8px; border-radius: 9999px; }
+    
+    .btn-logout {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-logout:hover { background: var(--danger); color: white; }
+
+    .main {
+      flex: 1;
+      max-width: 1000px;
+      width: 100%;
+      margin: 32px auto;
+      padding: 0 20px;
+    }
+    .welcome-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .welcome-card h2 { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+    .welcome-card p { color: var(--text-muted); font-size: 13px; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .stat-title { font-size: 12px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 6px; }
+    .stat-val { font-size: 18px; font-weight: 800; color: #fff; }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+    }
+    .panel h3 { font-size: 16px; margin-bottom: 12px; }
+    .btn-check {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-check:hover { background: var(--primary-hover); }
+    .status-box {
+      margin-top: 12px;
+      padding: 12px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #38bdf8;
+      word-break: break-all;
+    }
+
+    .roles-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      font-size: 13px;
+    }
+    .roles-table th, .roles-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+    .roles-table th { background: rgba(255,255,255,0.02); color: var(--text-muted); font-size: 11px; text-transform: uppercase; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>Quản Lý Thi Công</h2>
-    <p>Khung dự án Sprint S-01 (Backend + Frontend + DB base)</p>
-    <button class="btn" onclick="checkBackend()">Kiểm tra kết nối Backend</button>
-    <div id="result" class="status">Chưa kiểm tra</div>
-  </div>
+
+  <header class="navbar">
+    <div class="brand">
+      <span>Quản Lý Thi Công</span>
+      <span class="brand-sub">Nhóm 2 TTCS</span>
+    </div>
+
+    <!-- Tiêu chí chấp nhận 1: Đăng nhập thành công nhìn thấy tên mình trên màn hình -->
+    <div class="user-profile">
+      <div class="user-info">
+        <span class="user-name" id="user-fullname">Đang tải...</span>
+        <span class="user-role" id="user-role">Đang tải...</span>
+      </div>
+      <!-- Tiêu chí chấp nhận 4: Khi đăng xuất, phiên đăng nhập bị hủy và quay lại trang đăng nhập -->
+      <button class="btn-logout" onclick="handleLogout()">Đăng Xuất</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="welcome-card">
+      <h2>Xin chào, <span id="welcome-name" style="color: #60a5fa;">...</span>!</h2>
+      <p>Bạn đã đăng nhập thành công vào hệ thống Quản Lý Hồ Sơ Thi Công Công Trình (Mã nhiệm vụ: <strong>SCRUM-19 / S-02</strong>).</p>
+    </div>
+
+    <div class="grid">
+      <div class="stat-card">
+        <div class="stat-title">Trạng Thái Phiên Làm Việc</div>
+        <div class="stat-val" style="color: #34d399;">Hoạt Động (12 Giờ)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Người Thực Hiện Task</div>
+        <div class="stat-val">Trần Mạnh Dũng</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Tiến Độ Sprint S-02</div>
+        <div class="stat-val" style="color: #60a5fa;">SCRUM-29 &amp; SCRUM-30</div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-bottom: 24px;">
+      <h3>Danh Sách 6 Vai Trò Thi Công Hệ Thống (SCRUM-29 / T-04)</h3>
+      <table class="roles-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Mã Vai Trò</th>
+            <th>Tên Vai Trò Hiển Thị</th>
+            <th>Mô Tả Nhiệm Vụ</th>
+          </tr>
+        </thead>
+        <tbody id="roles-tbody">
+          <tr><td colspan="4" style="text-align:center; color: #94a3b8;">Đang tải danh sách 6 vai trò...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Kiểm Tra Kết Nối Backend (Sprint S-01)</h3>
+      <button class="btn-check" onclick="checkBackendHealth()">Kiểm tra /api/health</button>
+      <div id="health-result" class="status-box">Chưa kiểm tra</div>
+    </div>
+  </main>
 
   <script>
-    async function checkBackend() {
-      const resDiv = document.getElementById('result');
-      resDiv.innerText = 'Đang gọi API...';
+    // Tiêu chí chấp nhận 5: Sau khi đăng xuất, dùng nút quay lại của trình duyệt cũng không thể vào màn hình được bảo vệ
+    window.addEventListener('pageshow', function (event) {
+      if (event.persisted || !localStorage.getItem('quanly_token')) {
+        checkAuthAndRedirect();
+      }
+    });
+
+    async function checkAuthAndRedirect() {
+      const token = localStorage.getItem('quanly_token');
+      if (!token) {
+        window.location.replace('/login.html');
+        return;
+      }
+
       try {
-        const res = await fetch('http://localhost:5000/api/health');
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
         const data = await res.json();
-        resDiv.innerText = JSON.stringify(data);
+
+        if (!res.ok || !data.success) {
+          localStorage.removeItem('quanly_token');
+          localStorage.removeItem('quanly_user');
+          window.location.replace('/login.html');
+          return;
+        }
+
+        // Tiêu chí 1: Nhìn thấy tên mình trên trang chính
+        document.getElementById('user-fullname').innerText = data.user.full_name;
+        document.getElementById('welcome-name').innerText = data.user.full_name;
+        document.getElementById('user-role').innerText = data.user.role_display_name;
+
       } catch (err) {
-        resDiv.innerText = 'Không thể kết nối đến Backend: ' + err.message;
+        window.location.replace('/login.html');
       }
     }
+
+    // Tiêu chí 4: Khi đăng xuất, phiên bị hủy trên server và chuyển về login.html
+    async function handleLogout() {
+      const token = localStorage.getItem('quanly_token');
+      if (token) {
+        try {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+        } catch (e) {}
+      }
+      localStorage.removeItem('quanly_token');
+      localStorage.removeItem('quanly_user');
+      window.location.replace('/login.html');
+    }
+
+    async function loadRoles() {
+      try {
+        const res = await fetch('/api/auth/roles');
+        const data = await res.json();
+        const tbody = document.getElementById('roles-tbody');
+        if (data.success && data.data) {
+          tbody.innerHTML = data.data.map(r => `
+            <tr>
+              <td><strong>${r.id}</strong></td>
+              <td><code>${r.name}</code></td>
+              <td><strong style="color: #93c5fd;">${r.display_name}</strong></td>
+              <td style="color: #94a3b8;">${r.description || '---'}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) {}
+    }
+
+    async function checkBackendHealth() {
+      const box = document.getElementById('health-result');
+      box.innerText = 'Đang gọi API /api/health...';
+      try {
+        const res = await fetch('/api/health');
+        const d = await res.json();
+        box.innerText = JSON.stringify(d, null, 2);
+      } catch (err) {
+        box.innerText = 'Lỗi: ' + err.message;
+      }
+    }
+
+    // Khởi chạy kiểm tra đăng nhập ngay khi mở trang
+    checkAuthAndRedirect();
+    loadRoles();
   </script>
 </body>
 </html>

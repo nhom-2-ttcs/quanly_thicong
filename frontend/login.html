@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng Nhập | Quản Lý Thi Công Công Trình</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.15);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.15);
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body {
+      background: linear-gradient(135deg, #090d16 0%, #0f172a 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+    .header { text-align: center; margin-bottom: 24px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    p.subtitle { color: var(--text-muted); font-size: 13px; }
+    
+    .alert {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+      margin-bottom: 18px;
+    }
+    .alert-danger {
+      background: var(--danger-bg);
+      border: 1px solid var(--danger);
+      color: #fca5a5;
+    }
+    .alert-warning {
+      background: var(--warning-bg);
+      border: 1px solid var(--warning);
+      color: #fde68a;
+    }
+    .countdown {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      color: #ef4444;
+      margin-top: 6px;
+      display: block;
+    }
+
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+    .input-wrap { position: relative; }
+    input {
+      width: 100%;
+      padding: 11px 14px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
+    .btn-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 6px;
+    }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .demo-box {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+    .demo-title { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 10px; }
+    .demo-btn-group { display: flex; gap: 8px; }
+    .btn-demo {
+      flex: 1;
+      padding: 8px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      text-align: left;
+    }
+    .btn-demo:hover { border-color: var(--primary); background: rgba(59,130,246,0.1); }
+    .btn-demo strong { display: block; color: #93c5fd; font-size: 11px; }
+    .btn-demo span { font-size: 10px; color: var(--text-muted); }
+
+    .btn-unlock {
+      margin-top: 10px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 11px;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .btn-unlock:hover { color: #f87171; }
+  </style>
+</head>
+<body>
+
+  <div class="login-card">
+    <div class="header">
+      <span class="badge">[S-02 / SCRUM-19] Xác Thực & Khóa Tạm 15 Phút</span>
+      <h1>Quản Lý Thi Công</h1>
+      <p class="subtitle">Đăng nhập tài khoản cá nhân để thực hiện hồ sơ thi công</p>
+    </div>
+
+    <!-- Alert: Lỗi chung theo tiêu chí chấp nhận Jira -->
+    <div id="alert-warning" class="alert alert-warning">
+      <strong id="warn-title">Email hoặc mật khẩu không đúng</strong>
+      <p id="warn-desc" style="margin-top: 4px; font-size: 12px;"></p>
+    </div>
+
+    <!-- Alert: Khóa 15 phút theo tiêu chí chấp nhận Jira -->
+    <div id="alert-lockout" class="alert alert-danger">
+      <strong>⚠️ Tài khoản đã bị tạm khóa!</strong>
+      <p id="lockout-desc" style="margin-top: 4px; font-size: 12px;">Đã nhập sai mật khẩu 5 lần liên tiếp. Lần thứ 6 bị khóa 15 phút:</p>
+      <span class="countdown" id="countdown-timer">15:00</span>
+    </div>
+
+    <form id="form-login">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" required placeholder="name@thicong.vn" autocomplete="email">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mật khẩu</label>
+        <div class="input-wrap">
+          <input type="password" id="password" required placeholder="Nhập mật khẩu..." autocomplete="current-password">
+          <button type="button" id="btn-toggle-pwd" class="btn-toggle">Hiện</button>
+        </div>
+      </div>
+
+      <button type="submit" id="btn-submit" class="btn-primary">Đăng Nhập</button>
+    </form>
+
+    <div style="text-align: center; margin-top: 16px; font-size: 13px; color: var(--text-muted);">
+      Chưa có tài khoản? <a href="/register.html" style="color: #60a5fa; text-decoration: none; font-weight: 600;">Đăng ký ngay tại đây</a>
+    </div>
+
+    <!-- Tài khoản mẫu để kiểm thử nhanh -->
+    <div class="demo-box">
+      <div class="demo-title">Tài Khoản Mẫu Kiểm Thử (Bấm để điền nhanh)</div>
+      <div class="demo-btn-group">
+        <button type="button" class="btn-demo" onclick="fillAccount('dtc245160020@ictu.edu.vn', 'Dung@123')">
+          <strong>Trần Mạnh Dũng</strong>
+          <span>Chỉ huy trưởng (Dung@123)</span>
+        </button>
+        <button type="button" class="btn-demo" onclick="fillAccount('admin@thicong.vn', 'Admin@123')">
+          <strong>Quản Trị Viên</strong>
+          <span>Admin (Admin@123)</span>
+        </button>
+      </div>
+      <button type="button" class="btn-unlock" onclick="unlockDev()">
+        🔄 Mở khóa tài khoản ngay (Dành cho Dev / Test)
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let countdownInterval = null;
+    let localFailedAttempts = 0; // Bộ đếm lần sai cục bộ bảo đảm 100% khóa sau 5 lần
+
+    // Toggle ẩn hiện mật khẩu
+    document.getElementById('btn-toggle-pwd').addEventListener('click', function() {
+      const pwd = document.getElementById('password');
+      if (pwd.type === 'password') {
+        pwd.type = 'text';
+        this.innerText = 'Ẩn';
+      } else {
+        pwd.type = 'password';
+        this.innerText = 'Hiện';
+      }
+    });
+
+    function fillAccount(email, pwd) {
+      document.getElementById('email').value = email;
+      document.getElementById('password').value = pwd;
+      clearAlerts();
+    }
+
+    function clearAlerts() {
+      document.getElementById('alert-warning').style.display = 'none';
+      document.getElementById('alert-lockout').style.display = 'none';
+      if (countdownInterval) clearInterval(countdownInterval);
+      document.getElementById('btn-submit').disabled = false;
+      document.getElementById('btn-submit').innerText = 'Đăng Nhập';
+    }
+
+    function startLockoutTimer(seconds) {
+      const alertLockout = document.getElementById('alert-lockout');
+      const timerEl = document.getElementById('countdown-timer');
+      const btnSubmit = document.getElementById('btn-submit');
+
+      alertLockout.style.display = 'block';
+      document.getElementById('alert-warning').style.display = 'none';
+      btnSubmit.disabled = true;
+      btnSubmit.innerText = 'Tài khoản đang bị khóa';
+
+      let remaining = seconds;
+      function render() {
+        const m = Math.floor(remaining / 60);
+        const s = remaining % 60;
+        timerEl.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      }
+      render();
+
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(countdownInterval);
+          localFailedAttempts = 0;
+          clearAlerts();
+          document.getElementById('warn-desc').innerText = 'Đã hết thời gian khóa. Bạn có thể thử đăng nhập lại.';
+          document.getElementById('alert-warning').style.display = 'block';
+        } else {
+          render();
+        }
+      }, 1000);
+    }
+
+    document.getElementById('form-login').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      clearAlerts();
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('btn-submit');
+
+      btn.disabled = true;
+      btn.innerText = 'Đang xác thực...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          localFailedAttempts = 0;
+          localStorage.setItem('quanly_token', data.token);
+          localStorage.setItem('quanly_user', JSON.stringify(data.user));
+          window.location.replace('/index.html');
+          return;
+        }
+
+        // Tăng bộ đếm lần sai
+        localFailedAttempts++;
+
+        // Tiêu chí chấp nhận: Khi nhập sai mật khẩu 5 lần -> bị khóa 15 phút
+        if (res.status === 423 || data.locked || localFailedAttempts >= 5) {
+          startLockoutTimer(data.remaining_seconds || 15 * 60);
+        } else {
+          const warnAlert = document.getElementById('alert-warning');
+          warnAlert.style.display = 'block';
+          document.getElementById('warn-title').innerText = data.message || 'Email hoặc mật khẩu không đúng';
+          const remaining = Math.max(1, 5 - localFailedAttempts);
+          document.getElementById('warn-desc').innerText = `Lưu ý: Bạn đã nhập sai ${localFailedAttempts} lần. Còn ${remaining} lần thử trước khi tài khoản bị khóa 15 phút.`;
+        }
+      } catch (err) {
+        localFailedAttempts++;
+        if (localFailedAttempts >= 5) {
+          startLockoutTimer(15 * 60);
+        } else {
+          document.getElementById('alert-warning').style.display = 'block';
+          document.getElementById('warn-title').innerText = 'Email hoặc mật khẩu không đúng';
+          document.getElementById('warn-desc').innerText = `Lưu ý: Bạn đã nhập sai ${localFailedAttempts} lần. Còn ${5 - localFailedAttempts} lần thử trước khi bị khóa 15 phút.`;
+        }
+      } finally {
+        if (localFailedAttempts < 5 && (!document.getElementById('alert-lockout').style.display || document.getElementById('alert-lockout').style.display === 'none')) {
+          btn.disabled = false;
+          btn.innerText = 'Đăng Nhập';
+        }
+      }
+    });
+
+    async function unlockDev() {
+      localFailedAttempts = 0;
+      const email = document.getElementById('email').value.trim() || 'dtc245160020@ictu.edu.vn';
+      try {
+        const res = await fetch('/api/auth/unlock-dev', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const d = await res.json();
+        alert('Đã mở khóa và reset số lần sai thành công!');
+        clearAlerts();
+      } catch (e) {
+        alert('Đã reset bộ đếm mở khóa!');
+        clearAlerts();
+      }
+    }
+  </script>
+</body>
+</html>

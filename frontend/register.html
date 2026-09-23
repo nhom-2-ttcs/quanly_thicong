@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng Ký Tài Khoản | Quản Lý Thi Công Công Trình</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body {
+      background: linear-gradient(135deg, #090d16 0%, #0f172a 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .register-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+    .header { text-align: center; margin-bottom: 20px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    p.subtitle { color: var(--text-muted); font-size: 13px; }
+
+    .alert {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .alert-danger { background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: #fca5a5; }
+    .alert-success { background: rgba(16, 185, 129, 0.15); border: 1px solid var(--success); color: #6ee7b7; }
+
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+    input, select {
+      width: 100%;
+      padding: 11px 14px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
+    select option { background: #1e293b; color: #fff; }
+
+    .btn-submit {
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .btn-submit:hover { background: var(--primary-hover); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .footer-link {
+      text-align: center;
+      margin-top: 18px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .footer-link a { color: #60a5fa; text-decoration: none; font-weight: 600; }
+    .footer-link a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <div class="register-card">
+    <div class="header">
+      <span class="badge">[S-02] Đăng Ký Tài Khoản Thi Công</span>
+      <h1>Tạo Tài Khoản Mới</h1>
+      <p class="subtitle">Đăng ký tài khoản để tham gia quản lý hồ sơ dự án thi công</p>
+    </div>
+
+    <div id="alert-error" class="alert alert-danger"></div>
+    <div id="alert-success" class="alert alert-success"></div>
+
+    <form id="form-register">
+      <div class="form-group">
+        <label for="fullname">Họ và tên (*)</label>
+        <input type="text" id="fullname" required placeholder="Ví dụ: Trần Mạnh Dũng">
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email (*)</label>
+        <input type="email" id="email" required placeholder="Ví dụ: dtc245160020@ictu.edu.vn">
+      </div>
+
+      <div class="form-group">
+        <label for="role">Vai trò công việc (*)</label>
+        <select id="role" required>
+          <option value="2">Chỉ huy trưởng công trình</option>
+          <option value="3">Kỹ sư giám sát thi công</option>
+          <option value="4">Đội trưởng thi công</option>
+          <option value="5">Kế toán & Quản lý vật tư</option>
+          <option value="6">Chủ đầu tư</option>
+          <option value="1">Quản trị viên hệ thống</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mật khẩu (*)</label>
+        <input type="password" id="password" required minlength="6" placeholder="Tối thiểu 6 ký tự">
+      </div>
+
+      <div class="form-group">
+        <label for="confirm_password">Xác nhận mật khẩu (*)</label>
+        <input type="password" id="confirm_password" required minlength="6" placeholder="Nhập lại mật khẩu">
+      </div>
+
+      <button type="submit" id="btn-submit" class="btn-submit">Hoàn Tất Đăng Ký</button>
+    </form>
+
+    <div class="footer-link">
+      Đã có tài khoản? <a href="/login.html">Đăng nhập tại đây</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('form-register').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const errBox = document.getElementById('alert-error');
+      const succBox = document.getElementById('alert-success');
+      const btn = document.getElementById('btn-submit');
+
+      errBox.style.display = 'none';
+      succBox.style.display = 'none';
+
+      const full_name = document.getElementById('fullname').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const role_id = document.getElementById('role').value;
+      const password = document.getElementById('password').value;
+      const confirm_password = document.getElementById('confirm_password').value;
+
+      if (password !== confirm_password) {
+        errBox.innerText = 'Mật khẩu xác nhận không khớp!';
+        errBox.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = 'Đang xử lý đăng ký...';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ full_name, email, role_id, password, confirm_password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          succBox.innerText = data.message || 'Đăng ký thành công! Đang chuyển đến trang đăng nhập...';
+          succBox.style.display = 'block';
+          setTimeout(() => {
+            window.location.href = '/login.html';
+          }, 1500);
+        } else {
+          errBox.innerText = data.message || 'Không thể đăng ký tài khoản.';
+          errBox.style.display = 'block';
+          btn.disabled = false;
+          btn.innerText = 'Hoàn Tất Đăng Ký';
+        }
+      } catch (err) {
+        errBox.innerText = 'Lỗi kết nối máy chủ: ' + err.message;
+        errBox.style.display = 'block';
+        btn.disabled = false;
+        btn.innerText = 'Hoàn Tất Đăng Ký';
+      }
+    });
+  </script>
+</body>
+</html>
