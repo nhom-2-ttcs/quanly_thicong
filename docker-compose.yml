@@ -18,7 +18,7 @@ services:
     container_name: quanly_thicong_backend
     restart: always
     ports:
-      - "5000:5000"
+      - "5001:5000"
     environment:
       - PORT=5000
       - DB_HOST=db
@@ -31,6 +31,7 @@ services:
   frontend:
     image: nginx:alpine
     container_name: quanly_thicong_frontend
+    restart: always
     ports:
       - "8080:80"
     volumes:
