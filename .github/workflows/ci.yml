@@ -1,18 +1,35 @@
-name: CI Pipeline
+name: CI Pipeline (Build, Lint, Test)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
 
 jobs:
-  build-and-test:
+  build-lint-test:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Run Build and Test
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: 1. Build & Install Dependencies
         run: |
-          echo "Running build, lint, and test successfully..."
+          cd backend
+          npm install
+
+      - name: 2. Run Lint Validation
+        run: |
+          cd backend
+          npm run lint
+
+      - name: 3. Run Automated Tests
+        run: |
+          cd backend
+          npm test
