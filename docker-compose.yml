@@ -33,7 +33,7 @@ services:
     container_name: quanly_thicong_frontend
     restart: always
     ports:
-      - "8080:80"
+      - "${FRONTEND_PORT:-8080}:80"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
       - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro

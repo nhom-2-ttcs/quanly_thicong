@@ -52,6 +52,58 @@ async function initDbSchema() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    // 3. Tạo bảng projects (Quản lý dự án thi công)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        code VARCHAR(50) NOT NULL UNIQUE,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Seed dự án mặc định (id = 1)
+    await pool.query(`
+      INSERT INTO projects (id, name, code, description)
+      VALUES (1, 'Dự án Thi Công Mẫu', 'DA-01', 'Dự án mẫu quản trị tiến độ thi công')
+      ON DUPLICATE KEY UPDATE name = VALUES(name);
+    `);
+
+    // 4. Tạo bảng work_items (Cơ cấu công việc WBS)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS work_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        parent_id INT NULL,
+        name VARCHAR(255) NOT NULL,
+        code VARCHAR(50) NULL,
+        unit VARCHAR(50) NULL,
+        quantity DECIMAL(12,2) DEFAULT 0,
+        status ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (parent_id) REFERENCES work_items(id) ON DELETE RESTRICT
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // 5. Tạo bảng tasks (S-05 / SCRUM-60 / T-11: Khai báo công việc có thời lượng gắn vào hạng mục WBS)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tasks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        work_item_id INT NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        code VARCHAR(50) NULL,
+        duration DECIMAL(8,2) NOT NULL,
+        status ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_tasks_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        CONSTRAINT fk_tasks_work_item FOREIGN KEY (work_item_id) REFERENCES work_items(id) ON DELETE RESTRICT
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
     // Seed 6 vai trò
     for (const r of SEED_ROLES) {
       await pool.query(`
