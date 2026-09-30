@@ -73,6 +73,13 @@ app.get('/register', (req, res) => {
 const wbsRoutes = require("./wbs_routes");
 app.use("/api", wbsRoutes(db));
 
+// Sprint 2: S-05 (Tasks có thời lượng) & S-07 (Thứ tự phụ thuộc & phát hiện vòng)
+const taskRoutes = require("./src/routes/taskRoutes");
+app.use("/api", taskRoutes(db));
+
+const schedulingRoutes = require("./src/routes/schedulingRoutes");
+app.use("/api", schedulingRoutes(db));
+
 app.listen(PORT, async () => {
   console.log(`===================================================`);
   console.log(`🚀 Backend Quản lý thi công đang chạy tại port ${PORT}`);
