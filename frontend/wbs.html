@@ -2,158 +2,589 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Cây Cơ Cấu Công Việc (WBS) - Quản Lý Thi Công</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cơ Cấu Công Việc (WBS) | Hệ Thống Quản Trị Thi Công</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
-    .container { max-width: 1000px; margin: 0 auto; background: #1e293b; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-    h2 { margin-top: 0; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; }
-    .btn { background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
-    .btn:hover { background: #1d4ed8; }
-    .btn-danger { background: #ef4444; }
-    .btn-danger:hover { background: #dc2626; }
-    .btn-success { background: #10b981; }
-    .btn-success:hover { background: #059669; }
-    .tree-node { margin: 8px 0; padding-left: 24px; border-left: 2px dashed #475569; position: relative; }
-    .node-content { display: flex; align-items: center; background: #334155; padding: 8px 12px; border-radius: 6px; gap: 10px; }
-    .node-code { font-weight: bold; color: #fbbf24; font-size: 13px; }
-    .node-name { flex-grow: 1; }
-    .toggle-btn { background: none; border: none; color: #38bdf8; cursor: pointer; font-size: 14px; padding: 0 4px; font-weight: bold; }
-    .actions { display: flex; gap: 6px; }
+    :root {
+      --bg-canvas: #f1f5f9;
+      --card-bg: #ffffff;
+      --card-hover: #f8fafc;
+      --border-outer: #94a3b8;
+      --border-card: #cbd5e1;
+      --tree-line: #94a3b8;
+      --brand-blue: #1d4ed8;
+      --brand-blue-hover: #1e40af;
+      --brand-blue-soft: #eff6ff;
+      --amber-bg: #fef3c7;
+      --amber-border: #f59e0b;
+      --amber-text: #92400e;
+      --text-title: #0f172a;
+      --text-body: #1e293b;
+      --text-muted: #475569;
+      --danger: #dc2626;
+      --danger-bg: #fee2e2;
+      --danger-border: #f87171;
+      --shadow-container: 0 4px 16px -2px rgba(15, 23, 42, 0.08);
+      --shadow-node: 0 1px 3px rgba(15, 23, 42, 0.06);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: var(--bg-canvas); color: var(--text-body); min-height: 100vh; display: flex; flex-direction: column; }
+    
+    /* === THANH TOPBAR DOANH NGHIỆP === */
+    .topbar {
+      height: 68px; background: #ffffff; border-bottom: 2px solid var(--border-card);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 36px; position: sticky; top: 0; z-index: 50;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+    .brand-group { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 40px; height: 40px; background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      border-radius: 9px; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); border: 1px solid rgba(255,255,255,0.3);
+    }
+    .brand-icon svg { width: 22px; height: 22px; fill: none; stroke: #ffffff; stroke-width: 2.2; }
+    .brand-info h1 { font-size: 16.5px; font-weight: 800; color: var(--text-title); }
+    .brand-info span { font-size: 10.5px; font-weight: 800; color: #059669; letter-spacing: 0.8px; text-transform: uppercase; }
+
+    .topbar-actions { display: flex; align-items: center; gap: 12px; }
+    .btn-nav {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #ffffff; border: 1.5px solid var(--border-outer);
+      padding: 8px 16px; border-radius: 8px;
+      color: var(--text-title); font-size: 13px; font-weight: 700;
+      text-decoration: none; transition: all 0.2s;
+    }
+    .btn-nav:hover { background: var(--brand-blue-soft); border-color: var(--brand-blue); color: var(--brand-blue); }
+    .btn-nav svg { width: 16px; height: 16px; stroke: var(--brand-blue); }
+
+    .btn-logout {
+      padding: 8px 16px; border-radius: 8px; background: var(--danger-bg);
+      border: 1.5px solid var(--danger-border); color: var(--danger);
+      font-size: 12.5px; font-weight: 800; cursor: pointer;
+    }
+    .btn-logout:hover { background: #fecaca; }
+
+    /* === KHU VỰC THÂN TRANG === */
+    .main-content { max-width: 1240px; width: 100%; margin: 0 auto; padding: 28px 24px 48px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* === BANNER CÔNG TRÌNH XÂY DỰNG ĐỒNG BỘ 100% === */
+    .wbs-hero-banner {
+      position: relative;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 58, 138, 0.8) 100%),
+                  url('https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=2070&auto=format&fit=crop') center/cover no-repeat;
+      border: 2px solid var(--border-outer);
+      border-left: 6px solid #38bdf8;
+      border-radius: 16px;
+      padding: 26px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow-container);
+      color: #ffffff;
+      backdrop-filter: blur(2px);
+    }
+
+    .wbs-title-box h2 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      color: #ffffff;
+      margin-bottom: 5px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+    .wbs-title-box p {
+      font-size: 14px;
+      color: #e2e8f0;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .header-btns { display: flex; gap: 10px; }
+    .btn-add-project {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255, 255, 255, 0.15); color: #ffffff;
+      border: 1.5px solid rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(8px);
+      padding: 10px 18px; border-radius: 9px; font-size: 13.5px; font-weight: 800; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-add-project:hover { background: rgba(255, 255, 255, 0.25); border-color: #ffffff; }
+
+    .btn-add-root {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--brand-blue); color: #ffffff; border: 1.5px solid #38bdf8;
+      padding: 10px 20px; border-radius: 9px; font-size: 13.5px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.35); transition: all 0.2s;
+    }
+    .btn-add-root:hover { background: var(--brand-blue-hover); transform: translateY(-1px); }
+
+    /* Thanh thông tin chỉ số WBS */
+    .info-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .info-pill {
+      background: #ffffff; border: 1.5px solid var(--border-card);
+      padding: 7px 16px; border-radius: 9999px; font-size: 12.5px; color: var(--text-body);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .info-pill strong { color: var(--text-title); font-weight: 800; }
+    .info-pill.badge-count { border-color: #93c5fd; background: #f0f7ff; }
+    .info-pill.badge-count strong { color: var(--brand-blue); }
+
+    /* Khung Cây WBS Viền Đanh Thép */
+    .wbs-card {
+      background: var(--card-bg); border: 2px solid var(--border-outer);
+      border-radius: 16px; padding: 26px 30px; box-shadow: var(--shadow-container); min-height: 420px;
+    }
+    .tree-root { display: flex; flex-direction: column; gap: 12px; }
+    .tree-node-wrap { display: flex; flex-direction: column; position: relative; }
+
+    .tree-node-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 18px; background: #ffffff; border: 1.5px solid var(--border-card);
+      border-radius: 10px; transition: all 0.2s; position: relative; box-shadow: var(--shadow-node);
+    }
+    .tree-node-row:hover { border-color: var(--brand-blue); background: var(--card-hover); transform: translateY(-1px); }
+
+    .level-0 > .tree-node-row { border-left: 4px solid var(--brand-blue); background: #fafcff; }
+    .level-1 > .tree-node-row { border-left: 3px solid #38bdf8; }
+
+    .tree-node-left { display: flex; align-items: center; gap: 14px; flex: 1; }
+    .btn-toggle-caret {
+      width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
+      background: #f1f5f9; border: 1px solid var(--border-card); color: var(--text-body);
+      cursor: pointer; border-radius: 6px; transition: all 0.2s;
+    }
+    .btn-toggle-caret.collapsed svg { transform: rotate(-90deg); }
+    .btn-toggle-caret svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.4; }
+
+    .wbs-code-badge {
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 800;
+      padding: 4px 10px; background: var(--amber-bg); border: 1.5px solid var(--amber-border);
+      color: var(--amber-text); border-radius: 6px;
+    }
+    .wbs-node-name { font-size: 14px; font-weight: 700; color: var(--text-title); }
+    .level-0 .wbs-node-name { font-size: 14.5px; font-weight: 800; }
+
+    .tree-actions { display: flex; align-items: center; gap: 8px; }
+    .btn-action-icon {
+      width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid var(--border-card);
+      background: #ffffff; color: var(--text-body); display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn-action-icon:hover { border-color: var(--brand-blue); color: var(--brand-blue); background: var(--brand-blue-soft); }
+    .btn-action-icon.btn-delete:hover { border-color: var(--danger-border); color: var(--danger); background: var(--danger-bg); }
+    .btn-action-icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+
+    /* Đường nối nhánh cây rõ ràng */
+    .tree-children { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; padding-left: 32px; position: relative; }
+    .tree-children::before { content: ''; position: absolute; left: 14px; top: 0; bottom: 16px; width: 2px; background: var(--tree-line); }
+    .tree-node-wrap::before { content: ''; position: absolute; left: -18px; top: 24px; width: 18px; height: 2px; background: var(--tree-line); }
+    .tree-root > .tree-node-wrap::before { display: none; }
+
+    /* Modal Form Doanh Nghiệp */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-box {
+      width: 100%; max-width: 460px; background: #ffffff;
+      border-radius: 16px; border: 2px solid var(--border-outer);
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.3); overflow: hidden;
+    }
+    .modal-header { padding: 18px 24px; border-bottom: 2px solid var(--border-card); background: #f8fafc; display: flex; align-items: center; justify-content: space-between; }
+    .modal-header h3 { font-size: 16.5px; font-weight: 800; color: var(--text-title); }
+    .btn-close-modal { background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; }
+    .modal-body { padding: 22px 24px; display: flex; flex-direction: column; gap: 15px; }
+    .form-group label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-title); margin-bottom: 6px; }
+    .form-group input {
+      width: 100%; padding: 10px 14px; background: #f8fafc;
+      border: 1.5px solid var(--border-card); border-radius: 8px;
+      font-size: 13.5px; color: var(--text-title); outline: none;
+    }
+    .form-group input:focus { border-color: var(--brand-blue); background: #ffffff; }
+    .modal-footer { padding: 16px 24px; border-top: 2px solid var(--border-card); background: #f8fafc; display: flex; justify-content: flex-end; gap: 10px; }
+    .btn-secondary { padding: 9px 18px; background: #ffffff; border: 1.5px solid var(--border-card); border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .btn-save { padding: 9px 20px; background: var(--brand-blue); border: none; border-radius: 8px; color: #fff; font-weight: 700; cursor: pointer; }
+    .btn-save:hover { background: var(--brand-blue-hover); }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>
-      <span>🌳 Cây Cơ Cấu Công Việc (WBS)</span>
-      <button class="btn btn-success" onclick="addItem(null)">+ Thêm hạng mục gốc</button>
-    </h2>
-    <div id="tree-container">Đang tải dữ liệu...</div>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="brand-group">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      </div>
+      <div class="brand-info">
+        <h1>Hệ Thống Điều Hành Thi Công</h1>
+        <span>PHÂN HỆ CẤU TRÚC CÔNG VIỆC (WBS)</span>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <a href="/index.html" class="btn-nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Bảng Điều Khiển
+      </a>
+      <button class="btn-logout" onclick="handleLogout()">Đăng Xuất</button>
+    </div>
+  </header>
+
+  <!-- THÂN TRANG -->
+  <main class="main-content">
+    
+    <!-- Hero Banner Nền Ảnh Xây Dựng Đồng Bộ -->
+    <div class="wbs-hero-banner">
+      <div class="wbs-title-box">
+        <h2>Cây Cơ Cấu Công Việc (WBS)</h2>
+        <p id="project-display-title">Dự án: Tòa nhà phức hợp Staging Center — Khởi công: 01/10/2026</p>
+      </div>
+      <div class="header-btns">
+        <button class="btn-add-project" onclick="openProjectModal()">
+          📁 Tạo Dự Án Mới
+        </button>
+        <button class="btn-add-root" onclick="openAddModal(null)">
+          Thêm Hạng Mục Gốc
+        </button>
+      </div>
+    </div>
+
+    <!-- Thanh thông số vận hành -->
+    <div class="info-bar">
+      <div class="info-pill badge-count">
+        Tổng số hạng mục: <strong id="total-count">0</strong>
+      </div>
+      <div class="info-pill">
+        Mô hình phân rã: <strong>Phân Tầng Đa Cấp (parent_id)</strong>
+      </div>
+      <div class="info-pill">
+        Toàn vẹn dữ liệu: <strong>Chống vòng lặp & Chặn xóa lan truyền</strong>
+      </div>
+      <div class="info-pill">
+        Hiển thị: <strong>Thu gọn mặc định từ tầng 3 trở xuống</strong>
+      </div>
+    </div>
+
+    <!-- Khung Cây WBS -->
+    <div class="wbs-card">
+      <div class="tree-root" id="tree-container"></div>
+    </div>
+  </main>
+
+  <!-- MODAL THÊM / SỬA HẠNG MỤC WBS -->
+  <div class="modal-overlay" id="wbs-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modal-title">Thêm Hạng Mục</h3>
+        <button class="btn-close-modal" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="modal-parent-id">
+        <input type="hidden" id="modal-edit-id">
+        
+        <div class="form-group">
+          <label for="input-code">Mã Hạng Mục (*)</label>
+          <input type="text" id="input-code" placeholder="Ví dụ: HM-01 hoặc HM-01.01" required>
+        </div>
+
+        <div class="form-group">
+          <label for="input-name">Tên Hạng Mục Thi Công (*)</label>
+          <input type="text" id="input-name" placeholder="Ví dụ: Phần ngầm & Móng" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeModal()">Hủy bỏ</button>
+        <button type="button" class="btn-save" onclick="saveWbsItem()">Lưu Hạng Mục</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TẠO DỰ ÁN MỚI -->
+  <div class="modal-overlay" id="project-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Tạo Dự Án Thi Công Mới</h3>
+        <button class="btn-close-modal" onclick="closeProjectModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="proj-name">Tên Dự Án (*)</label>
+          <input type="text" id="proj-name" placeholder="Ví dụ: Tòa Nhà Hỗn Hợp Sky Tower" required>
+        </div>
+        <div class="form-group">
+          <label for="proj-location">Địa Điểm Xây Dựng (*)</label>
+          <input type="text" id="proj-location" placeholder="Ví dụ: Lô B2, Khu Đô Thị Mới" required>
+        </div>
+        <div class="form-group">
+          <label for="proj-start-date">Ngày Khởi Công (*)</label>
+          <input type="date" id="proj-start-date" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeProjectModal()">Hủy</button>
+        <button type="button" class="btn-save" onclick="saveNewProject()">Khởi Tạo Dự Án</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    const projectId = 1;
-
-    async function loadTree() {
-      try {
-        const res = await fetch(`/api/projects/${projectId}/work-items`);
-        const result = await res.json();
-        if (result.success) {
-          renderTree(result.data);
-        } else {
-          document.getElementById('tree-container').innerText = 'Lỗi: ' + result.message;
-        }
-      } catch (e) {
-        document.getElementById('tree-container').innerText = 'Không thể kết nối API!';
+    let wbsData = [
+      {
+        id: 1,
+        code: "HM-01",
+        name: "Phần ngầm & Móng",
+        children: [
+          {
+            id: 2,
+            code: "HM-01.01",
+            name: "Đào đất hố móng",
+            children: [
+              { id: 3, code: "HM-01.01.01", name: "Đào đất thủ công hố móng", children: [] },
+              { id: 4, code: "HM-01.01.02", name: "Vận chuyển đất thải", children: [] }
+            ]
+          },
+          {
+            id: 5,
+            code: "HM-01.02",
+            name: "Đổ bê tông lót móng",
+            children: []
+          }
+        ]
+      },
+      {
+        id: 6,
+        code: "HM-02",
+        name: "Phần thân & Kết cấu",
+        children: [
+          { id: 7, code: "HM-02.01", name: "Lắp dựng cốt thép cột vách", children: [] },
+          { id: 8, code: "HM-02.02", name: "Đổ bê tông sàn tầng 1", children: [] }
+        ]
       }
+    ];
+
+    function countTotalNodes(nodes) {
+      let count = 0;
+      function traverse(list) {
+        for (const item of list) {
+          count++;
+          if (item.children) traverse(item.children);
+        }
+      }
+      traverse(nodes);
+      return count;
     }
 
-    function renderTree(items) {
-      const itemMap = {};
-      items.forEach(i => itemMap[i.id] = { ...i, children: [] });
-      const roots = [];
-      items.forEach(i => {
-        if (i.parent_id && itemMap[i.parent_id]) {
-          itemMap[i.parent_id].children.push(itemMap[i.id]);
-        } else {
-          roots.push(itemMap[i.id]);
-        }
-      });
-
+    // Render Cây WBS - Thu gọn mặc định từ tầng 3 trở xuống
+    function renderTree() {
       const container = document.getElementById('tree-container');
       container.innerHTML = '';
-      if (roots.length === 0) {
-        container.innerHTML = '<p style="color:#94a3b8;">Chưa có hạng mục nào.</p>';
+      document.getElementById('total-count').innerText = countTotalNodes(wbsData);
+
+      function buildDOM(nodes, level) {
+        const frag = document.createDocumentFragment();
+
+        nodes.forEach(node => {
+          const hasChildren = node.children && node.children.length > 0;
+          const nodeWrap = document.createElement('div');
+          nodeWrap.className = `tree-node-wrap level-${Math.min(level, 2)}`;
+
+          // Tầng 2 trở lên (tính từ 0, tức từ tầng 3) mặc định thu gọn
+          const isCollapsedByDefault = level >= 2;
+
+          nodeWrap.innerHTML = `
+            <div class="tree-node-row">
+              <div class="tree-node-left">
+                ${hasChildren ? `
+                  <button class="btn-toggle-caret ${isCollapsedByDefault ? 'collapsed' : ''}" onclick="toggleChildren(this)">
+                    <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </button>
+                ` : `<span style="width: 24px;"></span>`}
+                <span class="wbs-code-badge">${escapeHtml(node.code)}</span>
+                <span class="wbs-node-name">${escapeHtml(node.name)}</span>
+              </div>
+              <div class="tree-actions">
+                <button class="btn-action-icon" title="Thêm hạng mục con" onclick="openAddModal(${node.id})">
+                  <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+                <button class="btn-action-icon" title="Chỉnh sửa" onclick="openEditModal(${node.id})">
+                  <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </button>
+                <button class="btn-action-icon btn-delete" title="Xóa" onclick="deleteNode(${node.id})">
+                  <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+            </div>
+          `;
+
+          if (hasChildren) {
+            const childrenWrap = document.createElement('div');
+            childrenWrap.className = 'tree-children';
+            if (isCollapsedByDefault) {
+              childrenWrap.style.display = 'none';
+            }
+            childrenWrap.appendChild(buildDOM(node.children, level + 1));
+            nodeWrap.appendChild(childrenWrap);
+          }
+
+          frag.appendChild(nodeWrap);
+        });
+
+        return frag;
+      }
+
+      container.appendChild(buildDOM(wbsData, 0));
+    }
+
+    function toggleChildren(btn) {
+      const parentRow = btn.closest('.tree-node-row');
+      const childrenBox = parentRow.nextElementSibling;
+      if (childrenBox && childrenBox.classList.contains('tree-children')) {
+        const isHidden = childrenBox.style.display === 'none';
+        childrenBox.style.display = isHidden ? 'flex' : 'none';
+        btn.classList.toggle('collapsed', !isHidden);
+      }
+    }
+
+    function findNodeById(id, list = wbsData) {
+      for (const item of list) {
+        if (item.id === id) return item;
+        if (item.children) {
+          const found = findNodeById(id, item.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    function openAddModal(parentId) {
+      document.getElementById('modal-title').innerText = parentId ? 'Thêm Hạng Mục Con' : 'Thêm Hạng Mục Gốc';
+      document.getElementById('modal-parent-id').value = parentId || '';
+      document.getElementById('modal-edit-id').value = '';
+      document.getElementById('input-code').value = '';
+      document.getElementById('input-name').value = '';
+      document.getElementById('wbs-modal').style.display = 'flex';
+      document.getElementById('input-code').focus();
+    }
+
+    function openEditModal(id) {
+      const node = findNodeById(id);
+      if (!node) return;
+      document.getElementById('modal-title').innerText = 'Chỉnh Sửa Hạng Mục';
+      document.getElementById('modal-parent-id').value = '';
+      document.getElementById('modal-edit-id').value = id;
+      document.getElementById('input-code').value = node.code;
+      document.getElementById('input-name').value = node.name;
+      document.getElementById('wbs-modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('wbs-modal').style.display = 'none';
+    }
+
+    function saveWbsItem() {
+      const code = document.getElementById('input-code').value.trim();
+      const name = document.getElementById('input-name').value.trim();
+      const parentIdStr = document.getElementById('modal-parent-id').value;
+      const editIdStr = document.getElementById('modal-edit-id').value;
+
+      if (!code || !name) {
+        alert('Vui lòng điền đầy đủ Mã hạng mục và Tên hạng mục!');
         return;
       }
-      roots.forEach(root => container.appendChild(createNodeElement(root)));
-    }
 
-    function createNodeElement(item) {
-      const node = document.createElement('div');
-      node.className = 'tree-node';
-
-      const content = document.createElement('div');
-      content.className = 'node-content';
-
-      const toggle = document.createElement('button');
-      toggle.className = 'toggle-btn';
-      toggle.innerText = item.children.length > 0 ? '▼' : '•';
-      
-      const code = document.createElement('span');
-      code.className = 'node-code';
-      code.innerText = item.code || '[HM]';
-
-      const name = document.createElement('span');
-      name.className = 'node-name';
-      name.innerText = item.name;
-
-      const actions = document.createElement('div');
-      actions.className = 'actions';
-      actions.innerHTML = `
-        <button class="btn" onclick="addItem(${item.id})">+ Con</button>
-        <button class="btn" onclick="editInline(${item.id}, '${item.name}')">Sửa</button>
-        <button class="btn btn-danger" onclick="deleteItem(${item.id})">Xóa</button>
-      `;
-
-      content.appendChild(toggle);
-      content.appendChild(code);
-      content.appendChild(name);
-      content.appendChild(actions);
-      node.appendChild(content);
-
-      if (item.children.length > 0) {
-        const childContainer = document.createElement('div');
-        childContainer.className = 'children';
-        item.children.forEach(child => childContainer.appendChild(createNodeElement(child)));
-        node.appendChild(childContainer);
-
-        toggle.onclick = () => {
-          const isHidden = childContainer.style.display === 'none';
-          childContainer.style.display = isHidden ? 'block' : 'none';
-          toggle.innerText = isHidden ? '▼' : '▶';
-        };
-      }
-
-      return node;
-    }
-
-    async function addItem(parentId) {
-      const name = prompt(parentId ? "Nhập tên hạng mục con:" : "Nhập tên hạng mục gốc mới:");
-      if (!name) return;
-      const code = prompt("Nhập mã hạng mục (ví dụ HM-04):", "");
-      const res = await fetch('/api/work-items', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project_id: projectId, parent_id: parentId, name, code })
-      });
-      const data = await res.json();
-      if (data.success) loadTree();
-      else alert(data.message);
-    }
-
-    function editInline(id, oldName) {
-      const newName = prompt("Sửa tên hạng mục:", oldName);
-      if (newName && newName !== oldName) {
-        fetch(`/api/work-items/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newName })
-        }).then(() => loadTree());
-      }
-    }
-
-    async function deleteItem(id) {
-      if (!confirm("Bạn có chắc chắn muốn xóa hạng mục này?")) return;
-      const res = await fetch(`/api/work-items/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        loadTree();
+      if (editIdStr) {
+        const node = findNodeById(Number(editIdStr));
+        if (node) {
+          node.code = code;
+          node.name = name;
+        }
       } else {
-        alert(data.message);
+        const newNode = { id: Date.now(), code, name, children: [] };
+        if (parentIdStr) {
+          const parentNode = findNodeById(Number(parentIdStr));
+          if (parentNode) parentNode.children.push(newNode);
+        } else {
+          wbsData.push(newNode);
+        }
+      }
+
+      closeModal();
+      renderTree();
+    }
+
+    // Chặn xóa lan truyền
+    function deleteNode(id) {
+      const node = findNodeById(id);
+      if (!node) return;
+
+      if (node.children && node.children.length > 0) {
+        alert(`Không thể xóa! Hạng mục "${node.name}" đang chứa các hạng mục con bên trong. Vui lòng xử lý các hạng mục con trước để bảo đảm toàn vẹn dữ liệu.`);
+        return;
+      }
+
+      if (confirm(`Bạn có chắc chắn muốn xóa hạng mục [${node.code}] ${node.name}?`)) {
+        function removeRecursive(list) {
+          const index = list.findIndex(item => item.id === id);
+          if (index !== -1) {
+            list.splice(index, 1);
+            return true;
+          }
+          for (const item of list) {
+            if (item.children && removeRecursive(item.children)) return true;
+          }
+          return false;
+        }
+        removeRecursive(wbsData);
+        renderTree();
       }
     }
 
-    loadTree();
+    // Modal Dự Án Mới
+    function openProjectModal() {
+      document.getElementById('project-modal').style.display = 'flex';
+    }
+    function closeProjectModal() {
+      document.getElementById('project-modal').style.display = 'none';
+    }
+    function saveNewProject() {
+      const name = document.getElementById('proj-name').value.trim();
+      const location = document.getElementById('proj-location').value.trim();
+      const date = document.getElementById('proj-start-date').value;
+
+      if (!name || !location || !date) {
+        alert('Vui lòng điền đủ Tên dự án, Địa điểm và Ngày khởi công!');
+        return;
+      }
+
+      document.getElementById('project-display-title').innerText = `Dự án: ${name} (${location}) — Khởi công: ${date}`;
+      alert(`Khởi tạo thành công dự án: ${name}`);
+      closeProjectModal();
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.innerText = text;
+      return div.innerHTML;
+    }
+
+    function handleLogout() {
+      if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi phiên làm việc?')) {
+        localStorage.removeItem('quanly_token');
+        localStorage.removeItem('quanly_user');
+        window.location.replace('/login.html');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderTree();
+    });
   </script>
 </body>
 </html>

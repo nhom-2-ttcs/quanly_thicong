@@ -3,321 +3,765 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <title>Trang Chủ | Hệ Thống Quản Lý Thi Công</title>
+  <title>Bảng Điều Hành | Hệ Thống Quản Trị Thi Công</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  
   <style>
     :root {
-      --bg: #090d16;
-      --card: #1e293b;
-      --border: #334155;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --danger: #ef4444;
-      --success: #10b981;
+      --bg-surface: #f1f5f9;
+      --card-bg: #ffffff;
+      
+      /* Hệ viền khung sắc nét, đanh thép */
+      --border-outer: #94a3b8;
+      --border-card: #cbd5e1;
+      --border-subtle: #e2e8f0;
+      
+      /* Màu sắc thương hiệu điều hành thi công */
+      --brand-blue: #1d4ed8;
+      --brand-blue-hover: #1e40af;
+      --brand-blue-soft: #eff6ff;
+      --brand-blue-border: #93c5fd;
+
+      --text-title: #0f172a;
+      --text-body: #1e293b;
+      --text-muted: #475569;
+      --text-dim: #64748b;
+
+      --success: #059669;
+      --success-bg: #ecfdf5;
+      --success-border: #a7f3d0;
+      
+      --danger: #dc2626;
+      --danger-bg: #fee2e2;
+      --danger-border: #f87171;
+
+      --shadow-card: 0 4px 16px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.05);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
     body {
-      background: var(--bg);
-      color: var(--text);
+      background-color: var(--bg-surface);
+      color: var(--text-body);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
-    .navbar {
-      background: rgba(30, 41, 59, 0.8);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 24px;
+
+    /* === THANH TOPBAR DOANH NGHIỆP === */
+    .topbar {
+      height: 68px;
+      background: #ffffff;
+      border-bottom: 2px solid var(--border-card);
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
+      padding: 0 36px;
       position: sticky;
       top: 0;
       z-index: 50;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
     }
-    .brand { font-size: 18px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
-    .brand-sub { font-size: 12px; color: #60a5fa; font-weight: 600; }
-    .user-profile {
+
+    .brand-group {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
     }
-    .user-info { text-align: right; }
-    .user-name { font-weight: 700; font-size: 14px; color: #fff; display: block; }
-    .user-role { font-size: 11px; color: #93c5fd; background: rgba(59,130,246,0.15); padding: 2px 8px; border-radius: 9999px; }
-    
-    .btn-logout {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      color: #fca5a5;
-      padding: 6px 14px;
-      border-radius: 6px;
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(29, 78, 216, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .brand-icon svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .brand-info h1 {
+      font-size: 16.5px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      color: var(--text-title);
+    }
+
+    .brand-info span {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: var(--brand-blue);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .btn-wbs {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      border: 1.5px solid var(--border-outer);
+      padding: 8px 16px;
+      border-radius: 8px;
+      color: var(--text-title);
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-wbs:hover {
+      background: var(--brand-blue-soft);
+      border-color: var(--brand-blue);
+      color: var(--brand-blue);
+    }
+
+    .btn-wbs svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--brand-blue);
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 6px 4px 12px;
+      border-radius: 9999px;
+      background: #f8fafc;
+      border: 1.5px solid var(--border-card);
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      background: var(--brand-blue-soft);
+      border: 1.5px solid var(--brand-blue-border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12.5px;
+      font-weight: 800;
+      color: var(--brand-blue);
+    }
+
+    .user-meta {
+      text-align: right;
+    }
+
+    .user-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-title);
+      line-height: 1.2;
+    }
+
+    .user-role {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim);
+    }
+
+    .btn-logout {
+      padding: 7px 15px;
+      border-radius: 8px;
+      background: var(--danger-bg);
+      border: 1.5px solid var(--danger-border);
+      color: var(--danger);
+      font-size: 12.5px;
+      font-weight: 800;
       cursor: pointer;
       transition: all 0.2s;
     }
-    .btn-logout:hover { background: var(--danger); color: white; }
 
-    .main {
-      flex: 1;
-      max-width: 1000px;
+    .btn-logout:hover {
+      background: #fecaca;
+    }
+
+    /* === KHU VỰC THÂN TRANG (CONTAINER) === */
+    .main-content {
+      max-width: 1240px;
       width: 100%;
-      margin: 32px auto;
-      padding: 0 20px;
+      margin: 0 auto;
+      padding: 28px 24px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
-    .welcome-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-    }
-    .welcome-card h2 { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
-    .welcome-card p { color: var(--text-muted); font-size: 13px; }
 
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .stat-card {
-      background: rgba(30, 41, 59, 0.5);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
+    /* === HERO BANNER CÓ NỀN ẢNH CÔNG TRÌNH XÂY DỰNG CHUYÊN NGHIỆP === */
+    .hero-banner {
+      position: relative;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 58, 138, 0.8) 100%),
+                  url('https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=2070&auto=format&fit=crop') center/cover no-repeat;
+      border: 2px solid var(--border-outer);
+      border-left: 6px solid #38bdf8;
+      border-radius: 16px;
+      padding: 26px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-card);
+      color: #ffffff;
+      backdrop-filter: blur(2px);
     }
-    .stat-title { font-size: 12px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 6px; }
-    .stat-val { font-size: 18px; font-weight: 800; color: #fff; }
 
-    .panel {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 24px;
+    .hero-text h2 {
+      font-size: 23px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      color: #ffffff;
+      margin-bottom: 5px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     }
-    .panel h3 { font-size: 16px; margin-bottom: 12px; }
-    .btn-check {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-check:hover { background: var(--primary-hover); }
-    .status-box {
-      margin-top: 12px;
-      padding: 12px;
-      background: #090d16;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-family: monospace;
-      font-size: 12px;
+
+    .hero-text h2 span {
       color: #38bdf8;
-      word-break: break-all;
     }
 
-    .roles-table {
+    .hero-text p {
+      font-size: 14px;
+      color: #e2e8f0;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .session-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.2);
+      border: 1.5px solid rgba(16, 185, 129, 0.4);
+      backdrop-filter: blur(8px);
+      padding: 8px 18px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .session-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #22c55e;
+    }
+
+    /* 3 Card Thông Số Vận Hành Doanh Nghiệp Viền Rõ */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-card);
+      border-radius: 12px;
+      padding: 20px 22px;
+      box-shadow: var(--shadow-card);
+      transition: all 0.2s ease;
+    }
+
+    .metric-card:hover {
+      border-color: var(--brand-blue);
+      transform: translateY(-2px);
+    }
+
+    .metric-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .metric-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--brand-blue-soft);
+      border: 1.5px solid var(--brand-blue-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .metric-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--brand-blue);
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .metric-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-title);
+      margin-bottom: 3px;
+    }
+
+    .metric-desc {
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+
+    /* Bảng Ma Trận Phân Quyền Khung Đậm Sắc Nét */
+    .panel-card {
+      background: var(--card-bg);
+      border: 2px solid var(--border-outer);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+
+    .panel-header {
+      padding: 20px 26px;
+      border-bottom: 2px solid var(--border-card);
+      background: #fafcff;
+    }
+
+    .panel-header-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-title);
+      margin-bottom: 3px;
+    }
+
+    .panel-header-title svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--brand-blue);
+      fill: none;
+      stroke-width: 2.2;
+    }
+
+    .panel-header p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-left: 30px;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 14px;
-      font-size: 13px;
-    }
-    .roles-table th, .roles-table td {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
       text-align: left;
     }
-    .roles-table th { background: rgba(255,255,255,0.02); color: var(--text-muted); font-size: 11px; text-transform: uppercase; }
+
+    th {
+      background: #f8fafc;
+      color: var(--text-dim);
+      font-size: 11.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      padding: 14px 24px;
+      border-bottom: 2px solid var(--border-card);
+    }
+
+    td {
+      padding: 16px 24px;
+      border-bottom: 1.5px solid var(--border-subtle);
+      font-size: 13.5px;
+      vertical-align: middle;
+      color: var(--text-body);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: #f8fafc;
+    }
+
+    .code-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 10px;
+      background: var(--brand-blue-soft);
+      border: 1.5px solid var(--brand-blue-border);
+      color: var(--brand-blue);
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .role-title {
+      font-weight: 800;
+      color: var(--text-title);
+    }
+
+    .role-desc {
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* Footer & Health Check */
+    .panel-footer {
+      padding: 18px 26px;
+      border-top: 2px solid var(--border-card);
+      background: #fafcff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .health-status-text {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--text-dim);
+    }
+
+    .btn-health {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--brand-blue);
+      border: 1.5px solid #1e40af;
+      padding: 9.5px 20px;
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+      transition: all 0.2s;
+    }
+
+    .btn-health:hover {
+      background: var(--brand-blue-hover);
+      box-shadow: 0 6px 16px rgba(29, 78, 216, 0.35);
+    }
+
+    .btn-health svg {
+      width: 15px;
+      height: 15px;
+      stroke: #ffffff;
+      fill: none;
+      stroke-width: 2.4;
+    }
+
+    @media (max-width: 960px) {
+      .topbar { padding: 0 16px; }
+      .metrics-grid { grid-template-columns: 1fr; }
+      .hero-banner { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .panel-footer { flex-direction: column; align-items: flex-start; }
+    }
   </style>
 </head>
 <body>
 
-  <header class="navbar">
-    <div class="brand">
-      <span>Quản Lý Thi Công</span>
-      <span class="brand-sub">Nhóm 2 TTCS</span>
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="brand-group">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+        </svg>
+      </div>
+      <div class="brand-info">
+        <h1>Hệ Thống Điều Hành Thi Công</h1>
+        <span>TRUNG TÂM QUẢN TRỊ DỰ ÁN</span>
+      </div>
     </div>
 
-    <!-- Tiêu chí chấp nhận 1: Đăng nhập thành công nhìn thấy tên mình trên màn hình -->
-    <div class="user-profile">
-      <div class="user-info">
-        <span class="user-name" id="user-fullname">Đang tải...</span>
-        <span class="user-role" id="user-role">Đang tải...</span>
+    <div class="topbar-actions">
+      <a href="/wbs.html" class="btn-wbs">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="8" y1="6" x2="21" y2="6"></line>
+          <line x1="8" y1="12" x2="21" y2="12"></line>
+          <line x1="8" y1="18" x2="21" y2="18"></line>
+          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+          <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        </svg>
+        Cơ Cấu Công Việc (WBS)
+      </a>
+
+      <div class="user-pill">
+        <div class="user-avatar" id="avatar-letter">U</div>
+        <div class="user-meta">
+          <div class="user-name" id="display-user-name">Đang tải...</div>
+          <div class="user-role" id="display-user-role">...</div>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">Đăng Xuất</button>
       </div>
-      <!-- Tiêu chí chấp nhận 4: Khi đăng xuất, phiên đăng nhập bị hủy và quay lại trang đăng nhập -->
-      <button class="btn-logout" onclick="handleLogout()">Đăng Xuất</button>
     </div>
   </header>
 
-  <main class="main">
-    <div class="welcome-card">
-      <h2>Xin chào, <span id="welcome-name" style="color: #60a5fa;">...</span>!</h2>
-      <p>Bạn đã đăng nhập thành công vào hệ thống Quản Lý Hồ Sơ Thi Công Công Trình (Mã nhiệm vụ: <strong>SCRUM-19 / S-02</strong>).</p>
-    </div>
-
-    <div class="grid">
-      <div class="stat-card">
-        <div class="stat-title">Trạng Thái Phiên Làm Việc</div>
-        <div class="stat-val" style="color: #34d399;">Hoạt Động (12 Giờ)</div>
+  <!-- THÂN TRANG -->
+  <main class="main-content">
+    
+    <!-- Hero Banner Nền Ảnh Công Trình Xây Dựng Sinh Động -->
+    <section class="hero-banner">
+      <div class="hero-text">
+        <h2>Xin chào, <span id="welcome-name">Kỹ sư điều hành</span>!</h2>
+        <p>Hệ thống vận hành máy chủ dự án đã sẵn sàng. Dữ liệu công trình được cô lập theo quyền hạn điều hành.</p>
       </div>
-      <div class="stat-card">
-        <div class="stat-title">Người Thực Hiện Task</div>
-        <div class="stat-val">Trần Mạnh Dũng</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-title">Tiến Độ Sprint S-02</div>
-        <div class="stat-val" style="color: #60a5fa;">SCRUM-29 &amp; SCRUM-30</div>
-      </div>
-    </div>
+      <div class="session-badge">Phiên bảo mật doanh nghiệp (12 Giờ)</div>
+    </section>
 
-    <div class="panel" style="margin-bottom: 24px;">
-      <h3>Danh Sách 6 Vai Trò Thi Công Hệ Thống (SCRUM-29 / T-04)</h3>
-      <table class="roles-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Mã Vai Trò</th>
-            <th>Tên Vai Trò Hiển Thị</th>
-            <th>Mô Tả Nhiệm Vụ</th>
-          </tr>
-        </thead>
-        <tbody id="roles-tbody">
-          <tr><td colspan="4" style="text-align:center; color: #94a3b8;">Đang tải danh sách 6 vai trò...</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- 3 Metrics Card Viền Rõ Ràng -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-label">Cấu Trúc Hạng Mục</span>
+          <div class="metric-icon">
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="metric-title">Cây Đa Tầng (WBS)</div>
+        <div class="metric-desc">Quan hệ phân cấp đệ quy parent_id chống vòng lặp</div>
+      </div>
 
-    <div class="panel">
-      <h3>Kiểm Tra Kết Nối Backend (Sprint S-01)</h3>
-      <button class="btn-check" onclick="checkBackendHealth()">Kiểm tra /api/health</button>
-      <div id="health-result" class="status-box">Chưa kiểm tra</div>
-    </div>
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-label">Tiêu Chuẩn Xác Thực</span>
+          <div class="metric-icon">
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="metric-title">Argon2id + JWT</div>
+        <div class="metric-desc">Chống brute-force khóa 15 phút sau 5 lần sai</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-label">Môi Trường Vận Hành</span>
+          <div class="metric-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="metric-title">Docker Staging</div>
+        <div class="metric-desc">Nginx Frontend + Node Backend + Database</div>
+      </div>
+    </section>
+
+    <!-- Ma Trận Phân Quyền Khung Đậm Sắc Nét -->
+    <section class="panel-card">
+      <div class="panel-header">
+        <div class="panel-header-title">
+          <svg viewBox="0 0 24 24">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          Ma Trận Phân Quyền Điều Hành Thi Công
+        </div>
+        <p>Quy định quyền truy cập dữ liệu và trách nhiệm chữ ký số theo chức danh dự án</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 70px;">STT</th>
+              <th style="width: 180px;">MÃ ĐỊNH DANH</th>
+              <th style="width: 260px;">CHỨC DANH ĐIỀU HÀNH</th>
+              <th>PHẠM VI TRÁCH NHIỆM & QUYỀN TRUY CẬP DỰ ÁN</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td><span class="code-badge">admin</span></td>
+              <td class="role-title">Quản trị viên hệ thống</td>
+              <td class="role-desc">Toàn quyền cấu hình máy chủ, phân bổ tài nguyên dự án và kiểm soát danh mục tài khoản.</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td><span class="code-badge">project_manager</span></td>
+              <td class="role-title">Chỉ huy trưởng công trình</td>
+              <td class="role-desc">Điều phối tiến độ tổng thể, phân công các đội thi công, ký duyệt nhật ký công trường.</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td><span class="code-badge">supervisor</span></td>
+              <td class="role-title">Kỹ sư giám sát thi công</td>
+              <td class="role-desc">Giám sát chất lượng hiện trường, lập biên bản nghiệm thu công việc và ghi nhật ký hàng ngày.</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td><span class="code-badge">contractor</span></td>
+              <td class="role-title">Đội trưởng thi công</td>
+              <td class="role-desc">Tổ chức nhân lực thiết bị tại mũi thi công, báo cáo khối lượng thực hiện hàng ngày.</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td><span class="code-badge">accountant</span></td>
+              <td class="role-title">Kế toán & Quản lý vật tư</td>
+              <td class="role-desc">Kiểm soát định mức vật tư, đối chiếu khối lượng nghiệm thu và chuẩn bị đề nghị thanh toán.</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td><span class="code-badge">client</span></td>
+              <td class="role-title">Chủ đầu tư</td>
+              <td class="role-desc">Theo dõi tiến độ đường găng tổng thể, xem ảnh hiện trường có định vị và phê duyệt thanh toán.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel-footer">
+        <div class="health-status-text" id="health-status-box">
+          <span class="status-dot" id="health-dot"></span>
+          <span id="health-text">Kiểm tra kết nối dịch vụ API Backend: Chưa thực hiện</span>
+        </div>
+        <button class="btn-health" id="btn-check-health" onclick="checkHealth()">
+          <svg viewBox="0 0 24 24">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          Chạy Kiểm Tra /api/health
+        </button>
+      </div>
+    </section>
+
   </main>
 
   <script>
-    async function smartFetch(endpoint, options = {}) {
-      const candidates = [endpoint];
-      const host = window.location.hostname || 'localhost';
-      const port = window.location.port;
+    function initUser() {
+      const userStr = localStorage.getItem('quanly_user');
+      let userName = 'Kỹ sư điều hành';
+      let userRole = 'authenticated';
 
-      if (port !== '5000') {
-        const protocol = window.location.protocol === 'file:' ? 'http:' : window.location.protocol;
-        candidates.push(`${protocol}//${host}:5000${endpoint}`);
-      }
-
-      let lastError = null;
-      for (const url of candidates) {
+      if (userStr) {
         try {
-          const res = await fetch(url, options);
-          const text = await res.text();
-          if (text.trim().startsWith('<') || text.includes('<html>') || text.includes('<!DOCTYPE')) {
-            lastError = new Error('Cổng trả về HTML');
-            continue;
-          }
-          let data;
-          try {
-            data = JSON.parse(text);
-          } catch (e) {
-            continue;
-          }
-          return { res, data };
-        } catch (err) {
-          lastError = err;
-        }
-      }
-      throw lastError || new Error('Không thể kết nối đến máy chủ API backend.');
-    }
-
-    // Tiêu chí chấp nhận 5: Sau khi đăng xuất, dùng nút quay lại của trình duyệt cũng không thể vào màn hình được bảo vệ
-    window.addEventListener('pageshow', function (event) {
-      if (event.persisted || !localStorage.getItem('quanly_token')) {
-        checkAuthAndRedirect();
-      }
-    });
-
-    async function checkAuthAndRedirect() {
-      const token = localStorage.getItem('quanly_token');
-      if (!token) {
+          const user = JSON.parse(userStr);
+          userName = user.full_name || user.fullName || user.name || user.ho_ten || user.email || userName;
+          userRole = user.role || user.role_id || user.vai_tro || 'admin';
+        } catch (e) {}
+      } else {
         window.location.replace('/login.html');
         return;
       }
 
-      try {
-        const { res, data } = await smartFetch('/api/auth/me', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
+      document.getElementById('welcome-name').innerText = userName;
+      document.getElementById('display-user-name').innerText = userName;
+      document.getElementById('display-user-role').innerText = String(userRole);
+      document.getElementById('avatar-letter').innerText = (userName.trim()[0] || 'U').toUpperCase();
+    }
 
-        if (!res.ok || !data.success) {
-          localStorage.removeItem('quanly_token');
-          localStorage.removeItem('quanly_user');
-          window.location.replace('/login.html');
-          return;
-        }
-
-        // Tiêu chí 1: Nhìn thấy tên mình trên trang chính
-        document.getElementById('user-fullname').innerText = data.user.full_name;
-        document.getElementById('welcome-name').innerText = data.user.full_name;
-        document.getElementById('user-role').innerText = data.user.role_display_name;
-
-      } catch (err) {
+    function handleLogout() {
+      if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi phiên làm việc?')) {
+        localStorage.removeItem('quanly_token');
+        localStorage.removeItem('quanly_user');
         window.location.replace('/login.html');
       }
     }
 
-    // Tiêu chí 4: Khi đăng xuất, phiên bị hủy trên server và chuyển về login.html
-    async function handleLogout() {
-      const token = localStorage.getItem('quanly_token');
-      if (token) {
+    async function checkHealth() {
+      const btn = document.getElementById('btn-check-health');
+      const dot = document.getElementById('health-dot');
+      const text = document.getElementById('health-text');
+
+      btn.disabled = true;
+      btn.innerText = 'Đang kiểm tra...';
+      dot.style.background = '#d97706';
+      text.innerText = 'Đang gửi yêu cầu tới /api/health...';
+
+      const host = window.location.hostname || 'localhost';
+      const targets = ['/api/health', `http://${host}:5000/api/health`];
+      let isSuccess = false;
+
+      for (const url of targets) {
         try {
-          await smartFetch('/api/auth/logout', {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + token }
-          });
-        } catch (e) {}
+          const res = await fetch(url);
+          if (res.ok) {
+            isSuccess = true;
+            break;
+          }
+        } catch (err) {}
       }
-      localStorage.removeItem('quanly_token');
-      localStorage.removeItem('quanly_user');
-      window.location.replace('/login.html');
-    }
 
-    async function loadRoles() {
-      try {
-        const { res, data } = await smartFetch('/api/auth/roles');
-        const tbody = document.getElementById('roles-tbody');
-        if (data.success && data.data) {
-          tbody.innerHTML = data.data.map(r => `
-            <tr>
-              <td><strong>${r.id}</strong></td>
-              <td><code>${r.name}</code></td>
-              <td><strong style="color: #93c5fd;">${r.display_name}</strong></td>
-              <td style="color: #94a3b8;">${r.description || '---'}</td>
-            </tr>
-          `).join('');
-        }
-      } catch (e) {}
-    }
+      btn.disabled = false;
+      btn.innerHTML = `
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2.4;">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Chạy Kiểm Tra /api/health
+      `;
 
-    async function checkBackendHealth() {
-      const box = document.getElementById('health-result');
-      box.innerText = 'Đang gọi API /api/health...';
-      try {
-        const { res, data } = await smartFetch('/api/health');
-        box.innerText = JSON.stringify(data, null, 2);
-      } catch (err) {
-        box.innerText = 'Lỗi: ' + err.message;
+      if (isSuccess) {
+        dot.style.background = '#059669';
+        text.innerText = 'Kết nối API Backend hoạt động bình thường (HTTP 200 OK)';
+      } else {
+        dot.style.background = '#dc2626';
+        text.innerText = 'Cảnh báo: Không thể kết nối tới máy chủ API Staging.';
       }
     }
 
-    // Khởi chạy kiểm tra đăng nhập ngay khi mở trang
-    checkAuthAndRedirect();
-    loadRoles();
+    window.addEventListener('DOMContentLoaded', initUser);
   </script>
 </body>
 </html>

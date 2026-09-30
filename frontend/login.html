@@ -3,229 +3,284 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Đăng Nhập | Quản Lý Thi Công Công Trình</title>
+  <title>Đăng Nhập | Hệ Thống Điều Hành Thi Công</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
   <style>
     :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --border: #334155;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --danger: #ef4444;
-      --danger-bg: rgba(239, 68, 68, 0.15);
-      --warning: #f59e0b;
-      --warning-bg: rgba(245, 158, 11, 0.15);
-      --success: #10b981;
+      --bg-canvas: #f1f5f9;
+      --card-bg: #ffffff;
+      --border: #cbd5e1;
+      --border-outer: #94a3b8;
+      --brand-blue: #1d4ed8;
+      --brand-blue-hover: #1e40af;
+      --brand-blue-soft: #eff6ff;
+      --text-title: #0f172a;
+      --text-body: #1e293b;
+      --text-muted: #475569;
+      --danger: #dc2626;
+      --danger-bg: #fee2e2;
+      --danger-border: #f87171;
+      --warning: #b45309;
+      --warning-bg: #fffbeb;
+      --warning-border: #fde68a;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    
     body {
-      background: linear-gradient(135deg, #090d16 0%, #0f172a 100%);
-      color: var(--text);
+      background-color: var(--bg-canvas);
+      color: var(--text-body);
       min-height: 100vh;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
+    }
+
+    .app-container {
+      display: grid;
+      grid-template-columns: 1fr 450px;
+      min-height: 100vh;
+      width: 100vw;
+    }
+    
+    /* === KHUNG TRÁI: HÌNH ẢNH CÔNG TRÌNH HIỆN ĐẠI KẾT HỢP GRADIENT KÍNH MỜ CHỐNG CHÓI === */
+    .brand-side {
+      position: relative;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 58, 138, 0.75) 100%),
+                  url('https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=2070&auto=format&fit=crop') center/cover no-repeat;
+      border-right: 2px solid var(--border-outer);
+      padding: 56px 64px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: #ffffff;
+      backdrop-filter: blur(2px);
+    }
+
+    .brand-header { display: flex; align-items: center; gap: 14px; }
+    .brand-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .brand-icon svg { width: 24px; height: 24px; stroke: #fff; fill: none; stroke-width: 2.2; }
+    .brand-title h2 { font-size: 19px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px; }
+    .brand-title span { font-size: 11px; font-weight: 800; color: #93c5fd; letter-spacing: 0.8px; text-transform: uppercase; }
+    
+    .brand-main { margin: auto 0; max-width: 600px; }
+    
+    .tag-live {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(8px);
+      padding: 6px 16px; border-radius: 9999px;
+      font-size: 11.5px; font-weight: 800; color: #ffffff; margin-bottom: 22px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .tag-live::before {
+      content: ''; width: 8px; height: 8px; background: #22c55e;
+      border-radius: 50%; box-shadow: 0 0 10px #22c55e;
+    }
+
+    .brand-main h1 {
+      font-size: 36px; font-weight: 800; line-height: 1.28; color: #ffffff;
+      margin-bottom: 16px; letter-spacing: -0.8px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+    .brand-main p {
+      font-size: 15px; line-height: 1.65; color: #e2e8f0;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .brand-features { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 36px; }
+    .feat-card {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 12px; padding: 16px 18px;
+    }
+    .feat-card strong { display: block; font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 4px; }
+    .feat-card span { font-size: 12px; color: #cbd5e1; }
+
+    .brand-footer { font-size: 12px; color: #94a3b8; }
+
+    /* === KHUNG PHẢI: FORM ĐĂNG NHẬP TRẮNG SỨ RÕ VIỀN === */
+    .form-side {
+      display: flex; align-items: center; justify-content: center;
+      padding: 32px 28px; background: #f8fafc;
     }
     .login-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 36px 32px;
-      width: 100%;
-      max-width: 440px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      width: 100%; max-width: 390px; background: #ffffff;
+      border: 2px solid var(--border-outer); border-radius: 16px;
+      padding: 34px 28px; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
     }
-    .header { text-align: center; margin-bottom: 24px; }
-    .badge {
-      display: inline-block;
-      padding: 4px 10px;
-      background: rgba(59, 130, 246, 0.15);
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      color: #60a5fa;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-    h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
-    p.subtitle { color: var(--text-muted); font-size: 13px; }
-    
-    .alert {
-      display: none;
-      padding: 12px 14px;
-      border-radius: 8px;
-      font-size: 13px;
-      line-height: 1.4;
-      margin-bottom: 18px;
-    }
-    .alert-danger {
-      background: var(--danger-bg);
-      border: 1px solid var(--danger);
-      color: #fca5a5;
-    }
-    .alert-warning {
-      background: var(--warning-bg);
-      border: 1px solid var(--warning);
-      color: #fde68a;
-    }
-    .countdown {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 18px;
-      font-weight: 700;
-      color: #ef4444;
-      margin-top: 6px;
-      display: block;
-    }
+    .login-header h2 { font-size: 23px; font-weight: 800; color: var(--text-title); margin-bottom: 4px; }
+    .login-header p { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+
+    .alert { display: none; padding: 12px 14px; border-radius: 8px; font-size: 12.5px; line-height: 1.45; margin-bottom: 16px; }
+    .alert-danger { background: var(--danger-bg); border: 1.5px solid var(--danger-border); color: var(--danger); }
+    .alert-warning { background: var(--warning-bg); border: 1.5px solid var(--warning-border); color: var(--warning); }
+    .countdown { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; color: var(--danger); margin-top: 6px; display: block; }
 
     .form-group { margin-bottom: 16px; }
-    label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+    label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-title); margin-bottom: 6px; }
     .input-wrap { position: relative; }
     input {
-      width: 100%;
-      padding: 11px 14px;
-      background: #090d16;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: #fff;
-      font-size: 14px;
-      outline: none;
-      transition: all 0.2s;
+      width: 100%; padding: 11px 14px; background: #f8fafc;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 13.5px; color: var(--text-title); outline: none; transition: all 0.2s;
     }
-    input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
-    .btn-toggle {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-    }
-    .btn-primary {
-      width: 100%;
-      padding: 12px;
-      background: var(--primary);
-      border: none;
-      border-radius: 8px;
-      color: white;
-      font-weight: 700;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background 0.2s;
-      margin-top: 6px;
-    }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    input:focus { border-color: var(--brand-blue); background: #fff; box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15); }
+    .btn-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 11.5px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
 
-    .demo-box {
-      margin-top: 24px;
-      padding-top: 18px;
-      border-top: 1px solid var(--border);
+    .btn-submit {
+      width: 100%; padding: 12px; background: var(--brand-blue); border: none;
+      border-radius: 8px; color: #fff; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: background 0.2s; margin-top: 4px;
+      box-shadow: 0 4px 10px rgba(29, 78, 216, 0.25);
+    }
+    .btn-submit:hover { background: var(--brand-blue-hover); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .register-prompt {
       text-align: center;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border);
+      font-size: 13px;
+      color: var(--text-muted);
     }
-    .demo-title { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 10px; }
-    .demo-btn-group { display: flex; gap: 8px; }
-    .btn-demo {
-      flex: 1;
-      padding: 8px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-size: 12px;
-      cursor: pointer;
-      text-align: left;
+    .register-prompt a {
+      color: var(--brand-blue);
+      text-decoration: none;
+      font-weight: 800;
+      margin-left: 4px;
     }
-    .btn-demo:hover { border-color: var(--primary); background: rgba(59,130,246,0.1); }
-    .btn-demo strong { display: block; color: #93c5fd; font-size: 11px; }
-    .btn-demo span { font-size: 10px; color: var(--text-muted); }
-
-    .btn-unlock {
-      margin-top: 10px;
-      background: none;
-      border: none;
-      color: #94a3b8;
-      font-size: 11px;
-      cursor: pointer;
+    .register-prompt a:hover {
       text-decoration: underline;
     }
-    .btn-unlock:hover { color: #f87171; }
+
+    .demo-box { margin-top: 18px; padding: 14px; background: #f8fafc; border: 1.5px dashed var(--border); border-radius: 8px; text-align: center; }
+    .demo-title { font-size: 10.5px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px; margin-bottom: 10px; }
+    .demo-btn-group { display: flex; gap: 8px; }
+    .btn-demo { flex: 1; padding: 8px 10px; background: #fff; border: 1.5px solid var(--border); border-radius: 6px; text-align: left; cursor: pointer; }
+    .btn-demo:hover { border-color: var(--brand-blue); background: var(--brand-blue-soft); }
+    .btn-demo strong { display: block; font-size: 11.5px; color: var(--text-title); }
+    .btn-demo span { font-size: 10px; color: var(--text-muted); }
+    .btn-unlock { margin-top: 10px; background: none; border: none; color: var(--text-muted); font-size: 11px; cursor: pointer; text-decoration: underline; }
+    .btn-unlock:hover { color: var(--danger); }
   </style>
 </head>
 <body>
 
-  <div class="login-card">
-    <div class="header">
-      <span class="badge">[S-02 / SCRUM-19] Xác Thực & Khóa Tạm 15 Phút</span>
-      <h1>Quản Lý Thi Công</h1>
-      <p class="subtitle">Đăng nhập tài khoản cá nhân để thực hiện hồ sơ thi công</p>
-    </div>
-
-    <!-- Alert: Lỗi chung theo tiêu chí chấp nhận Jira -->
-    <div id="alert-warning" class="alert alert-warning">
-      <strong id="warn-title">Email hoặc mật khẩu không đúng</strong>
-      <p id="warn-desc" style="margin-top: 4px; font-size: 12px;"></p>
-    </div>
-
-    <!-- Alert: Khóa 15 phút theo tiêu chí chấp nhận Jira -->
-    <div id="alert-lockout" class="alert alert-danger">
-      <strong>⚠️ Tài khoản đã bị tạm khóa!</strong>
-      <p id="lockout-desc" style="margin-top: 4px; font-size: 12px;">Đã nhập sai mật khẩu 5 lần liên tiếp. Lần thứ 6 bị khóa 15 phút:</p>
-      <span class="countdown" id="countdown-timer">15:00</span>
-    </div>
-
-    <form id="form-login">
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input type="email" id="email" required placeholder="name@thicong.vn" autocomplete="email">
-      </div>
-
-      <div class="form-group">
-        <label for="password">Mật khẩu</label>
-        <div class="input-wrap">
-          <input type="password" id="password" required placeholder="Nhập mật khẩu..." autocomplete="current-password">
-          <button type="button" id="btn-toggle-pwd" class="btn-toggle">Hiện</button>
+  <div class="app-container">
+    <div class="brand-side">
+      <div class="brand-header">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <div class="brand-title">
+          <h2>HỆ THỐNG ĐIỀU HÀNH THI CÔNG</h2>
+          <span>CỔNG QUẢN TRỊ DỰ ÁN</span>
         </div>
       </div>
 
-      <button type="submit" id="btn-submit" class="btn-primary">Đăng Nhập</button>
-    </form>
+      <div class="brand-main">
+        <div class="tag-live">Hệ thống Giám sát & Quản lý Thi công</div>
+        <h1>Kiểm soát tiến độ & chất lượng xây dựng chuẩn xác.</h1>
+        <p>Hệ sinh thái số hóa công trình từ thiết kế kết cấu, vật tư đến nhật ký thi công hàng ngày theo tiêu chuẩn quản lý xây dựng chuyên nghiệp.</p>
 
-    <div style="text-align: center; margin-top: 16px; font-size: 13px; color: var(--text-muted);">
-      Chưa có tài khoản? <a href="/register.html" style="color: #60a5fa; text-decoration: none; font-weight: 600;">Đăng ký ngay tại đây</a>
+        <div class="brand-features">
+          <div class="feat-card">
+            <strong>Bảo Mật Xác Thực</strong>
+            <span>Khóa tạm 15 phút sau 5 lần sai</span>
+          </div>
+          <div class="feat-card">
+            <strong>Phiên Làm Việc 12h</strong>
+            <span>Tự động hết hạn an toàn</span>
+          </div>
+          <div class="feat-card">
+            <strong>6 Cấp Bậc Vai Trò</strong>
+            <span>Chỉ xem dự án mình tham gia</span>
+          </div>
+          <div class="feat-card">
+            <strong>Phân Rã Đa Tầng</strong>
+            <span>Cây WBS công trình mượt mà</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="brand-footer">
+        &copy; 2026 Nền tảng điều hành thi công công trình. Bảo mật cấp doanh nghiệp.
+      </div>
     </div>
 
-    <!-- Tài khoản mẫu để kiểm thử nhanh -->
-    <div class="demo-box">
-      <div class="demo-title">Tài Khoản Mẫu Kiểm Thử (Bấm để điền nhanh)</div>
-      <div class="demo-btn-group">
-        <button type="button" class="btn-demo" onclick="fillAccount('dtc245160020@ictu.edu.vn', 'Dung@123')">
-          <strong>Trần Mạnh Dũng</strong>
-          <span>Chỉ huy trưởng (Dung@123)</span>
-        </button>
-        <button type="button" class="btn-demo" onclick="fillAccount('admin@thicong.vn', 'Admin@123')">
-          <strong>Quản Trị Viên</strong>
-          <span>Admin (Admin@123)</span>
-        </button>
+    <div class="form-side">
+      <div class="login-card">
+        <div class="login-header">
+          <h2>Đăng Nhập</h2>
+          <p>Truy cập tài khoản cá nhân điều hành dự án</p>
+        </div>
+
+        <div id="alert-warning" class="alert alert-warning">
+          <strong id="warn-title">Email hoặc mật khẩu không đúng</strong>
+          <p id="warn-desc" style="margin-top: 4px; font-size: 12px;"></p>
+        </div>
+
+        <div id="alert-lockout" class="alert alert-danger">
+          <strong>⚠️ Tài khoản đã bị tạm khóa!</strong>
+          <p id="lockout-desc" style="margin-top: 4px; font-size: 12px;">Đã nhập sai mật khẩu 5 lần liên tiếp. Tài khoản bị khóa 15 phút:</p>
+          <span class="countdown" id="countdown-timer">15:00</span>
+        </div>
+
+        <form id="form-login">
+          <div class="form-group">
+            <label for="email">Địa chỉ Email</label>
+            <input type="email" id="email" required placeholder="name@thicong.vn" autocomplete="email">
+          </div>
+
+          <div class="form-group">
+            <label for="password">Mật khẩu</label>
+            <div class="input-wrap">
+              <input type="password" id="password" required placeholder="Nhập mật khẩu..." autocomplete="current-password">
+              <button type="button" id="btn-toggle-pwd" class="btn-toggle">Hiện</button>
+            </div>
+          </div>
+
+          <button type="submit" id="btn-submit" class="btn-submit">Đăng Nhập</button>
+        </form>
+
+        <div class="register-prompt">
+          Chưa có tài khoản? <a href="/register.html">Đăng ký tài khoản mới</a>
+        </div>
+
+        <div class="demo-box">
+          <div class="demo-title">Tài Khoản Kiểm Thử (Bấm điền nhanh)</div>
+          <div class="demo-btn-group">
+            <button type="button" class="btn-demo" onclick="fillAccount('dtc245160020@ictu.edu.vn', 'Dung@123')">
+              <strong>Trần Mạnh Dũng</strong>
+              <span>Chỉ huy trưởng (PM)</span>
+            </button>
+            <button type="button" class="btn-demo" onclick="fillAccount('admin@thicong.vn', 'Admin@123')">
+              <strong>Quản Trị Viên</strong>
+              <span>Admin hệ thống</span>
+            </button>
+          </div>
+          <button type="button" class="btn-unlock" onclick="unlockDev()">
+            🔄 Reset bộ đếm thử nghiệm
+          </button>
+        </div>
       </div>
-      <button type="button" class="btn-unlock" onclick="unlockDev()">
-        🔄 Mở khóa tài khoản ngay (Dành cho Dev / Test)
-      </button>
     </div>
   </div>
 
   <script>
     let countdownInterval = null;
-    let localFailedAttempts = 0; // Bộ đếm lần sai cục bộ bảo đảm 100% khóa sau 5 lần
+    let localFailedAttempts = 0;
 
     async function smartFetch(endpoint, options = {}) {
       const candidates = [endpoint];
@@ -242,36 +297,21 @@
         try {
           const res = await fetch(url, options);
           const text = await res.text();
-          if (text.trim().startsWith('<') || text.includes('<html>') || text.includes('<!DOCTYPE')) {
-            console.warn(`URL ${url} trả về HTML, thử tiếp URL dự phòng...`);
-            lastError = new Error('Cổng hiện tại trả về HTML. Đang tự động kết nối dự phòng cổng 5000...');
-            continue;
-          }
+          if (text.trim().startsWith('<') || text.includes('<html>')) continue;
           let data;
-          try {
-            data = JSON.parse(text);
-          } catch (e) {
-            continue;
-          }
+          try { data = JSON.parse(text); } catch (e) { continue; }
           return { res, data };
         } catch (err) {
-          console.warn(`Lỗi khi gọi ${url}:`, err.message);
           lastError = err;
         }
       }
-      throw lastError || new Error('Không thể kết nối đến máy chủ API backend.');
+      throw lastError || new Error('Không thể kết nối đến máy chủ backend.');
     }
 
-    // Toggle ẩn hiện mật khẩu
     document.getElementById('btn-toggle-pwd').addEventListener('click', function() {
       const pwd = document.getElementById('password');
-      if (pwd.type === 'password') {
-        pwd.type = 'text';
-        this.innerText = 'Ẩn';
-      } else {
-        pwd.type = 'password';
-        this.innerText = 'Hiện';
-      }
+      this.innerText = pwd.type === 'password' ? 'Ẩn' : 'Hiện';
+      pwd.type = pwd.type === 'password' ? 'text' : 'password';
     });
 
     function fillAccount(email, pwd) {
@@ -313,7 +353,7 @@
           clearInterval(countdownInterval);
           localFailedAttempts = 0;
           clearAlerts();
-          document.getElementById('warn-desc').innerText = 'Đã hết thời gian khóa. Bạn có thể thử đăng nhập lại.';
+          document.getElementById('warn-desc').innerText = 'Đã hết thời gian khóa 15 phút. Bạn có thể thử đăng nhập lại.';
           document.getElementById('alert-warning').style.display = 'block';
         } else {
           render();
@@ -347,18 +387,16 @@
           return;
         }
 
-        // Tăng bộ đếm lần sai
         localFailedAttempts++;
 
-        // Tiêu chí chấp nhận: Khi nhập sai mật khẩu 5 lần -> bị khóa 15 phút
         if (res.status === 423 || data.locked || localFailedAttempts >= 5) {
           startLockoutTimer(data.remaining_seconds || 15 * 60);
         } else {
           const warnAlert = document.getElementById('alert-warning');
           warnAlert.style.display = 'block';
-          document.getElementById('warn-title').innerText = data.message || 'Email hoặc mật khẩu không đúng';
+          document.getElementById('warn-title').innerText = 'Email hoặc mật khẩu không đúng';
           const remaining = Math.max(1, 5 - localFailedAttempts);
-          document.getElementById('warn-desc').innerText = `Lưu ý: Bạn đã nhập sai ${localFailedAttempts} lần. Còn ${remaining} lần thử trước khi tài khoản bị khóa 15 phút.`;
+          document.getElementById('warn-desc').innerText = `Lưu ý: Bạn đã nhập sai ${localFailedAttempts} lần. Còn ${remaining} lần thử trước khi bị khóa 15 phút.`;
         }
       } catch (err) {
         localFailedAttempts++;
@@ -367,7 +405,7 @@
         } else {
           document.getElementById('alert-warning').style.display = 'block';
           document.getElementById('warn-title').innerText = 'Email hoặc mật khẩu không đúng';
-          document.getElementById('warn-desc').innerText = `Lưu ý: Bạn đã nhập sai ${localFailedAttempts} lần. Còn ${5 - localFailedAttempts} lần thử trước khi bị khóa 15 phút.`;
+          document.getElementById('warn-desc').innerText = `Lưu ý: Bạn đã nhập sai ${localFailedAttempts} lần. Còn ${5 - localFailedAttempts} lần thử.`;
         }
       } finally {
         if (localFailedAttempts < 5 && (!document.getElementById('alert-lockout').style.display || document.getElementById('alert-lockout').style.display === 'none')) {
@@ -381,15 +419,15 @@
       localFailedAttempts = 0;
       const email = document.getElementById('email').value.trim() || 'admin@thicong.vn';
       try {
-        const { res, data } = await smartFetch('/api/auth/unlock-dev', {
+        await smartFetch('/api/auth/unlock-dev', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email })
         });
-        alert('Đã mở khóa và reset số lần sai thành công!');
+        alert('Đã reset bộ đếm và mở khóa thành công!');
         clearAlerts();
       } catch (e) {
-        alert('Đã reset bộ đếm mở khóa!');
+        alert('Đã reset bộ đếm thử nghiệm!');
         clearAlerts();
       }
     }

@@ -3,157 +3,272 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Đăng Ký Tài Khoản | Quản Lý Thi Công Công Trình</title>
+  <title>Đăng Ký Tài Khoản | Hệ Thống Điều Hành Thi Công</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
   <style>
     :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --border: #334155;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --danger: #ef4444;
-      --success: #10b981;
+      --bg-canvas: #f1f5f9;
+      --card-bg: #ffffff;
+      --border: #cbd5e1;
+      --border-outer: #94a3b8;
+      --brand-blue: #1d4ed8;
+      --brand-blue-hover: #1e40af;
+      --brand-blue-soft: #eff6ff;
+      --text-title: #0f172a;
+      --text-body: #1e293b;
+      --text-muted: #475569;
+      --danger: #dc2626;
+      --danger-bg: #fee2e2;
+      --danger-border: #f87171;
+      --success: #059669;
+      --success-bg: #ecfdf5;
+      --success-border: #a7f3d0;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body {
-      background: linear-gradient(135deg, #090d16 0%, #0f172a 100%);
-      color: var(--text);
+    body { background-color: var(--bg-canvas); color: var(--text-body); min-height: 100vh; display: flex; }
+
+    .app-container {
+      display: grid;
+      grid-template-columns: 1fr 450px;
       min-height: 100vh;
+      width: 100vw;
+    }
+
+    /* === KHUNG TRÁI: HÌNH ẢNH CÔNG TRÌNH HIỆN ĐẠI KẾT HỢP GRADIENT KÍNH MỜ CHỐNG CHÓI === */
+    .brand-side {
+      position: relative;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 58, 138, 0.75) 100%),
+                  url('https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=2070&auto=format&fit=crop') center/cover no-repeat;
+      border-right: 2px solid var(--border-outer);
+      padding: 56px 64px;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
+      flex-direction: column;
+      justify-content: space-between;
+      color: #ffffff;
+      backdrop-filter: blur(2px);
     }
+
+    .brand-header { display: flex; align-items: center; gap: 14px; }
+    .brand-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .brand-icon svg { width: 24px; height: 24px; stroke: #fff; fill: none; stroke-width: 2.2; }
+    .brand-title h2 { font-size: 19px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px; }
+    .brand-title span { font-size: 11px; font-weight: 800; color: #93c5fd; letter-spacing: 0.8px; text-transform: uppercase; }
+
+    .brand-main { margin: auto 0; max-width: 600px; }
+    .tag-live {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(8px);
+      padding: 6px 16px; border-radius: 9999px;
+      font-size: 11.5px; font-weight: 800; color: #ffffff; margin-bottom: 22px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .tag-live::before {
+      content: ''; width: 8px; height: 8px; background: #22c55e;
+      border-radius: 50%; box-shadow: 0 0 10px #22c55e;
+    }
+
+    .brand-main h1 {
+      font-size: 34px; font-weight: 800; line-height: 1.3; color: #ffffff;
+      margin-bottom: 16px; letter-spacing: -0.8px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+    .brand-main p {
+      font-size: 14.5px; line-height: 1.65; color: #e2e8f0;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .brand-features { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 32px; }
+    .feat-card {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 12px; padding: 14px 16px;
+    }
+    .feat-card strong { display: block; font-size: 13.5px; font-weight: 800; color: #ffffff; margin-bottom: 4px; }
+    .feat-card span { font-size: 12px; color: #cbd5e1; }
+
+    .brand-footer { font-size: 12px; color: #94a3b8; }
+
+    /* === KHUNG PHẢI: FORM ĐĂNG KÝ TRẮNG SỨ VIỀN RÕ RỆT === */
+    .form-side {
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px 28px; background: #f8fafc; overflow-y: auto;
+    }
+
     .register-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px;
-      width: 100%;
-      max-width: 480px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      width: 100%; max-width: 390px; background: #ffffff;
+      border: 2px solid var(--border-outer); border-radius: 16px;
+      padding: 28px 26px; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
     }
-    .header { text-align: center; margin-bottom: 20px; }
-    .badge {
-      display: inline-block;
-      padding: 4px 10px;
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #34d399;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
-    p.subtitle { color: var(--text-muted); font-size: 13px; }
+
+    .register-header h2 { font-size: 22px; font-weight: 800; color: var(--text-title); margin-bottom: 4px; }
+    .register-header p { font-size: 12.5px; color: var(--text-muted); margin-bottom: 18px; }
 
     .alert {
-      display: none;
-      padding: 12px 14px;
-      border-radius: 8px;
-      font-size: 13px;
-      margin-bottom: 16px;
+      display: none; padding: 10px 12px; border-radius: 8px;
+      font-size: 12px; line-height: 1.45; margin-bottom: 14px;
     }
-    .alert-danger { background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: #fca5a5; }
-    .alert-success { background: rgba(16, 185, 129, 0.15); border: 1px solid var(--success); color: #6ee7b7; }
+    .alert-danger { background: var(--danger-bg); border: 1.5px solid var(--danger-border); color: var(--danger); }
+    .alert-success { background: var(--success-bg); border: 1.5px solid var(--success-border); color: var(--success); }
 
-    .form-group { margin-bottom: 14px; }
-    label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 12px; font-weight: 700; color: var(--text-title); margin-bottom: 4px; }
+    .input-wrap { position: relative; }
     input, select {
-      width: 100%;
-      padding: 11px 14px;
-      background: #090d16;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: #fff;
-      font-size: 14px;
-      outline: none;
-      transition: all 0.2s;
+      width: 100%; padding: 9.5px 12px; background: #f8fafc;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 13px; color: var(--text-title); outline: none; transition: all 0.2s;
     }
-    input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
-    select option { background: #1e293b; color: #fff; }
+    select { cursor: pointer; }
+    input:focus, select:focus {
+      border-color: var(--brand-blue); background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
+    }
+
+    .btn-toggle {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; font-size: 11px; font-weight: 700;
+      color: var(--text-muted); cursor: pointer;
+    }
 
     .btn-submit {
-      width: 100%;
-      padding: 12px;
-      background: var(--primary);
-      border: none;
-      border-radius: 8px;
-      color: white;
-      font-weight: 700;
-      font-size: 14px;
-      cursor: pointer;
-      margin-top: 10px;
+      width: 100%; padding: 11px; background: var(--brand-blue); border: none;
+      border-radius: 8px; color: #ffffff; font-size: 13.5px; font-weight: 700;
+      cursor: pointer; transition: background 0.2s; margin-top: 6px;
+      box-shadow: 0 4px 10px rgba(29, 78, 216, 0.25);
     }
-    .btn-submit:hover { background: var(--primary-hover); }
-    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-submit:hover { background: var(--brand-blue-hover); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    .footer-link {
-      text-align: center;
-      margin-top: 18px;
-      font-size: 13px;
-      color: var(--text-muted);
+    .switch-link {
+      text-align: center; margin-top: 14px;
+      font-size: 12.5px; color: var(--text-muted);
     }
-    .footer-link a { color: #60a5fa; text-decoration: none; font-weight: 600; }
-    .footer-link a:hover { text-decoration: underline; }
+    .switch-link a {
+      color: var(--brand-blue); text-decoration: none; font-weight: 700;
+    }
+    .switch-link a:hover { text-decoration: underline; }
+
+    @media (max-width: 900px) {
+      .app-container { grid-template-columns: 1fr; }
+      .brand-side { display: none; }
+      .form-side { padding: 24px 16px; }
+    }
   </style>
 </head>
 <body>
 
-  <div class="register-card">
-    <div class="header">
-      <span class="badge">[S-02] Đăng Ký Tài Khoản Thi Công</span>
-      <h1>Tạo Tài Khoản Mới</h1>
-      <p class="subtitle">Đăng ký tài khoản để tham gia quản lý hồ sơ dự án thi công</p>
+  <div class="app-container">
+    <!-- CỘT TRÁI ĐỒNG BỘ NỀN ẢNH CÔNG TRÌNH XÂY DỰNG -->
+    <div class="brand-side">
+      <div class="brand-header">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <div class="brand-title">
+          <h2>HỆ THỐNG ĐIỀU HÀNH THI CÔNG</h2>
+          <span>CỔNG ĐĂNG KÝ THÀNH VIÊN</span>
+        </div>
+      </div>
+
+      <div class="brand-main">
+        <div class="tag-live">Khởi tạo tài khoản điều hành công trình</div>
+        <h1>Gia nhập hệ thống quản lý & nghiệm thu số hóa.</h1>
+        <p>Mỗi tài khoản được gắn với chức danh cụ thể, bảo mật mật khẩu cấp doanh nghiệp và tự động phân quyền truy cập theo từng dự án được phân công.</p>
+
+        <div class="brand-features">
+          <div class="feat-card">
+            <strong>Bảo Mật Xác Thực</strong>
+            <span>Chuẩn mã hóa hiện đại</span>
+          </div>
+          <div class="feat-card">
+            <strong>Phiên Làm Việc 12h</strong>
+            <span>Tự động hết hạn an toàn</span>
+          </div>
+          <div class="feat-card">
+            <strong>6 Cấp Bậc Vai Trò</strong>
+            <span>Phân quyền ma trận chặt chẽ</span>
+          </div>
+          <div class="feat-card">
+            <strong>Đồng Bộ WBS</strong>
+            <span>Quản lý cây hạng mục đệ quy</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="brand-footer">
+        &copy; 2026 Nền tảng điều hành thi công công trình. Bảo mật cấp doanh nghiệp.
+      </div>
     </div>
 
-    <div id="alert-error" class="alert alert-danger"></div>
-    <div id="alert-success" class="alert alert-success"></div>
+    <!-- CỘT PHẢI: FORM ĐĂNG KÝ SẠCH SẼ, KHÔNG CÒN NHÃN THỪA -->
+    <div class="form-side">
+      <div class="register-card">
+        <div class="register-header">
+          <h2>Tạo Tài Khoản Mới</h2>
+          <p>Điền thông tin để đăng ký tài khoản tham gia dự án</p>
+        </div>
 
-    <form id="form-register">
-      <div class="form-group">
-        <label for="fullname">Họ và tên (*)</label>
-        <input type="text" id="fullname" required placeholder="Ví dụ: Trần Mạnh Dũng">
+        <div id="alert-error" class="alert alert-danger"></div>
+        <div id="alert-success" class="alert alert-success"></div>
+
+        <form id="form-register">
+          <div class="form-group">
+            <label for="fullName">Họ và tên (*)</label>
+            <input type="text" id="fullName" required placeholder="Ví dụ: Trần Mạnh Dũng" autocomplete="name">
+          </div>
+
+          <div class="form-group">
+            <label for="email">Địa chỉ Email (*)</label>
+            <input type="email" id="email" required placeholder="name@thicong.vn" autocomplete="email">
+          </div>
+
+          <div class="form-group">
+            <label for="role">Vai trò công việc (*)</label>
+            <select id="role" required>
+              <option value="2">Chỉ huy trưởng công trình (PM)</option>
+              <option value="3">Kỹ sư giám sát thi công</option>
+              <option value="4">Đội trưởng thi công</option>
+              <option value="5">Kế toán & Quản lý vật tư</option>
+              <option value="6">Chủ đầu tư</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Mật khẩu (*)</label>
+            <div class="input-wrap">
+              <input type="password" id="password" required placeholder="Tối thiểu 6 ký tự" autocomplete="new-password">
+              <button type="button" class="btn-toggle" onclick="togglePwd('password', this)">Hiện</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">Xác nhận mật khẩu (*)</label>
+            <div class="input-wrap">
+              <input type="password" id="confirmPassword" required placeholder="Nhập lại mật khẩu" autocomplete="new-password">
+              <button type="button" class="btn-toggle" onclick="togglePwd('confirmPassword', this)">Hiện</button>
+            </div>
+          </div>
+
+          <button type="submit" id="btn-submit" class="btn-submit">Hoàn Tất Đăng Ký</button>
+        </form>
+
+        <div class="switch-link">
+          Đã có tài khoản? <a href="/login.html">Đăng nhập tại đây</a>
+        </div>
       </div>
-
-      <div class="form-group">
-        <label for="email">Email (*)</label>
-        <input type="email" id="email" required placeholder="Ví dụ: dtc245160020@ictu.edu.vn">
-      </div>
-
-      <div class="form-group">
-        <label for="role">Vai trò công việc (*)</label>
-        <select id="role" required>
-          <option value="2">Chỉ huy trưởng công trình</option>
-          <option value="3">Kỹ sư giám sát thi công</option>
-          <option value="4">Đội trưởng thi công</option>
-          <option value="5">Kế toán & Quản lý vật tư</option>
-          <option value="6">Chủ đầu tư</option>
-          <option value="1">Quản trị viên hệ thống</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="password">Mật khẩu (*)</label>
-        <input type="password" id="password" required minlength="6" placeholder="Tối thiểu 6 ký tự">
-      </div>
-
-      <div class="form-group">
-        <label for="confirm_password">Xác nhận mật khẩu (*)</label>
-        <input type="password" id="confirm_password" required minlength="6" placeholder="Nhập lại mật khẩu">
-      </div>
-
-      <button type="submit" id="btn-submit" class="btn-submit">Hoàn Tất Đăng Ký</button>
-    </form>
-
-    <div class="footer-link">
-      Đã có tài khoản? <a href="/login.html">Đăng nhập tại đây</a>
     </div>
   </div>
 
@@ -173,73 +288,94 @@
         try {
           const res = await fetch(url, options);
           const text = await res.text();
-          // Kiểm tra xem phản hồi có phải là HTML do Nginx trả về 404 không
-          if (text.trim().startsWith('<') || text.includes('<html>') || text.includes('<!DOCTYPE')) {
-            console.warn(`URL ${url} trả về HTML, thử tiếp URL dự phòng...`);
-            lastError = new Error('Cổng hiện tại trả về HTML. Đang tự động kết nối dự phòng cổng 5000...');
-            continue;
-          }
+          if (text.trim().startsWith('<') || text.includes('<html>')) continue;
           let data;
-          try {
-            data = JSON.parse(text);
-          } catch (e) {
-            continue;
-          }
+          try { data = JSON.parse(text); } catch (e) { continue; }
           return { res, data };
         } catch (err) {
-          console.warn(`Lỗi khi gọi ${url}:`, err.message);
           lastError = err;
         }
       }
-      throw lastError || new Error('Không thể kết nối đến máy chủ API backend.');
+      throw lastError || new Error('Không thể kết nối đến máy chủ backend.');
+    }
+
+    function togglePwd(id, btn) {
+      const el = document.getElementById(id);
+      btn.innerText = el.type === 'password' ? 'Ẩn' : 'Hiện';
+      el.type = el.type === 'password' ? 'text' : 'password';
+    }
+
+    function showError(msg) {
+      const err = document.getElementById('alert-error');
+      const succ = document.getElementById('alert-success');
+      succ.style.display = 'none';
+      err.innerText = msg;
+      err.style.display = 'block';
+    }
+
+    function showSuccess(msg) {
+      const err = document.getElementById('alert-error');
+      const succ = document.getElementById('alert-success');
+      err.style.display = 'none';
+      succ.innerText = msg;
+      succ.style.display = 'block';
     }
 
     document.getElementById('form-register').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const errBox = document.getElementById('alert-error');
-      const succBox = document.getElementById('alert-success');
+      
+      const fullName = document.getElementById('fullName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const roleId = Number(document.getElementById('role').value) || 2;
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
       const btn = document.getElementById('btn-submit');
 
-      errBox.style.display = 'none';
-      succBox.style.display = 'none';
+      if (!fullName || !email || !password) {
+        showError('Vui lòng điền đầy đủ Họ và tên, Email và Mật khẩu.');
+        return;
+      }
 
-      const full_name = document.getElementById('fullname').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const role_id = document.getElementById('role').value;
-      const password = document.getElementById('password').value;
-      const confirm_password = document.getElementById('confirm_password').value;
+      if (password.length < 6) {
+        showError('Mật khẩu phải có độ dài tối thiểu từ 6 ký tự trở lên.');
+        return;
+      }
 
-      if (password !== confirm_password) {
-        errBox.innerText = 'Mật khẩu xác nhận không khớp!';
-        errBox.style.display = 'block';
+      if (password !== confirmPassword) {
+        showError('Mật khẩu xác nhận không khớp.');
         return;
       }
 
       btn.disabled = true;
-      btn.innerText = 'Đang xử lý đăng ký...';
+      btn.innerText = 'Đang xử lý tạo tài khoản...';
+
+      const payload = {
+        full_name: fullName,
+        email: email,
+        password: password,
+        confirm_password: confirmPassword,
+        role_id: roleId
+      };
 
       try {
         const { res, data } = await smartFetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ full_name, email, role_id, password, confirm_password })
+          body: JSON.stringify(payload)
         });
 
-        if (res.ok && data.success) {
-          succBox.innerText = data.message || 'Đăng ký thành công! Đang chuyển đến trang đăng nhập...';
-          succBox.style.display = 'block';
+        if (res.ok && (data.success || res.status === 200 || res.status === 201)) {
+          showSuccess(data.message || 'Đăng ký tài khoản thành công! Đang chuyển về trang đăng nhập...');
           setTimeout(() => {
             window.location.href = '/login.html';
-          }, 1500);
+          }, 1200);
         } else {
-          errBox.innerText = data.message || 'Không thể đăng ký tài khoản.';
-          errBox.style.display = 'block';
+          showError(data.message || 'Đăng ký không thành công. Vui lòng kiểm tra lại!');
           btn.disabled = false;
           btn.innerText = 'Hoàn Tất Đăng Ký';
         }
       } catch (err) {
-        errBox.innerText = 'Lỗi kết nối máy chủ: ' + err.message;
-        errBox.style.display = 'block';
+        showError(err.message || 'Có lỗi kết nối máy chủ backend!');
         btn.disabled = false;
         btn.innerText = 'Hoàn Tất Đăng Ký';
       }
