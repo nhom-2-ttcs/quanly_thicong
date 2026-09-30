@@ -4,8 +4,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "lint": "node -c server.js wbs_routes.js",
-    "test": "echo \"All automated tests passed\" && exit 0"
+    "lint": "node -c server.js wbs_routes.js src/routes/taskRoutes.js src/routes/schedulingRoutes.js src/domain/scheduling/graph.js src/domain/scheduling/topologicalSort.js src/domain/scheduling/contracts.js src/domain/scheduling/schedulerService.js",
+    "test": "node --test"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
