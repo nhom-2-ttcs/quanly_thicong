@@ -104,6 +104,15 @@ module.exports = (db) => {
         });
       }
 
+      // Kiểm tra ràng buộc công việc (S-05): Chặn xoá khi hạng mục đang chứa công việc
+      const [tasks] = await pool.query('SELECT id FROM tasks WHERE work_item_id = ?', [itemId]);
+      if (tasks.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'Lỗi ràng buộc: Không thể xoá vì hạng mục này đang có công việc thi công gắn vào!'
+        });
+      }
+
       await pool.query('DELETE FROM work_items WHERE id = ?', [itemId]);
       res.json({ success: true, message: 'Xóa hạng mục thành công' });
     } catch (err) {

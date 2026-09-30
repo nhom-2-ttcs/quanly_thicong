@@ -22,6 +22,9 @@
       --amber-bg: #fef3c7;
       --amber-border: #f59e0b;
       --amber-text: #92400e;
+      --emerald-bg: #ecfdf5;
+      --emerald-border: #a7f3d0;
+      --emerald-text: #065f46;
       --text-title: #0f172a;
       --text-body: #1e293b;
       --text-muted: #475569;
@@ -73,7 +76,7 @@
     /* === KHU VỰC THÂN TRANG === */
     .main-content { max-width: 1240px; width: 100%; margin: 0 auto; padding: 28px 24px 48px; display: flex; flex-direction: column; gap: 20px; }
 
-    /* === BANNER CÔNG TRÌNH XÂY DỰNG ĐỒNG BỘ 100% === */
+    /* === BANNER CÔNG TRÌNH XÂY DỰNG ĐỒNG BỘ === */
     .wbs-hero-banner {
       position: relative;
       background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 58, 138, 0.8) 100%),
@@ -106,7 +109,7 @@
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 
-    .header-btns { display: flex; gap: 10px; }
+    .header-btns { display: flex; gap: 10px; flex-wrap: wrap; }
     .btn-add-project {
       display: inline-flex; align-items: center; gap: 8px;
       background: rgba(255, 255, 255, 0.15); color: #ffffff;
@@ -116,6 +119,14 @@
       transition: all 0.2s;
     }
     .btn-add-project:hover { background: rgba(255, 255, 255, 0.25); border-color: #ffffff; }
+
+    .btn-check-schedule {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #059669; color: #ffffff; border: 1.5px solid #6ee7b7;
+      padding: 10px 18px; border-radius: 9px; font-size: 13.5px; font-weight: 800; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35); transition: all 0.2s;
+    }
+    .btn-check-schedule:hover { background: #047857; transform: translateY(-1px); }
 
     .btn-add-root {
       display: inline-flex; align-items: center; gap: 8px;
@@ -135,24 +146,27 @@
     .info-pill strong { color: var(--text-title); font-weight: 800; }
     .info-pill.badge-count { border-color: #93c5fd; background: #f0f7ff; }
     .info-pill.badge-count strong { color: var(--brand-blue); }
+    .info-pill.badge-tasks { border-color: #a7f3d0; background: #ecfdf5; }
+    .info-pill.badge-tasks strong { color: #059669; }
 
     /* Khung Cây WBS Viền Đanh Thép */
     .wbs-card {
       background: var(--card-bg); border: 2px solid var(--border-outer);
       border-radius: 16px; padding: 26px 30px; box-shadow: var(--shadow-container); min-height: 420px;
     }
-    .tree-root { display: flex; flex-direction: column; gap: 12px; }
+    .tree-root { display: flex; flex-direction: column; gap: 14px; }
     .tree-node-wrap { display: flex; flex-direction: column; position: relative; }
 
     .tree-node-row {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 11px 18px; background: #ffffff; border: 1.5px solid var(--border-card);
+      padding: 12px 18px; background: #ffffff; border: 1.5px solid var(--border-card);
       border-radius: 10px; transition: all 0.2s; position: relative; box-shadow: var(--shadow-node);
     }
     .tree-node-row:hover { border-color: var(--brand-blue); background: var(--card-hover); transform: translateY(-1px); }
 
-    .level-0 > .tree-node-row { border-left: 4px solid var(--brand-blue); background: #fafcff; }
-    .level-1 > .tree-node-row { border-left: 3px solid #38bdf8; }
+    .level-0 > .tree-node-row { border-left: 5px solid var(--brand-blue); background: #fafcff; }
+    .level-1 > .tree-node-row { border-left: 4px solid #38bdf8; }
+    .level-2 > .tree-node-row { border-left: 3px solid #94a3b8; }
 
     .tree-node-left { display: flex; align-items: center; gap: 14px; flex: 1; }
     .btn-toggle-caret {
@@ -171,47 +185,99 @@
     .wbs-node-name { font-size: 14px; font-weight: 700; color: var(--text-title); }
     .level-0 .wbs-node-name { font-size: 14.5px; font-weight: 800; }
 
-    .tree-actions { display: flex; align-items: center; gap: 8px; }
+    .tree-actions { display: flex; align-items: center; gap: 6px; }
     .btn-action-icon {
       width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid var(--border-card);
       background: #ffffff; color: var(--text-body); display: inline-flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: all 0.2s;
+      cursor: pointer; transition: all 0.2s; font-size: 14px;
     }
     .btn-action-icon:hover { border-color: var(--brand-blue); color: var(--brand-blue); background: var(--brand-blue-soft); }
-    .btn-action-icon.btn-delete:hover { border-color: var(--danger-border); color: var(--danger); background: var(--danger-bg); }
-    .btn-action-icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+    .btn-action-icon.btn-delete:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
+    .btn-action-icon.btn-add-task { border-color: #6ee7b7; background: #ecfdf5; color: #059669; }
+    .btn-action-icon.btn-add-task:hover { background: #059669; color: #ffffff; border-color: #047857; }
 
-    /* Đường nối nhánh cây rõ ràng */
-    .tree-children { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; padding-left: 32px; position: relative; }
-    .tree-children::before { content: ''; position: absolute; left: 14px; top: 0; bottom: 16px; width: 2px; background: var(--tree-line); }
-    .tree-node-wrap::before { content: ''; position: absolute; left: -18px; top: 24px; width: 18px; height: 2px; background: var(--tree-line); }
-    .tree-root > .tree-node-wrap::before { display: none; }
+    .tree-children {
+      display: flex; flex-direction: column; gap: 10px;
+      margin-left: 28px; margin-top: 10px; padding-left: 18px;
+      border-left: 2px dashed var(--tree-line);
+    }
 
-    /* Modal Form Doanh Nghiệp */
+    /* === KHU VỰC CÔNG VIỆC THI CÔNG (TASKS - S-05) === */
+    .task-container {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-left: 28px; margin-top: 8px; margin-bottom: 6px; padding-left: 18px;
+      border-left: 2px solid #10b981;
+    }
+    .task-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; background: #ffffff; border: 1.5px solid #d1fae5;
+      border-radius: 8px; transition: all 0.2s; box-shadow: 0 1px 2px rgba(16, 185, 129, 0.05);
+    }
+    .task-row:hover { border-color: #10b981; background: #f0fdf4; transform: translateX(2px); }
+    .task-left { display: flex; align-items: center; gap: 10px; flex: 1; }
+    .task-code-badge {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+      padding: 3px 8px; background: #dbeafe; border: 1px solid #93c5fd;
+      color: #1e40af; border-radius: 5px;
+    }
+    .task-name { font-size: 13.5px; font-weight: 600; color: #0f172a; }
+    .task-duration-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 700; color: #065f46;
+      background: #ecfdf5; border: 1px solid #a7f3d0;
+      padding: 3px 10px; border-radius: 9999px;
+    }
+    .task-status-badge {
+      font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;
+    }
+    .status-pending { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .status-in_progress { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+    .status-completed { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+
+    /* === CÁC CỬA SỔ MODAL === */
     .modal-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55);
-      backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; padding: 20px;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6); display: none; align-items: center; justify-content: center;
+      z-index: 100; backdrop-filter: blur(4px);
     }
     .modal-box {
-      width: 100%; max-width: 460px; background: #ffffff;
-      border-radius: 16px; border: 2px solid var(--border-outer);
-      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.3); overflow: hidden;
+      background: #ffffff; border: 2px solid var(--border-outer);
+      border-radius: 16px; width: 100%; max-width: 500px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden;
+      display: flex; flex-direction: column;
     }
+    .modal-box.modal-large { max-width: 650px; }
     .modal-header { padding: 18px 24px; border-bottom: 2px solid var(--border-card); background: #f8fafc; display: flex; align-items: center; justify-content: space-between; }
     .modal-header h3 { font-size: 16.5px; font-weight: 800; color: var(--text-title); }
     .btn-close-modal { background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; }
-    .modal-body { padding: 22px 24px; display: flex; flex-direction: column; gap: 15px; }
+    .modal-body { padding: 22px 24px; display: flex; flex-direction: column; gap: 15px; max-height: 70vh; overflow-y: auto; }
     .form-group label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-title); margin-bottom: 6px; }
-    .form-group input {
+    .form-group input, .form-group select {
       width: 100%; padding: 10px 14px; background: #f8fafc;
       border: 1.5px solid var(--border-card); border-radius: 8px;
       font-size: 13.5px; color: var(--text-title); outline: none;
     }
-    .form-group input:focus { border-color: var(--brand-blue); background: #ffffff; }
+    .form-group input:focus, .form-group select:focus { border-color: var(--brand-blue); background: #ffffff; }
     .modal-footer { padding: 16px 24px; border-top: 2px solid var(--border-card); background: #f8fafc; display: flex; justify-content: flex-end; gap: 10px; }
     .btn-secondary { padding: 9px 18px; background: #ffffff; border: 1.5px solid var(--border-card); border-radius: 8px; font-weight: 700; cursor: pointer; }
     .btn-save { padding: 9px 20px; background: var(--brand-blue); border: none; border-radius: 8px; color: #fff; font-weight: 700; cursor: pointer; }
     .btn-save:hover { background: var(--brand-blue-hover); }
+
+    /* Alert trong Modal */
+    .alert-banner { padding: 12px 16px; border-radius: 8px; font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
+    .alert-banner.alert-warning { background: var(--amber-bg); border: 1.5px solid var(--amber-border); color: var(--amber-text); }
+    .alert-banner.alert-danger { background: var(--danger-bg); border: 1.5px solid var(--danger-border); color: var(--danger); font-weight: 700; }
+    .alert-banner.alert-info { background: #eff6ff; border: 1.5px solid #93c5fd; color: #1e40af; }
+    .schedule-step-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; background: #f8fafc; border: 1.5px solid var(--border-card);
+      border-radius: 8px; margin-bottom: 8px;
+    }
+    .schedule-step-num {
+      width: 28px; height: 28px; border-radius: 50%; background: var(--brand-blue);
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 12px;
+    }
   </style>
 </head>
 <body>
@@ -224,7 +290,7 @@
       </div>
       <div class="brand-info">
         <h1>Hệ Thống Điều Hành Thi Công</h1>
-        <span>PHÂN HỆ CẤU TRÚC CÔNG VIỆC (WBS)</span>
+        <span>PHÂN HỆ CẤU TRÚC CÔNG VIỆC (WBS) & TIẾN ĐỘ</span>
       </div>
     </div>
 
@@ -243,15 +309,18 @@
     <!-- Hero Banner Nền Ảnh Xây Dựng Đồng Bộ -->
     <div class="wbs-hero-banner">
       <div class="wbs-title-box">
-        <h2>Cây Cơ Cấu Công Việc (WBS)</h2>
-        <p id="project-display-title">Dự án: Tòa nhà phức hợp Staging Center — Khởi công: 01/10/2026</p>
+        <h2>Cây Cơ Cấu Công Việc (WBS) & Công Việc (Tasks)</h2>
+        <p id="project-display-title">Dự án: Dự án Thi Công Mẫu (DA-01) — Khởi công: 01/10/2026</p>
       </div>
       <div class="header-btns">
         <button class="btn-add-project" onclick="openProjectModal()">
           📁 Tạo Dự Án Mới
         </button>
+        <button class="btn-check-schedule" onclick="openScheduleModal()">
+          ⚡ Thứ Tự Thi Công (S-07)
+        </button>
         <button class="btn-add-root" onclick="openAddModal(null)">
-          Thêm Hạng Mục Gốc
+          + Thêm Hạng Mục Gốc
         </button>
       </div>
     </div>
@@ -259,22 +328,26 @@
     <!-- Thanh thông số vận hành -->
     <div class="info-bar">
       <div class="info-pill badge-count">
-        Tổng số hạng mục: <strong id="total-count">0</strong>
+        Tổng số hạng mục WBS: <strong id="total-count">0</strong>
+      </div>
+      <div class="info-pill badge-tasks">
+        Tổng số công việc: <strong id="total-task-count">0</strong>
       </div>
       <div class="info-pill">
-        Mô hình phân rã: <strong>Phân Tầng Đa Cấp (parent_id)</strong>
+        Tổng thời lượng thi công: <strong id="total-duration">0</strong> ngày
       </div>
       <div class="info-pill">
         Toàn vẹn dữ liệu: <strong>Chống vòng lặp & Chặn xóa lan truyền</strong>
-      </div>
-      <div class="info-pill">
-        Hiển thị: <strong>Thu gọn mặc định từ tầng 3 trở xuống</strong>
       </div>
     </div>
 
     <!-- Khung Cây WBS -->
     <div class="wbs-card">
-      <div class="tree-root" id="tree-container"></div>
+      <div class="tree-root" id="tree-container">
+        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+          Đang tải dữ liệu hạng mục và công việc từ máy chủ...
+        </div>
+      </div>
     </div>
   </main>
 
@@ -306,6 +379,70 @@
     </div>
   </div>
 
+  <!-- MODAL THÊM / SỬA CÔNG VIỆC THI CÔNG (S-05 / SCRUM-60 / T-12) -->
+  <div class="modal-overlay" id="task-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="task-modal-title">Thêm Công Việc Thi Công</h3>
+        <button class="btn-close-modal" onclick="closeTaskModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="task-edit-id">
+
+        <div class="form-group">
+          <label for="task-work-item-id">Gắn Vào Hạng Mục WBS (*)</label>
+          <select id="task-work-item-id" required>
+            <!-- Tùy chọn sẽ được nạp động từ danh sách hạng mục WBS -->
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="task-code">Mã Công Việc</label>
+          <input type="text" id="task-code" placeholder="Ví dụ: CV-01, CV-02">
+        </div>
+
+        <div class="form-group">
+          <label for="task-name">Tên Công Việc Thi Công (*)</label>
+          <input type="text" id="task-name" placeholder="Ví dụ: Đào đất hố móng trụ T1" required>
+        </div>
+
+        <div class="form-group">
+          <label for="task-duration">Thời Lượng (Đơn vị: Ngày) (*)</label>
+          <input type="number" id="task-duration" step="0.5" min="0.1" placeholder="Ví dụ: 3.5 (ngày)" required>
+        </div>
+
+        <div class="form-group">
+          <label for="task-status">Trạng Thái Thực Hiện</label>
+          <select id="task-status">
+            <option value="pending">Đang chờ thi công</option>
+            <option value="in_progress">Đang tiến hành</option>
+            <option value="completed">Đã hoàn thành</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeTaskModal()">Hủy</button>
+        <button type="button" class="btn-save" onclick="saveTask()">Lưu Công Việc</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL KIỂM TRA THỨ TỰ THI CÔNG & VÒNG LẶP (S-07 / SCRUM-62) -->
+  <div class="modal-overlay" id="schedule-modal">
+    <div class="modal-box modal-large">
+      <div class="modal-header">
+        <h3>Kiểm Tra Thứ Tự Thi Công & Vòng Lặp (S-07)</h3>
+        <button class="btn-close-modal" onclick="closeScheduleModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="schedule-modal-body">
+        <div style="text-align: center; padding: 20px;">Đang phân tích đồ thị phụ thuộc...</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeScheduleModal()">Đóng</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL TẠO DỰ ÁN MỚI -->
   <div class="modal-overlay" id="project-modal">
     <div class="modal-box">
@@ -319,12 +456,12 @@
           <input type="text" id="proj-name" placeholder="Ví dụ: Tòa Nhà Hỗn Hợp Sky Tower" required>
         </div>
         <div class="form-group">
-          <label for="proj-location">Địa Điểm Xây Dựng (*)</label>
-          <input type="text" id="proj-location" placeholder="Ví dụ: Lô B2, Khu Đô Thị Mới" required>
+          <label for="proj-code">Mã Dự Án (*)</label>
+          <input type="text" id="proj-code" placeholder="Ví dụ: DA-02" required>
         </div>
         <div class="form-group">
-          <label for="proj-start-date">Ngày Khởi Công (*)</label>
-          <input type="date" id="proj-start-date" required>
+          <label for="proj-desc">Mô Tả Dự Án</label>
+          <input type="text" id="proj-desc" placeholder="Dự án chung cư cao cấp...">
         </div>
       </div>
       <div class="modal-footer">
@@ -335,100 +472,202 @@
   </div>
 
   <script>
-    let wbsData = [
-      {
-        id: 1,
-        code: "HM-01",
-        name: "Phần ngầm & Móng",
-        children: [
-          {
-            id: 2,
-            code: "HM-01.01",
-            name: "Đào đất hố móng",
-            children: [
-              { id: 3, code: "HM-01.01.01", name: "Đào đất thủ công hố móng", children: [] },
-              { id: 4, code: "HM-01.01.02", name: "Vận chuyển đất thải", children: [] }
-            ]
-          },
-          {
-            id: 5,
-            code: "HM-01.02",
-            name: "Đổ bê tông lót móng",
-            children: []
-          }
-        ]
-      },
-      {
-        id: 6,
-        code: "HM-02",
-        name: "Phần thân & Kết cấu",
-        children: [
-          { id: 7, code: "HM-02.01", name: "Lắp dựng cốt thép cột vách", children: [] },
-          { id: 8, code: "HM-02.02", name: "Đổ bê tông sàn tầng 1", children: [] }
-        ]
-      }
-    ];
+    const CURRENT_PROJECT_ID = 1;
+    let rawWorkItems = [];
+    let rawTasks = [];
+    let treeData = [];
 
-    function countTotalNodes(nodes) {
-      let count = 0;
-      function traverse(list) {
-        for (const item of list) {
-          count++;
-          if (item.children) traverse(item.children);
-        }
+    async function apiRequest(endpoint, options = {}) {
+      try {
+        const res = await fetch(endpoint, options);
+        const data = await res.json();
+        return { res, data };
+      } catch (err) {
+        return { res: { ok: false, status: 500 }, data: { success: false, message: err.message } };
       }
-      traverse(nodes);
-      return count;
     }
 
-    // Render Cây WBS - Thu gọn mặc định từ tầng 3 trở xuống
+    // Tải toàn bộ dữ liệu từ CSDL MySQL
+    async function loadData() {
+      const container = document.getElementById('tree-container');
+      container.innerHTML = '<div style="text-align: center; padding: 30px; color: var(--text-muted);">Đang tải dữ liệu từ CSDL...</div>';
+
+      const [wbsRes, tasksRes] = await Promise.all([
+        apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/work-items`),
+        apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/tasks`)
+      ]);
+
+      if (!wbsRes.res.ok || !wbsRes.data.success) {
+        container.innerHTML = `<div style="padding: 20px; color: var(--danger); text-align: center;">Không thể tải danh sách hạng mục: ${wbsRes.data.message || 'Lỗi kết nối'}</div>`;
+        return;
+      }
+
+      rawWorkItems = wbsRes.data.data || [];
+      rawTasks = (tasksRes.data && tasksRes.data.data) ? tasksRes.data.data : [];
+
+      // Nếu CSDL chưa có hạng mục nào, tự động tạo seed mẫu để người dùng có dữ liệu ngay
+      if (rawWorkItems.length === 0) {
+        await seedInitialData();
+        return;
+      }
+
+      buildTreeAndRender();
+    }
+
+    // Khởi tạo dữ liệu mẫu ban đầu nếu CSDL trống
+    async function seedInitialData() {
+      const initialItems = [
+        { name: 'Phần ngầm & Móng', code: 'HM-01', parent_id: null },
+        { name: 'Phần thân & Kết cấu', code: 'HM-02', parent_id: null }
+      ];
+
+      for (const item of initialItems) {
+        const { res, data } = await apiRequest('/api/work-items', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ project_id: CURRENT_PROJECT_ID, ...item })
+        });
+
+        if (res.ok && data.id && item.code === 'HM-01') {
+          // Thêm 1 công việc mẫu có thời lượng gắn vào hạng mục này
+          await apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/tasks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              project_id: CURRENT_PROJECT_ID,
+              work_item_id: data.id,
+              code: 'CV-01',
+              name: 'Đào đất hố móng bằng máy',
+              duration: 3,
+              status: 'in_progress'
+            })
+          });
+        }
+      }
+
+      // Tải lại sau khi seed
+      const [wbsRes, tasksRes] = await Promise.all([
+        apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/work-items`),
+        apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/tasks`)
+      ]);
+      rawWorkItems = wbsRes.data.data || [];
+      rawTasks = (tasksRes.data && tasksRes.data.data) ? tasksRes.data.data : [];
+      buildTreeAndRender();
+    }
+
+    // Xây dựng cây WBS phân cấp kèm danh sách Tasks
+    function buildTreeAndRender() {
+      const itemMap = new Map();
+      rawWorkItems.forEach(item => {
+        itemMap.set(item.id, { ...item, children: [], tasks: [] });
+      });
+
+      // Gắn tasks vào từng work item
+      rawTasks.forEach(task => {
+        const item = itemMap.get(task.work_item_id);
+        if (item) {
+          item.tasks.push(task);
+        }
+      });
+
+      const roots = [];
+      itemMap.forEach(item => {
+        if (item.parent_id && itemMap.has(item.parent_id)) {
+          itemMap.get(item.parent_id).children.push(item);
+        } else {
+          roots.push(item);
+        }
+      });
+
+      treeData = roots;
+      renderTree();
+    }
+
     function renderTree() {
       const container = document.getElementById('tree-container');
       container.innerHTML = '';
-      document.getElementById('total-count').innerText = countTotalNodes(wbsData);
+
+      document.getElementById('total-count').innerText = rawWorkItems.length;
+      document.getElementById('total-task-count').innerText = rawTasks.length;
+
+      let totalDuration = 0;
+      rawTasks.forEach(t => { totalDuration += Number(t.duration || 0); });
+      document.getElementById('total-duration').innerText = totalDuration.toFixed(1);
+
+      if (treeData.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Chưa có hạng mục WBS nào. Hãy bấm "Thêm Hạng Mục Gốc" để bắt đầu!</div>';
+        return;
+      }
 
       function buildDOM(nodes, level) {
         const frag = document.createDocumentFragment();
 
         nodes.forEach(node => {
           const hasChildren = node.children && node.children.length > 0;
+          const hasTasks = node.tasks && node.tasks.length > 0;
           const nodeWrap = document.createElement('div');
           nodeWrap.className = `tree-node-wrap level-${Math.min(level, 2)}`;
-
-          // Tầng 2 trở lên (tính từ 0, tức từ tầng 3) mặc định thu gọn
-          const isCollapsedByDefault = level >= 2;
 
           nodeWrap.innerHTML = `
             <div class="tree-node-row">
               <div class="tree-node-left">
                 ${hasChildren ? `
-                  <button class="btn-toggle-caret ${isCollapsedByDefault ? 'collapsed' : ''}" onclick="toggleChildren(this)">
+                  <button class="btn-toggle-caret" onclick="toggleChildren(this)">
                     <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
                   </button>
                 ` : `<span style="width: 24px;"></span>`}
-                <span class="wbs-code-badge">${escapeHtml(node.code)}</span>
+                <span class="wbs-code-badge">${escapeHtml(node.code || `HM-${node.id}`)}</span>
                 <span class="wbs-node-name">${escapeHtml(node.name)}</span>
               </div>
               <div class="tree-actions">
+                <button class="btn-action-icon btn-add-task" title="Thêm công việc có thời lượng (S-05)" onclick="openAddTaskModal(${node.id})">
+                  +CV
+                </button>
                 <button class="btn-action-icon" title="Thêm hạng mục con" onclick="openAddModal(${node.id})">
-                  <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <svg viewBox="0 0 24 24" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
-                <button class="btn-action-icon" title="Chỉnh sửa" onclick="openEditModal(${node.id})">
-                  <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                <button class="btn-action-icon" title="Chỉnh sửa hạng mục" onclick="openEditModal(${node.id})">
+                  <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                 </button>
-                <button class="btn-action-icon btn-delete" title="Xóa" onclick="deleteNode(${node.id})">
-                  <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                <button class="btn-action-icon btn-delete" title="Xóa hạng mục" onclick="deleteWbsNode(${node.id}, '${escapeHtml(node.name)}')">
+                  <svg viewBox="0 0 24 24" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
               </div>
             </div>
           `;
 
+          // Render các tasks gắn vào hạng mục này
+          if (hasTasks) {
+            const taskBox = document.createElement('div');
+            taskBox.className = 'task-container';
+            node.tasks.forEach(task => {
+              const taskEl = document.createElement('div');
+              taskEl.className = 'task-row';
+              taskEl.innerHTML = `
+                <div class="task-left">
+                  <span class="task-code-badge">${escapeHtml(task.code || `CV-${task.id}`)}</span>
+                  <span class="task-name">${escapeHtml(task.name)}</span>
+                  <span class="task-duration-badge">⏱️ ${task.duration} ngày</span>
+                  <span class="task-status-badge status-${task.status}">${task.status === 'completed' ? 'Hoàn thành' : (task.status === 'in_progress' ? 'Đang làm' : 'Đang chờ')}</span>
+                </div>
+                <div class="tree-actions">
+                  <button class="btn-action-icon" title="Sửa công việc" onclick="openEditTaskModal(${task.id})">
+                    <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                  </button>
+                  <button class="btn-action-icon btn-delete" title="Xóa công việc" onclick="deleteTask(${task.id}, '${escapeHtml(task.name)}')">
+                    <svg viewBox="0 0 24 24" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  </button>
+                </div>
+              `;
+              taskBox.appendChild(taskEl);
+            });
+            nodeWrap.appendChild(taskBox);
+          }
+
+          // Render các hạng mục con
           if (hasChildren) {
             const childrenWrap = document.createElement('div');
             childrenWrap.className = 'tree-children';
-            if (isCollapsedByDefault) {
-              childrenWrap.style.display = 'none';
-            }
             childrenWrap.appendChild(buildDOM(node.children, level + 1));
             nodeWrap.appendChild(childrenWrap);
           }
@@ -439,30 +678,20 @@
         return frag;
       }
 
-      container.appendChild(buildDOM(wbsData, 0));
+      container.appendChild(buildDOM(treeData, 0));
     }
 
     function toggleChildren(btn) {
       const parentRow = btn.closest('.tree-node-row');
-      const childrenBox = parentRow.nextElementSibling;
-      if (childrenBox && childrenBox.classList.contains('tree-children')) {
+      const childrenBox = parentRow.parentElement.querySelector('.tree-children');
+      if (childrenBox) {
         const isHidden = childrenBox.style.display === 'none';
         childrenBox.style.display = isHidden ? 'flex' : 'none';
         btn.classList.toggle('collapsed', !isHidden);
       }
     }
 
-    function findNodeById(id, list = wbsData) {
-      for (const item of list) {
-        if (item.id === id) return item;
-        if (item.children) {
-          const found = findNodeById(id, item.children);
-          if (found) return found;
-        }
-      }
-      return null;
-    }
-
+    // === QUẢN LÝ HẠNG MỤC WBS ===
     function openAddModal(parentId) {
       document.getElementById('modal-title').innerText = parentId ? 'Thêm Hạng Mục Con' : 'Thêm Hạng Mục Gốc';
       document.getElementById('modal-parent-id').value = parentId || '';
@@ -474,13 +703,13 @@
     }
 
     function openEditModal(id) {
-      const node = findNodeById(id);
-      if (!node) return;
+      const item = rawWorkItems.find(w => w.id === id);
+      if (!item) return;
       document.getElementById('modal-title').innerText = 'Chỉnh Sửa Hạng Mục';
-      document.getElementById('modal-parent-id').value = '';
+      document.getElementById('modal-parent-id').value = item.parent_id || '';
       document.getElementById('modal-edit-id').value = id;
-      document.getElementById('input-code').value = node.code;
-      document.getElementById('input-name').value = node.name;
+      document.getElementById('input-code').value = item.code || '';
+      document.getElementById('input-name').value = item.name || '';
       document.getElementById('wbs-modal').style.display = 'flex';
     }
 
@@ -488,7 +717,7 @@
       document.getElementById('wbs-modal').style.display = 'none';
     }
 
-    function saveWbsItem() {
+    async function saveWbsItem() {
       const code = document.getElementById('input-code').value.trim();
       const name = document.getElementById('input-name').value.trim();
       const parentIdStr = document.getElementById('modal-parent-id').value;
@@ -500,77 +729,247 @@
       }
 
       if (editIdStr) {
-        const node = findNodeById(Number(editIdStr));
-        if (node) {
-          node.code = code;
-          node.name = name;
+        const { res, data } = await apiRequest(`/api/work-items/${editIdStr}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, name })
+        });
+        if (!res.ok || !data.success) {
+          alert(`Lỗi cập nhật: ${data.message || 'Không thể lưu'}`);
+          return;
         }
       } else {
-        const newNode = { id: Date.now(), code, name, children: [] };
-        if (parentIdStr) {
-          const parentNode = findNodeById(Number(parentIdStr));
-          if (parentNode) parentNode.children.push(newNode);
-        } else {
-          wbsData.push(newNode);
+        const { res, data } = await apiRequest('/api/work-items', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project_id: CURRENT_PROJECT_ID,
+            parent_id: parentIdStr ? Number(parentIdStr) : null,
+            code,
+            name
+          })
+        });
+        if (!res.ok || !data.success) {
+          alert(`Lỗi tạo hạng mục: ${data.message || 'Không thể lưu'}`);
+          return;
         }
       }
 
       closeModal();
-      renderTree();
+      await loadData();
     }
 
-    // Chặn xóa lan truyền
-    function deleteNode(id) {
-      const node = findNodeById(id);
-      if (!node) return;
+    async function deleteWbsNode(id, name) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa hạng mục "${name}"?`)) return;
 
-      if (node.children && node.children.length > 0) {
-        alert(`Không thể xóa! Hạng mục "${node.name}" đang chứa các hạng mục con bên trong. Vui lòng xử lý các hạng mục con trước để bảo đảm toàn vẹn dữ liệu.`);
+      const { res, data } = await apiRequest(`/api/work-items/${id}`, { method: 'DELETE' });
+      if (!res.ok || !data.success) {
+        // Bắt lỗi ràng buộc (409 nếu có công việc, 400 nếu có con)
+        alert(`Không thể xóa!\n${data.message || 'Lỗi ràng buộc hệ thống'}`);
         return;
       }
 
-      if (confirm(`Bạn có chắc chắn muốn xóa hạng mục [${node.code}] ${node.name}?`)) {
-        function removeRecursive(list) {
-          const index = list.findIndex(item => item.id === id);
-          if (index !== -1) {
-            list.splice(index, 1);
-            return true;
-          }
-          for (const item of list) {
-            if (item.children && removeRecursive(item.children)) return true;
-          }
-          return false;
-        }
-        removeRecursive(wbsData);
-        renderTree();
-      }
+      alert('Đã xóa hạng mục thành công!');
+      await loadData();
     }
 
-    // Modal Dự Án Mới
+    // === QUẢN LÝ CÔNG VIỆC (TASKS - S-05 / SCRUM-60) ===
+    function populateWorkItemSelect(selectedId) {
+      const select = document.getElementById('task-work-item-id');
+      select.innerHTML = '';
+      rawWorkItems.forEach(wi => {
+        const opt = document.createElement('option');
+        opt.value = wi.id;
+        opt.innerText = `[${wi.code || wi.id}] ${wi.name}`;
+        if (wi.id === selectedId) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function openAddTaskModal(workItemId) {
+      populateWorkItemSelect(workItemId);
+      document.getElementById('task-modal-title').innerText = 'Thêm Công Việc Mới (S-05)';
+      document.getElementById('task-edit-id').value = '';
+      document.getElementById('task-code').value = '';
+      document.getElementById('task-name').value = '';
+      document.getElementById('task-duration').value = '1';
+      document.getElementById('task-status').value = 'pending';
+      document.getElementById('task-modal').style.display = 'flex';
+      document.getElementById('task-name').focus();
+    }
+
+    function openEditTaskModal(taskId) {
+      const task = rawTasks.find(t => t.id === taskId);
+      if (!task) return;
+      populateWorkItemSelect(task.work_item_id);
+      document.getElementById('task-modal-title').innerText = 'Chỉnh Sửa Công Việc';
+      document.getElementById('task-edit-id').value = task.id;
+      document.getElementById('task-code').value = task.code || '';
+      document.getElementById('task-name').value = task.name || '';
+      document.getElementById('task-duration').value = task.duration || 1;
+      document.getElementById('task-status').value = task.status || 'pending';
+      document.getElementById('task-modal').style.display = 'flex';
+    }
+
+    function closeTaskModal() {
+      document.getElementById('task-modal').style.display = 'none';
+    }
+
+    async function saveTask() {
+      const editId = document.getElementById('task-edit-id').value;
+      const workItemId = Number(document.getElementById('task-work-item-id').value);
+      const code = document.getElementById('task-code').value.trim();
+      const name = document.getElementById('task-name').value.trim();
+      const durationVal = document.getElementById('task-duration').value;
+      const status = document.getElementById('task-status').value;
+
+      if (!name) {
+        alert('Tên công việc không được để trống!');
+        return;
+      }
+
+      const duration = Number(durationVal);
+      if (isNaN(duration) || duration <= 0) {
+        alert('Thời lượng phải là một số dương hợp lệ (đơn vị: Ngày)!');
+        return;
+      }
+
+      if (editId) {
+        const { res, data } = await apiRequest(`/api/tasks/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ work_item_id: workItemId, code, name, duration, status })
+        });
+        if (!res.ok || !data.success) {
+          alert(`Lỗi cập nhật: ${data.message || 'Không thể lưu'}`);
+          return;
+        }
+      } else {
+        const { res, data } = await apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/tasks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project_id: CURRENT_PROJECT_ID,
+            work_item_id: workItemId,
+            code,
+            name,
+            duration,
+            status
+          })
+        });
+        if (!res.ok || !data.success) {
+          alert(`Lỗi tạo công việc: ${data.message || 'Không thể lưu'}`);
+          return;
+        }
+      }
+
+      closeTaskModal();
+      await loadData();
+    }
+
+    async function deleteTask(taskId, taskName) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa công việc "${taskName}"?`)) return;
+
+      const { res, data } = await apiRequest(`/api/tasks/${taskId}`, { method: 'DELETE' });
+      if (!res.ok || !data.success) {
+        alert(`Không thể xóa: ${data.message || 'Lỗi hệ thống'}`);
+        return;
+      }
+
+      alert('Đã xóa công việc thành công!');
+      await loadData();
+    }
+
+    // === KIỂM TRA THỨ TỰ THI CÔNG & VÒNG LẶP (S-07 / SCRUM-62) ===
+    async function openScheduleModal() {
+      const modal = document.getElementById('schedule-modal');
+      const body = document.getElementById('schedule-modal-body');
+      modal.style.display = 'flex';
+      body.innerHTML = '<div style="text-align: center; padding: 25px;">Đang chạy thuật toán sắp xếp Topo (Kahn O(V+E))...</div>';
+
+      const { res, data } = await apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/scheduling/order`);
+
+      if (data.hasCycle) {
+        body.innerHTML = `
+          <div class="alert-banner alert-danger">
+            ⚠️ <strong>PHÁT HIỆN VÒNG LẶP PHỤ THUỘC (CIRCULAR DEPENDENCY)!</strong><br>
+            Chu trình vòng: <code>${escapeHtml(data.cyclePath || '')}</code><br>
+            Không thể thiết lập tiến độ thi công khi có chu trình khép kín. Vui lòng gỡ bỏ quan hệ phụ thuộc vòng.
+          </div>
+        `;
+        return;
+      }
+
+      if (!data.success && !data.order) {
+        body.innerHTML = `<div class="alert-banner alert-danger">${escapeHtml(data.message || 'Lỗi tính toán tiến độ')}</div>`;
+        return;
+      }
+
+      let integrationNote = '';
+      if (data.integrationStatus === 'BLOCKED BY S-06 INTEGRATION') {
+        integrationNote = `
+          <div class="alert-banner alert-warning">
+            📌 <strong>Trạng thái tích hợp: BLOCKED BY S-06 INTEGRATION</strong><br>
+            Module quan hệ phụ thuộc FS, SS, FF, SF (S-06) đang được thành viên khác thực hiện.
+            Thuật toán sắp xếp Topo (S-07) đã sẵn sàng hoạt động với các công việc độc lập hiện có.
+          </div>
+        `;
+      }
+
+      const tasksList = data.order || [];
+      let listHtml = '';
+      if (tasksList.length === 0) {
+        listHtml = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">Dự án chưa có công việc nào để sắp xếp thứ tự thi công.</div>';
+      } else {
+        listHtml = tasksList.map((t, idx) => `
+          <div class="schedule-step-item">
+            <div class="schedule-step-num">${idx + 1}</div>
+            <div style="flex: 1;">
+              <span class="task-code-badge">${escapeHtml(t.code || `CV-${t.id}`)}</span>
+              <strong>${escapeHtml(t.name)}</strong>
+            </div>
+            <span class="task-duration-badge">⏱️ ${t.duration || 0} ngày</span>
+          </div>
+        `).join('');
+      }
+
+      body.innerHTML = `
+        ${integrationNote}
+        <h4 style="margin-bottom: 12px; font-size: 14.5px; color: var(--text-title);">
+          Thứ Tự Thi Công Đề Xuất (Độ phức tạp O(V + E) - Deterministic):
+        </h4>
+        <div style="max-height: 400px; overflow-y: auto;">
+          ${listHtml}
+        </div>
+      `;
+    }
+
+    function closeScheduleModal() {
+      document.getElementById('schedule-modal').style.display = 'none';
+    }
+
     function openProjectModal() {
       document.getElementById('project-modal').style.display = 'flex';
     }
     function closeProjectModal() {
       document.getElementById('project-modal').style.display = 'none';
     }
+
     function saveNewProject() {
       const name = document.getElementById('proj-name').value.trim();
-      const location = document.getElementById('proj-location').value.trim();
-      const date = document.getElementById('proj-start-date').value;
-
-      if (!name || !location || !date) {
-        alert('Vui lòng điền đủ Tên dự án, Địa điểm và Ngày khởi công!');
+      const code = document.getElementById('proj-code').value.trim();
+      if (!name || !code) {
+        alert('Vui lòng điền đủ Tên và Mã dự án!');
         return;
       }
-
-      document.getElementById('project-display-title').innerText = `Dự án: ${name} (${location}) — Khởi công: ${date}`;
-      alert(`Khởi tạo thành công dự án: ${name}`);
+      alert(`Khởi tạo thành công dự án: ${name} [${code}]`);
       closeProjectModal();
     }
 
     function escapeHtml(text) {
+      if (text === null || text === undefined) return '';
       const div = document.createElement('div');
-      div.innerText = text;
+      div.innerText = String(text);
       return div.innerHTML;
     }
 
@@ -583,7 +982,7 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      renderTree();
+      loadData();
     });
   </script>
 </body>
