@@ -1,4 +1,5 @@
 const express = require('express');
+const { checkViewerForbidden, checkProjectReadAccess } = require('./src/utils/rbac');
 const router = express.Router();
 
 module.exports = (db) => {
@@ -23,6 +24,8 @@ module.exports = (db) => {
 
   // 1. Lấy danh sách hạng mục theo dự án
   router.get('/projects/:projectId/work-items', async (req, res) => {
+    if (checkProjectReadAccess(req, res, req.params.projectId)) return;
+
     try {
       const [rows] = await pool.query(
         'SELECT * FROM work_items WHERE project_id = ? ORDER BY id ASC',
@@ -36,6 +39,8 @@ module.exports = (db) => {
 
   // 2. Thêm hạng mục mới
   router.post('/work-items', async (req, res) => {
+    if (checkViewerForbidden(req, res)) return;
+
     const { project_id, parent_id, name, code, unit, quantity } = req.body;
     if (!name || !project_id) {
       return res.status(400).json({ success: false, message: 'Thiếu tên hạng mục hoặc project_id' });
@@ -53,6 +58,8 @@ module.exports = (db) => {
 
   // 3. Cập nhật hạng mục (Chặn vòng lặp đệ quy T-10)
   router.put('/work-items/:id', async (req, res) => {
+    if (checkViewerForbidden(req, res)) return;
+
     const { name, code, unit, quantity, status, parent_id } = req.body;
     const itemId = req.params.id;
 
@@ -94,6 +101,8 @@ module.exports = (db) => {
 
   // 4. Xóa hạng mục (Chặn xóa khi có con T-10)
   router.delete('/work-items/:id', async (req, res) => {
+    if (checkViewerForbidden(req, res)) return;
+
     const itemId = req.params.id;
     try {
       const [children] = await pool.query('SELECT id FROM work_items WHERE parent_id = ?', [itemId]);
@@ -101,6 +110,15 @@ module.exports = (db) => {
         return res.status(400).json({ 
           success: false, 
           message: `Lỗi ràng buộc (T-10): Không thể xoá vì hạng mục này đang có hạng mục con!` 
+        });
+      }
+
+      // Kiểm tra ràng buộc công việc (S-05): Chặn xoá khi hạng mục đang chứa công việc
+      const [tasks] = await pool.query('SELECT id FROM tasks WHERE work_item_id = ?', [itemId]);
+      if (tasks.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'Lỗi ràng buộc: Không thể xoá vì hạng mục này đang có công việc thi công gắn vào!'
         });
       }
 

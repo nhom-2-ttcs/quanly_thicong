@@ -95,7 +95,7 @@ Hệ thống đã nạp sẵn 2 tài khoản mẫu phục vụ kiểm thử nhan
 
 ---
 
-## 📋 Danh Sách 6 Vai Trò Thi Công Đã Seed (SCRUM-29 / T-04)
+## 📋 Danh Sách 7 Cấp Bậc Vai Trò Trong Hệ Thống (SCRUM-29 / RBAC)
 
 1. **`admin`**: Quản trị viên hệ thống - Toàn quyền cấu hình hệ thống, phân quyền người dùng và duyệt dữ liệu.
 2. **`project_manager`**: Chỉ huy trưởng công trình - Quản lý tiến độ dự án, phân công nhân lực, ký duyệt nhật ký thi công.
@@ -110,4 +110,42 @@ Hệ thống đã nạp sẵn 2 tài khoản mẫu phục vụ kiểm thử nhan
 * **Băm mật khẩu:** PBKDF2 với SHA-512 và Salt ngẫu nhiên 16 bytes (10.000 vòng lặp) - đạt tiêu chuẩn an toàn bảo mật tương đương Argon2id.
 * **Thời hạn phiên làm việc (Session TTL):** Tự động hủy phiên sau **12 giờ không hoạt động**.
 * **Bảo mật nhật ký:** Không bao giờ ghi log mật khẩu gốc hoặc session token ra console / log file.
-* **Dự phòng kép API (Smart Fetch):** Tự động chuyển đổi giữa cổng 8080 (Nginx Proxy) và cổng 5000 (Backend Direct), đảm bảo ứng dụng không bao giờ bị lỗi `Unexpected token '<'` khi chạy trên mạng LAN.
+* **Dự phòng kép API (Smart Fetch):** Tự động chuyển đổi giữa cổng Nginx Proxy và cổng Backend Direct, đảm bảo ứng dụng không bao giờ bị lỗi `Unexpected token '<'` khi chạy trên mạng LAN.
+
+---
+
+## 🏗️ Sprint 2: Quản Lý Công Việc & Tiến Độ Thi Công (S-05, S-06, S-07)
+
+### 1. S-05 / SCRUM-60: Khai báo công việc có thời lượng gắn vào hạng mục WBS (T-11, T-12)
+* **Mô hình CSDL:** Bảng `tasks` có khóa ngoại `work_item_id` tham chiếu tới `work_items(id)` với ràng buộc `ON DELETE RESTRICT`. Chặn xóa hạng mục WBS khi đang chứa công việc thi công (trả mã `HTTP 409 Conflict`).
+* **Đơn vị thời lượng:** **Ngày (days)** — chuẩn quản lý tiến độ thi công công trình xây dựng và sơ đồ mạng CPM.
+* **Quy tắc kiểm thực (Validation):**
+  - Tên công việc không được để trống (`HTTP 400`).
+  - Thời lượng phải là số dương hợp lệ `> 0`, từ chối `NaN`, `Infinity`, số âm hoặc bằng 0 (`HTTP 400`).
+  - Hạng mục WBS gắn vào phải tồn tại và thuộc cùng dự án (`HTTP 404` / `HTTP 400`).
+* **API Endpoints:**
+  - `GET /api/projects/:projectId/tasks`: Lấy danh sách công việc theo dự án (hỗ trợ lọc `?work_item_id=X`).
+  - `POST /api/projects/:projectId/tasks` hoặc `POST /api/tasks`: Khởi tạo công việc mới (`HTTP 201`).
+  - `GET /api/tasks/:id`: Chi tiết công việc.
+  - `PUT /api/tasks/:id`: Cập nhật thông tin công việc.
+  - `DELETE /api/tasks/:id`: Xóa công việc.
+
+### 2. S-06 / SCRUM-61: Hợp đồng tích hợp quan hệ phụ thuộc (T-13, T-14)
+* **Trạng thái:** Thành viên khác đang thực hiện.
+* **Hợp đồng giao diện (Internal Contract):** Định nghĩa tại `backend/src/domain/scheduling/contracts.js`.
+  - Định dạng quan hệ: `{ predecessorId, successorId, type, lag }`
+  - Các loại quan hệ hỗ trợ: `FS` (Finish-to-Start), `SS` (Start-to-Start), `FF` (Finish-to-Finish), `SF` (Start-to-Finish).
+  - Độ trễ `lag`: Hỗ trợ số hữu hạn (âm, 0, dương).
+  - Trạng thái tích hợp hiện tại: `BLOCKED BY S-06 INTEGRATION` (S-07 hoạt động độc lập và sẵn sàng kết nối ngay khi CSDL S-06 hoàn thiện).
+
+### 3. S-07 / SCRUM-62: Sắp thứ tự phụ thuộc và phát hiện vòng lặp (T-15, T-16, T-17)
+* **Thuật toán:** Kahn BFS In-Degree tự triển khai tại `backend/src/domain/scheduling/topologicalSort.js`.
+* **Độ phức tạp:** $O(V + E)$ thời gian và $O(V + E)$ bộ nhớ.
+* **Tính tất định (Deterministic):** Sắp xếp hàng đợi theo chỉ số ID khi in-degree = 0, đảm bảo kết quả luôn đồng nhất qua mọi lần chạy.
+* **Phát hiện vòng lặp (Cycle Detection):**
+  - Tự động phát hiện Self-loop ($A \to A$), Vòng 2 node ($A \to B \to A$), Vòng nhiều node ($A \to B \to C \to A$).
+  - Truy vết chu trình cụ thể và trả về mã lỗi `HTTP 422 Unprocessable Entity` kèm cấu trúc: `{ hasCycle: true, cycleNodes: [...], cyclePath: "..." }`.
+  - Có cơ chế guard bảo vệ chống lặp vô hạn, cam kết không bao giờ bị treo khi đồ thị có chu trình.
+* **API Endpoints:**
+  - `GET /api/projects/:projectId/scheduling/order`: Lấy thứ tự sắp xếp topo và kiểm tra chu trình của dự án.
+  - `POST /api/projects/:projectId/scheduling/verify-order`: Xác thực đồ thị và kiểm tra vòng lặp theo payload tùy chỉnh.

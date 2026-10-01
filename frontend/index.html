@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bảng Điều Hành | Hệ Thống Quản Trị Thi Công</title>
+  <title>Bảng điều khiển | Hệ thống quản trị thi công</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
@@ -516,13 +516,13 @@
         </svg>
       </div>
       <div class="brand-info">
-        <h1>Hệ Thống Điều Hành Thi Công</h1>
-        <span>TRUNG TÂM QUẢN TRỊ DỰ ÁN</span>
+        <h1>Hệ thống điều hành thi công</h1>
+        <span>Trung tâm quản trị dự án</span>
       </div>
     </div>
 
     <div class="topbar-actions">
-      <a href="/wbs.html" class="btn-wbs">
+      <a href="/wbs.html" class="btn-wbs" title="Đi tới Cơ cấu công việc (WBS)" aria-label="Cơ cấu công việc (WBS)">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="8" y1="6" x2="21" y2="6"></line>
           <line x1="8" y1="12" x2="21" y2="12"></line>
@@ -531,7 +531,7 @@
           <line x1="3" y1="12" x2="3.01" y2="12"></line>
           <line x1="3" y1="18" x2="3.01" y2="18"></line>
         </svg>
-        Cơ Cấu Công Việc (WBS)
+        Cơ cấu công việc (WBS)
       </a>
 
       <div class="user-pill">
@@ -540,7 +540,7 @@
           <div class="user-name" id="display-user-name">Đang tải...</div>
           <div class="user-role" id="display-user-role">...</div>
         </div>
-        <button class="btn-logout" onclick="handleLogout()">Đăng Xuất</button>
+        <button class="btn-logout" title="Đăng xuất khỏi hệ thống" aria-label="Đăng xuất" onclick="handleLogout()">Đăng xuất</button>
       </div>
     </div>
   </header>
@@ -554,14 +554,14 @@
         <h2>Xin chào, <span id="welcome-name">Kỹ sư điều hành</span>!</h2>
         <p>Hệ thống vận hành máy chủ dự án đã sẵn sàng. Dữ liệu công trình được cô lập theo quyền hạn điều hành.</p>
       </div>
-      <div class="session-badge">Phiên bảo mật doanh nghiệp (12 Giờ)</div>
+      <div class="session-badge">Phiên bảo mật doanh nghiệp (12 giờ)</div>
     </section>
 
     <!-- 3 Metrics Card Viền Rõ Ràng -->
     <section class="metrics-grid">
       <div class="metric-card">
         <div class="metric-head">
-          <span class="metric-label">Cấu Trúc Hạng Mục</span>
+          <span class="metric-label">Cấu trúc hạng mục</span>
           <div class="metric-icon">
             <svg viewBox="0 0 24 24">
               <rect x="3" y="3" width="7" height="7"></rect>
@@ -571,13 +571,13 @@
             </svg>
           </div>
         </div>
-        <div class="metric-title">Cây Đa Tầng (WBS)</div>
+        <div class="metric-title">Cây đa tầng (WBS)</div>
         <div class="metric-desc">Quan hệ phân cấp đệ quy parent_id chống vòng lặp</div>
       </div>
 
       <div class="metric-card">
         <div class="metric-head">
-          <span class="metric-label">Tiêu Chuẩn Xác Thực</span>
+          <span class="metric-label">Tiêu chuẩn xác thực</span>
           <div class="metric-icon">
             <svg viewBox="0 0 24 24">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
@@ -585,21 +585,21 @@
             </svg>
           </div>
         </div>
-        <div class="metric-title">Argon2id + JWT</div>
-        <div class="metric-desc">Chống brute-force khóa 15 phút sau 5 lần sai</div>
+        <div class="metric-title">PBKDF2 & Token</div>
+        <div class="metric-desc">Băm mật khẩu SHA-512 và khóa 15 phút sau 5 lần sai</div>
       </div>
 
       <div class="metric-card">
         <div class="metric-head">
-          <span class="metric-label">Môi Trường Vận Hành</span>
+          <span class="metric-label">Môi trường vận hành</span>
           <div class="metric-icon">
             <svg viewBox="0 0 24 24">
               <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
             </svg>
           </div>
         </div>
-        <div class="metric-title">Docker Staging</div>
-        <div class="metric-desc">Nginx Frontend + Node Backend + Database</div>
+        <div class="metric-title">Môi trường Docker local</div>
+        <div class="metric-desc">Nginx frontend + Node backend + MySQL database</div>
       </div>
     </section>
 
@@ -613,9 +613,9 @@
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
-          Ma Trận Phân Quyền Điều Hành Thi Công
+          Ma trận phân quyền điều hành thi công
         </div>
-        <p>Quy định quyền truy cập dữ liệu và trách nhiệm chữ ký số theo chức danh dự án</p>
+        <p>Quy định quyền truy cập dữ liệu và trách nhiệm theo chức danh dự án</p>
       </div>
 
       <div class="table-wrap">
@@ -665,6 +665,12 @@
               <td class="role-title">Chủ đầu tư</td>
               <td class="role-desc">Theo dõi tiến độ đường găng tổng thể, xem ảnh hiện trường có định vị và phê duyệt thanh toán.</td>
             </tr>
+            <tr>
+              <td>7</td>
+              <td><span class="code-badge">viewer</span></td>
+              <td class="role-title">Người xem dự án</td>
+              <td class="role-desc">Chỉ xem những dự án được cấp quyền; không được tạo, sửa hoặc xóa dữ liệu.</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -672,9 +678,9 @@
       <div class="panel-footer">
         <div class="health-status-text" id="health-status-box">
           <span class="status-dot" id="health-dot"></span>
-          <span id="health-text">Kiểm tra kết nối dịch vụ API Backend: Chưa thực hiện</span>
+          <span id="health-text">Kiểm tra kết nối dịch vụ API backend: Chưa thực hiện</span>
         </div>
-        <button class="btn-health" id="btn-check-health" onclick="checkHealth()">
+        <button class="btn-health" id="btn-check-health" title="Chạy kiểm tra /api/health" aria-label="Chạy kiểm tra /api/health" onclick="checkHealth()">
           <svg viewBox="0 0 24 24">
             <polyline points="23 4 23 10 17 10"></polyline>
             <polyline points="1 20 1 14 7 14"></polyline>
@@ -688,30 +694,79 @@
   </main>
 
   <script>
-    function initUser() {
-      const userStr = localStorage.getItem('quanly_user');
-      let userName = 'Kỹ sư điều hành';
-      let userRole = 'authenticated';
-
-      if (userStr) {
-        try {
-          const user = JSON.parse(userStr);
-          userName = user.full_name || user.fullName || user.name || user.ho_ten || user.email || userName;
-          userRole = user.role || user.role_id || user.vai_tro || 'admin';
-        } catch (e) {}
-      } else {
+    async function initUser() {
+      const token = localStorage.getItem('quanly_token');
+      if (!token) {
         window.location.replace('/login.html');
         return;
       }
 
-      document.getElementById('welcome-name').innerText = userName;
-      document.getElementById('display-user-name').innerText = userName;
-      document.getElementById('display-user-role').innerText = String(userRole);
-      document.getElementById('avatar-letter').innerText = (userName.trim()[0] || 'U').toUpperCase();
+      try {
+        const host = window.location.hostname || 'localhost';
+        const targets = ['/api/auth/me', `http://${host}:5000/api/auth/me`];
+        let userData = null;
+
+        for (const url of targets) {
+          try {
+            const res = await fetch(url, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.success && data.user) {
+                userData = data.user;
+                localStorage.setItem('quanly_user', JSON.stringify(data.user));
+                break;
+              }
+            } else if (res.status === 401) {
+              localStorage.removeItem('quanly_token');
+              localStorage.removeItem('quanly_user');
+              window.location.replace('/login.html');
+              return;
+            }
+          } catch (e) {}
+        }
+
+        if (!userData) {
+          const userStr = localStorage.getItem('quanly_user');
+          if (userStr) {
+            try { userData = JSON.parse(userStr); } catch (e) {}
+          }
+        }
+
+        if (!userData) {
+          window.location.replace('/login.html');
+          return;
+        }
+
+        const userName = userData.full_name || userData.fullName || userData.name || userData.email || 'Kỹ sư điều hành';
+        const userRole = userData.role_display_name || userData.role_name || userData.role || 'Người dùng';
+
+        document.getElementById('welcome-name').innerText = userName;
+        document.getElementById('display-user-name').innerText = userName;
+        document.getElementById('display-user-role').innerText = String(userRole);
+        document.getElementById('avatar-letter').innerText = (userName.trim()[0] || 'U').toUpperCase();
+      } catch (err) {
+        console.error('Lỗi kiểm tra phiên làm việc:', err);
+      }
     }
 
-    function handleLogout() {
+    async function handleLogout() {
       if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi phiên làm việc?')) {
+        const token = localStorage.getItem('quanly_token');
+        if (token) {
+          try {
+            const host = window.location.hostname || 'localhost';
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ token })
+            });
+          } catch (e) {}
+        }
         localStorage.removeItem('quanly_token');
         localStorage.removeItem('quanly_user');
         window.location.replace('/login.html');
@@ -749,19 +804,24 @@
           <polyline points="1 20 1 14 7 14"></polyline>
           <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
         </svg>
-        Chạy Kiểm Tra /api/health
+        Chạy kiểm tra /api/health
       `;
 
       if (isSuccess) {
         dot.style.background = '#059669';
-        text.innerText = 'Kết nối API Backend hoạt động bình thường (HTTP 200 OK)';
+        text.innerText = 'Kết nối API backend hoạt động bình thường (HTTP 200 OK)';
       } else {
         dot.style.background = '#dc2626';
-        text.innerText = 'Cảnh báo: Không thể kết nối tới máy chủ API Staging.';
+        text.innerText = 'Cảnh báo: Không thể kết nối tới máy chủ API backend.';
       }
     }
 
     window.addEventListener('DOMContentLoaded', initUser);
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted || !localStorage.getItem('quanly_token')) {
+        initUser();
+      }
+    });
   </script>
 </body>
 </html>
