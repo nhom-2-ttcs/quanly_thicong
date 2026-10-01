@@ -70,6 +70,14 @@ app.get('/register', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/register.html'));
 });
 
+// Middleware xác thực token phiên
+const { authenticate } = require('./src/utils/rbac');
+app.use(authenticate);
+
+// Quản lý dự án thi công
+const projectRoutes = require('./src/routes/projectRoutes');
+app.use('/api', projectRoutes(db));
+
 const wbsRoutes = require("./wbs_routes");
 app.use("/api", wbsRoutes(db));
 

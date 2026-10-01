@@ -1,18 +1,20 @@
 const { hashPassword } = require('../utils/security');
 
-// 6 vai trò thi công xây dựng theo nhiệm vụ SCRUM-29 (T-04)
+// 7 vai trò thi công xây dựng theo nhiệm vụ SCRUM-29 & Sprint 2
 const SEED_ROLES = [
   { id: 1, name: 'admin', display_name: 'Quản trị viên hệ thống', description: 'Toàn quyền cấu hình hệ thống, phân quyền người dùng và duyệt dữ liệu' },
   { id: 2, name: 'project_manager', display_name: 'Chỉ huy trưởng công trình', description: 'Quản lý tiến độ dự án, phân công nhân lực, ký duyệt nhật ký thi công' },
   { id: 3, name: 'supervisor', display_name: 'Kỹ sư giám sát thi công', description: 'Giám sát kỹ thuật hiện trường, nghiệm thu công việc và ghi nhật ký' },
   { id: 4, name: 'contractor', display_name: 'Đội trưởng thi công', description: 'Tổ chức đội ngũ công nhân, báo cáo khối lượng thi công hàng ngày' },
   { id: 5, name: 'accountant', display_name: 'Kế toán & Quản lý vật tư', description: 'Kiểm soát ngân sách, xuất nhập kho vật liệu và thanh quyết toán' },
-  { id: 6, name: 'client', display_name: 'Chủ đầu tư', description: 'Theo dõi tiến độ tổng thể, hình ảnh hiện trường và chất lượng công trình' }
+  { id: 6, name: 'client', display_name: 'Chủ đầu tư', description: 'Theo dõi tiến độ tổng thể, hình ảnh hiện trường và chất lượng công trình' },
+  { id: 7, name: 'viewer', display_name: 'Người xem dự án', description: 'Chỉ xem những dự án được cấp quyền; không được tạo, sửa hoặc xóa dữ liệu.' }
 ];
 
 // Khởi tạo hash mật khẩu mẫu
-const adminHash = hashPassword('Admin@123');
-const dungHash = hashPassword('Dung@123');
+const adminHash = hashPassword(process.env.DEMO_ADMIN_PASSWORD || 'Admin@123');
+const dungHash = hashPassword(process.env.DEMO_PM_PASSWORD || 'Dung@123');
+const viewerHash = hashPassword(process.env.DEMO_VIEWER_PASSWORD || process.env.VIEWER_PASSWORD || 'Viewer@123');
 
 // Dữ liệu người dùng khởi tạo ban đầu
 let inMemoryUsers = [
@@ -41,6 +43,19 @@ let inMemoryUsers = [
     failed_login_attempts: 0,
     locked_until: null,
     is_active: true
+  },
+  {
+    id: 3,
+    email: 'viewer@thicong.vn',
+    password_hash: viewerHash.hash,
+    salt: viewerHash.salt,
+    full_name: 'Nguyễn Khách Xem',
+    role_id: 7,
+    role_name: 'viewer',
+    role_display_name: 'Người xem dự án',
+    failed_login_attempts: 0,
+    locked_until: null,
+    is_active: true
   }
 ];
 
@@ -49,6 +64,31 @@ let inMemoryUsers = [
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const sessions = new Map();
 
+// Bảng phân quyền dự án: userId -> Set(projectId)
+const userProjectAssignments = new Map();
+userProjectAssignments.set(1, new Set(['*'])); // admin toàn quyền
+userProjectAssignments.set(2, new Set([1]));   // PM dự án 1
+userProjectAssignments.set(3, new Set([1]));   // Viewer dự án 1 (được cấp quyền xem dự án 1)
+
+function canUserAccessProject(user, projectId) {
+  if (!user) return false;
+  // Admin được toàn quyền xem tất cả dự án
+  if (user.role_name === 'admin' || user.role_id === 1) return true;
+  // Project Manager được truy cập các dự án thi công
+  if (user.role_name === 'project_manager' || user.role_id === 2) return true;
+  // Viewer chỉ xem dự án được gán quyền
+  const pId = Number(projectId);
+  const assigned = userProjectAssignments.get(user.id);
+  if (assigned) {
+    if (assigned.has('*') || assigned.has(pId)) return true;
+  }
+  // Mặc định cho demo viewer nếu tài khoản là viewer@thicong.vn thì gán dự án 1
+  if ((user.role_name === 'viewer' || user.role_id === 7) && pId === 1) {
+    return true;
+  }
+  return false;
+}
+
 function findUserByEmail(email) {
   if (!email) return null;
   const clean = email.trim().toLowerCase();
@@ -56,6 +96,11 @@ function findUserByEmail(email) {
   const adminAliases = ['admin', 'admin@thicong.vn', 'admin@gmail.com', 'admin@admin.com', 'administrator', 'quantri', 'quantrivien'];
   if (adminAliases.includes(clean)) {
     return inMemoryUsers.find(u => u.role_id === 1) || inMemoryUsers[0];
+  }
+  // Hỗ trợ linh hoạt cho kiểm thử viewer
+  const viewerAliases = ['viewer', 'viewer@thicong.vn', 'nguoixem', 'khachxem'];
+  if (viewerAliases.includes(clean)) {
+    return inMemoryUsers.find(u => u.role_id === 7) || inMemoryUsers[2];
   }
   return inMemoryUsers.find(u => u.email.toLowerCase() === clean) || null;
 }
@@ -133,5 +178,7 @@ module.exports = {
   getSession,
   destroySession,
   inMemoryUsers,
-  SESSION_TTL_MS
+  SESSION_TTL_MS,
+  canUserAccessProject,
+  userProjectAssignments
 };

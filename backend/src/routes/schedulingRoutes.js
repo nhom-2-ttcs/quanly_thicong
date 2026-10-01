@@ -1,5 +1,6 @@
 const express = require('express');
 const { SchedulerService } = require('../domain/scheduling/schedulerService');
+const { checkProjectReadAccess } = require('../utils/rbac');
 
 module.exports = (db) => {
   const router = express.Router();
@@ -11,6 +12,8 @@ module.exports = (db) => {
     if (!Number.isInteger(projectId) || projectId <= 0) {
       return res.status(400).json({ success: false, message: 'projectId không hợp lệ' });
     }
+
+    if (checkProjectReadAccess(req, res, projectId)) return;
 
     try {
       const result = await schedulerService.getProjectSchedule(projectId);

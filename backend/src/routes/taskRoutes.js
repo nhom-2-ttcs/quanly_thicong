@@ -1,4 +1,5 @@
 const express = require('express');
+const { checkViewerForbidden, checkProjectReadAccess } = require('../utils/rbac');
 
 module.exports = (db) => {
   const router = express.Router();
@@ -10,6 +11,8 @@ module.exports = (db) => {
     if (!Number.isInteger(projectId) || projectId <= 0) {
       return res.status(400).json({ success: false, message: 'projectId không hợp lệ' });
     }
+
+    if (checkProjectReadAccess(req, res, projectId)) return;
 
     const { work_item_id } = req.query;
 
@@ -38,6 +41,8 @@ module.exports = (db) => {
 
   // 2. Thêm công việc mới (S-05 / SCRUM-60 / T-11)
   const createTaskHandler = async (req, res) => {
+    if (checkViewerForbidden(req, res)) return;
+
     const projectId = Number(req.params.projectId || req.body.project_id);
     const { name, code, duration, work_item_id, status } = req.body;
 
@@ -154,6 +159,9 @@ module.exports = (db) => {
       if (rows.length === 0) {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' });
       }
+
+      if (checkProjectReadAccess(req, res, rows[0].project_id)) return;
+
       res.json({ success: true, data: rows[0] });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
@@ -162,6 +170,8 @@ module.exports = (db) => {
 
   // 4. Cập nhật công việc
   router.put('/tasks/:id', async (req, res) => {
+    if (checkViewerForbidden(req, res)) return;
+
     const taskId = Number(req.params.id);
     const { name, code, duration, work_item_id, status } = req.body;
 
@@ -226,6 +236,8 @@ module.exports = (db) => {
 
   // 5. Xóa công việc
   router.delete('/tasks/:id', async (req, res) => {
+    if (checkViewerForbidden(req, res)) return;
+
     const taskId = Number(req.params.id);
     try {
       const [existing] = await pool.query('SELECT id FROM tasks WHERE id = ?', [taskId]);
