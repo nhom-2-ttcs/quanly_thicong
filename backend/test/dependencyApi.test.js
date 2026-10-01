@@ -42,7 +42,7 @@ async function mockRequest(app, method, url, body = null) {
   });
 }
 
-test('API S-06: GET /api/dependencies/types trả về đủ 4 loại quan hệ chuẩn FS, SS, FF, SF', async () => {
+test('API Dependencies: GET /api/dependencies/types trả về đủ 4 loại quan hệ chuẩn FS, SS, FF, SF', async () => {
   const app = createTestApp();
   const res = await mockRequest(app, 'GET', '/api/dependencies/types');
   assert.strictEqual(res.status, 200);
@@ -56,7 +56,7 @@ test('API S-06: GET /api/dependencies/types trả về đủ 4 loại quan hệ 
   assert.ok(codes.includes('SF'));
 });
 
-test('API S-06: POST /api/dependencies lưu đủ 4 loại quan hệ và độ trễ dương, 0, âm', async () => {
+test('API Dependencies: POST /api/dependencies lưu đủ 4 loại quan hệ và độ trễ dương, 0, âm', async () => {
   const app = createTestApp();
 
   // 1. FS với lag = 0
@@ -108,7 +108,7 @@ test('API S-06: POST /api/dependencies lưu đủ 4 loại quan hệ và độ t
   assert.strictEqual(resFF.body.data.lag, 3);
 });
 
-test('API S-06: Chặn tự phụ thuộc (predecessor === successor)', async () => {
+test('API Dependencies: Chặn tự phụ thuộc (predecessor === successor)', async () => {
   const app = createTestApp();
   const res = await mockRequest(app, 'POST', '/api/dependencies', {
     project_id: 1,
@@ -123,7 +123,7 @@ test('API S-06: Chặn tự phụ thuộc (predecessor === successor)', async ()
   assert.match(res.body.message, /Không cho một công việc phụ thuộc chính nó/);
 });
 
-test('API S-06: Chặn trùng cặp công việc trước và công việc sau', async () => {
+test('API Dependencies: Chặn trùng cặp công việc trước và công việc sau', async () => {
   const app = createTestApp();
   // Tạo cặp (1, 2)
   await mockRequest(app, 'POST', '/api/dependencies', {
@@ -148,7 +148,7 @@ test('API S-06: Chặn trùng cặp công việc trước và công việc sau',
   assert.match(dupRes.body.message, /Không cho trùng cặp/);
 });
 
-test('API S-06: Từ chối chuỗi tiếng Việt hoặc mã không hợp lệ cho loại quan hệ', async () => {
+test('API Dependencies: Từ chối chuỗi tiếng Việt hoặc mã không hợp lệ cho loại quan hệ', async () => {
   const app = createTestApp();
   const res = await mockRequest(app, 'POST', '/api/dependencies', {
     project_id: 1,
@@ -163,7 +163,7 @@ test('API S-06: Từ chối chuỗi tiếng Việt hoặc mã không hợp lệ 
   assert.match(res.body.message, /mã cố định: FS, SS, FF, SF/);
 });
 
-test('API S-06: PUT và DELETE quan hệ phụ thuộc qua API', async () => {
+test('API Dependencies: PUT và DELETE quan hệ phụ thuộc qua API', async () => {
   const app = createTestApp();
   const postRes = await mockRequest(app, 'POST', '/api/dependencies', {
     project_id: 1,

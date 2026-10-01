@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quản Lý Tiến Độ & Quan Hệ Phụ Thuộc (WBS / S-06) | Hệ Thống Quản Trị Thi Công</title>
+  <title>Cơ Cấu WBS & Quan Hệ Phụ Thuộc | Hệ Thống Quản Trị Thi Công</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
@@ -462,7 +462,7 @@
       </div>
       <div class="brand-info">
         <h1>Hệ Thống Điều Hành Thi Công</h1>
-        <span>PHÂN HỆ CẤU TRÚC WBS & TIẾN ĐỘ PHỤ THUỘC (S-06)</span>
+        <span>PHÂN HỆ CẤU TRÚC WBS & TIẾN ĐỘ THI CÔNG</span>
       </div>
     </div>
 
@@ -481,7 +481,7 @@
     <!-- Hero Banner Nền Ảnh Xây Dựng Đồng Bộ -->
     <div class="wbs-hero-banner">
       <div class="wbs-title-box">
-        <h2>Cơ Cấu WBS & Quan Hệ Phụ Thuộc (S-06)</h2>
+        <h2>Cơ Cấu WBS & Quan Hệ Phụ Thuộc</h2>
         <p id="project-display-title">Dự án: Tòa nhà phức hợp Staging Center — Khởi công: 01/10/2026</p>
       </div>
       <div class="header-btns">
@@ -497,7 +497,7 @@
     <!-- THANH ĐIỀU HƯỚNG TAB -->
     <nav class="tabs-nav">
       <button class="tab-btn active" onclick="switchTab('tab-dependencies')">
-        🔗 Khai Báo Quan Hệ Phụ Thuộc (S-06)
+        🔗 Khai Báo Quan Hệ Phụ Thuộc
         <span class="tab-badge" id="dep-count-badge">5</span>
       </button>
       <button class="tab-btn" onclick="switchTab('tab-wbs')">
@@ -510,17 +510,17 @@
     </nav>
 
     <!-- ========================================================================= -->
-    <!-- TAB 1: KHAI BÁO QUAN HỆ PHỤ THUỘC ĐỦ BỐN LOẠI VÀ ĐỘ TRỄ (S-06) -->
+    <!-- TAB 1: KHAI BÁO QUAN HỆ PHỤ THUỘC ĐỦ BỐN LOẠI VÀ ĐỘ TRỄ -->
     <!-- ========================================================================= -->
     <div class="tab-pane active" id="tab-dependencies">
       
-      <!-- Thẻ đặc tả Sprint S-06 & User Story -->
+      <!-- Thẻ đặc tả & User Story -->
       <div class="s06-hero-card">
         <div class="s06-header">
           <div>
-            <span class="s06-tag">SPRINT S-06 • ACCEPTANCE CRITERIA PASSED</span>
+            <span class="s06-tag">QUẢN LÝ TIẾN ĐỘ THI CÔNG</span>
             <h3 style="font-size: 18px; font-weight: 800; color: var(--text-title); margin-top: 6px;">
-              [S-06] Khai quan hệ phụ thuộc đủ bốn loại và độ trễ
+              Khai Báo Quan Hệ Phụ Thuộc Đủ Bốn Loại Và Độ Trễ
             </h3>
           </div>
           <button class="btn-primary-action" onclick="openDependencyModal()">
@@ -680,7 +680,7 @@
   <div class="modal-overlay" id="dep-modal">
     <div class="modal-box">
       <div class="modal-header">
-        <h3 id="dep-modal-title">Khai Báo Quan Hệ Phụ Thuộc (S-06)</h3>
+        <h3 id="dep-modal-title">Khai Báo Quan Hệ Phụ Thuộc</h3>
         <button class="btn-close-modal" onclick="closeDependencyModal()">&times;</button>
       </div>
       <div class="modal-body">
@@ -1059,12 +1059,12 @@
       if (editId) {
         const dep = dependenciesList.find(d => Number(d.id) === Number(editId));
         if (!dep) return;
-        document.getElementById('dep-modal-title').innerText = 'Chỉnh Sửa Quan Hệ Phụ Thuộc (S-06)';
+        document.getElementById('dep-modal-title').innerText = 'Chỉnh Sửa Quan Hệ Phụ Thuộc';
         populateDropdowns(dep.predecessor_id, dep.successor_id);
         document.getElementById('select-type').value = dep.dependency_type;
         document.getElementById('input-lag').value = dep.lag;
       } else {
-        document.getElementById('dep-modal-title').innerText = 'Khai Báo Quan Hệ Phụ Thuộc (S-06)';
+        document.getElementById('dep-modal-title').innerText = 'Khai Báo Quan Hệ Phụ Thuộc';
         populateDropdowns(defaultPredId, defaultSuccId);
         document.getElementById('select-type').value = 'FS';
         document.getElementById('input-lag').value = 0;

@@ -1,7 +1,7 @@
 USE quanly_thicong;
 
 -- ====================================================================
--- Sprint S-06: Khai quan hệ phụ thuộc đủ bốn loại và độ trễ
+-- Khai báo quan hệ phụ thuộc đủ bốn loại (FS, SS, FF, SF) và độ trễ thi công
 -- User Story: Là ban quản lý dự án, tôi muốn khai việc nào phải chờ việc nào
 -- theo đúng loại quan hệ thực tế để hệ thống tính được tiến độ.
 -- Tiêu chí chấp nhận:

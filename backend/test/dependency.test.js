@@ -21,7 +21,7 @@ test.beforeEach(() => {
 // =========================================================================
 // TIÊU CHÍ 1: Lưu được đầy đủ FS, SS, FF và SF
 // =========================================================================
-test('TC-1 (S-06): Lưu được đầy đủ 4 loại quan hệ FS, SS, FF và SF với mã chuẩn', () => {
+test('TC-1: Lưu được đầy đủ 4 loại quan hệ FS, SS, FF và SF với mã chuẩn', () => {
   assert.strictEqual(ALLOWED_TYPE_CODES.length, 4, 'Hệ thống phải hỗ trợ đúng 4 loại quan hệ');
   assert.deepStrictEqual(ALLOWED_TYPE_CODES.sort(), ['FF', 'FS', 'SF', 'SS'], 'Gồm các mã: FS, SS, FF, SF');
 
@@ -77,7 +77,7 @@ test('TC-1 (S-06): Lưu được đầy đủ 4 loại quan hệ FS, SS, FF và 
 // =========================================================================
 // TIÊU CHÍ 2: Quan hệ có thể có độ trễ dương, bằng 0 hoặc âm
 // =========================================================================
-test('TC-2 (S-06): Quan hệ có thể có độ trễ dương, bằng 0 hoặc âm (Lead/Lag)', () => {
+test('TC-2: Quan hệ có thể có độ trễ dương, bằng 0 hoặc âm (Lead/Lag)', () => {
   // 1. Độ trễ dương (+5 ngày)
   const depPositive = createDependency({
     project_id: 1,
@@ -123,7 +123,7 @@ test('TC-2 (S-06): Quan hệ có thể có độ trễ dương, bằng 0 hoặc 
 // =========================================================================
 // TIÊU CHÍ 3: Không cho một công việc phụ thuộc chính nó
 // =========================================================================
-test('TC-3 (S-06): Chặn một công việc phụ thuộc chính nó (Self-dependency)', () => {
+test('TC-3: Chặn một công việc phụ thuộc chính nó (Self-dependency)', () => {
   const result = validateDependency({
     project_id: 1,
     predecessor_id: 7,
@@ -150,7 +150,7 @@ test('TC-3 (S-06): Chặn một công việc phụ thuộc chính nó (Self-depe
 // =========================================================================
 // TIÊU CHÍ 4: Không cho trùng cặp công việc trước và công việc sau
 // =========================================================================
-test('TC-4 (S-06): Không cho trùng cặp công việc trước và công việc sau', () => {
+test('TC-4: Không cho trùng cặp công việc trước và công việc sau', () => {
   // Tạo cặp đầu tiên giữa việc 2 và việc 5
   createDependency({
     project_id: 1,
@@ -197,7 +197,7 @@ test('TC-4 (S-06): Không cho trùng cặp công việc trước và công việ
 // =========================================================================
 // TIÊU CHÍ 5: Loại quan hệ lưu bằng mã cố định, không lưu chuỗi tiếng Việt
 // =========================================================================
-test('TC-5 (S-06): Loại quan hệ lưu bằng mã cố định, từ chối chuỗi tiếng Việt', () => {
+test('TC-5: Loại quan hệ lưu bằng mã cố định, từ chối chuỗi tiếng Việt', () => {
   // 1. Thử gửi chuỗi tiếng Việt "Kết thúc – Khởi đầu"
   const vnTextAttempt1 = validateDependency({
     project_id: 1,
@@ -244,7 +244,7 @@ test('TC-5 (S-06): Loại quan hệ lưu bằng mã cố định, từ chối ch
 // =========================================================================
 // BỔ SUNG: Kiểm tra Cập nhật (PUT) & Xóa (DELETE) & Cascade Clean-up
 // =========================================================================
-test('TC-6 (S-06): Cập nhật và Xóa quan hệ phụ thuộc thành công', () => {
+test('TC-6: Cập nhật và Xóa quan hệ phụ thuộc thành công', () => {
   const dep = createDependency({
     project_id: 1,
     predecessor_id: 20,
@@ -267,7 +267,7 @@ test('TC-6 (S-06): Cập nhật và Xóa quan hệ phụ thuộc thành công', 
   assert.strictEqual(getDependencyById(dep.id), null);
 });
 
-test('TC-7 (S-06): Tự động dọn dẹp quan hệ khi công việc bị xóa (Cascade Clean-up)', () => {
+test('TC-7: Tự động dọn dẹp quan hệ khi công việc bị xóa (Cascade Clean-up)', () => {
   createDependency({
     project_id: 1,
     predecessor_id: 100,

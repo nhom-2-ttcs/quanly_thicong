@@ -126,7 +126,7 @@ async function initDbSchema() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    // 5. Tạo bảng work_item_dependencies (Khai báo quan hệ phụ thuộc 4 loại và độ trễ [S-06])
+    // 5. Tạo bảng work_item_dependencies (Khai báo quan hệ phụ thuộc 4 loại và độ trễ)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS work_item_dependencies (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -143,7 +143,7 @@ async function initDbSchema() {
         UNIQUE KEY unique_predecessor_successor (predecessor_id, successor_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
-    console.log('[DB] Đã khởi tạo schema WBS và quan hệ phụ thuộc S-06 thành công!');
+    console.log('[DB] Đã khởi tạo schema WBS và quan hệ phụ thuộc thành công!');
   } catch (err) {
     console.warn('[DB] Lưu ý khi tạo schema MySQL:', err.message);
   }

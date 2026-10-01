@@ -1,5 +1,5 @@
 /**
- * Sprint S-06: Quản lý quan hệ phụ thuộc đủ bốn loại (FS, SS, FF, SF) và độ trễ
+ * Quản lý quan hệ phụ thuộc đủ bốn loại (FS, SS, FF, SF) và độ trễ thi công
  * User Story: Là ban quản lý dự án, tôi muốn khai việc nào phải chờ việc nào
  * theo đúng loại quan hệ thực tế để hệ thống tính được tiến độ.
  * 
@@ -42,7 +42,7 @@ const DEPENDENCY_TYPES = {
 const ALLOWED_TYPE_CODES = Object.keys(DEPENDENCY_TYPES);
 
 /**
- * Kiểm tra tính hợp lệ của quan hệ phụ thuộc theo các tiêu chí chấp nhận S-06
+ * Kiểm tra tính hợp lệ của quan hệ phụ thuộc theo các tiêu chí chấp nhận
  * @param {Object} data - Dữ liệu quan hệ cần kiểm tra
  * @param {Array} existingDependencies - Danh sách các quan hệ hiện có
  * @param {number|null} currentId - ID của quan hệ nếu đang cập nhật (để bỏ qua chính nó khi kiểm tra trùng)

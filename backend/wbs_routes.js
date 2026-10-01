@@ -229,7 +229,7 @@ module.exports = (db) => {
   });
 
   // =========================================================================
-  // II. CÁC ENDPOINT CHO SPRINT S-06: KHAI BÁO QUAN HỆ PHỤ THUỘC & ĐỘ TRỄ
+  // II. QUẢN LÝ QUAN HỆ PHỤ THUỘC & ĐỘ TRỄ THI CÔNG
   // =========================================================================
 
   // 1. Lấy danh mục 4 loại quan hệ chuẩn quốc tế (FS, SS, FF, SF)
@@ -289,7 +289,7 @@ module.exports = (db) => {
     res.json({ success: true, data: enriched });
   });
 
-  // 3. Khai báo quan hệ phụ thuộc mới [S-06]
+  // 3. Khai báo quan hệ phụ thuộc mới
   // Tiêu chí kiểm định:
   // - Lưu được đủ 4 loại: FS, SS, FF, SF.
   // - Độ trễ có thể dương, bằng 0 hoặc âm.
@@ -315,7 +315,7 @@ module.exports = (db) => {
       existingDeps = getAllDependencies(projId);
     }
 
-    // Xác thực các quy tắc nghiệp vụ theo tiêu chí chấp nhận S-06
+    // Xác thực các quy tắc nghiệp vụ theo tiêu chí chấp nhận
     const validation = validateDependency(
       { project_id: projId, predecessor_id, successor_id, dependency_type, lag },
       existingDeps

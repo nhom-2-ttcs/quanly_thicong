@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS work_items (
     FOREIGN KEY (parent_id) REFERENCES work_items(id) ON DELETE RESTRICT
 );
 
--- Bảng work_item_dependencies (Khai báo quan hệ phụ thuộc đủ 4 loại FS, SS, FF, SF và độ trễ [S-06])
+-- Bảng work_item_dependencies (Khai báo quan hệ phụ thuộc đủ 4 loại FS, SS, FF, SF và độ trễ)
 CREATE TABLE IF NOT EXISTS work_item_dependencies (
     id INT AUTO_INCREMENT PRIMARY KEY,
     project_id INT NOT NULL,
