@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Đăng Nhập | Hệ Thống Điều Hành Thi Công</title>
+  <title>Đăng nhập | Hệ thống điều hành thi công</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -166,11 +166,11 @@
 
     .demo-box { margin-top: 18px; padding: 14px; background: #f8fafc; border: 1.5px dashed var(--border); border-radius: 8px; text-align: center; }
     .demo-title { font-size: 10.5px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px; margin-bottom: 10px; }
-    .demo-btn-group { display: flex; gap: 8px; }
-    .btn-demo { flex: 1; padding: 8px 10px; background: #fff; border: 1.5px solid var(--border); border-radius: 6px; text-align: left; cursor: pointer; }
+    .demo-btn-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .btn-demo { padding: 8px 6px; background: #fff; border: 1.5px solid var(--border); border-radius: 6px; text-align: center; cursor: pointer; transition: all 0.2s; }
     .btn-demo:hover { border-color: var(--brand-blue); background: var(--brand-blue-soft); }
-    .btn-demo strong { display: block; font-size: 11.5px; color: var(--text-title); }
-    .btn-demo span { font-size: 10px; color: var(--text-muted); }
+    .btn-demo strong { display: block; font-size: 11px; color: var(--text-title); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .btn-demo span { font-size: 9.5px; color: var(--text-muted); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .btn-unlock { margin-top: 10px; background: none; border: none; color: var(--text-muted); font-size: 11px; cursor: pointer; text-decoration: underline; }
     .btn-unlock:hover { color: var(--danger); }
   </style>
@@ -184,31 +184,31 @@
           <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
         </div>
         <div class="brand-title">
-          <h2>HỆ THỐNG ĐIỀU HÀNH THI CÔNG</h2>
-          <span>CỔNG QUẢN TRỊ DỰ ÁN</span>
+          <h2>Hệ thống điều hành thi công</h2>
+          <span>Cổng quản trị dự án</span>
         </div>
       </div>
 
       <div class="brand-main">
-        <div class="tag-live">Hệ thống Giám sát & Quản lý Thi công</div>
+        <div class="tag-live">Hệ thống giám sát & quản lý thi công</div>
         <h1>Kiểm soát tiến độ & chất lượng xây dựng chuẩn xác.</h1>
         <p>Hệ sinh thái số hóa công trình từ thiết kế kết cấu, vật tư đến nhật ký thi công hàng ngày theo tiêu chuẩn quản lý xây dựng chuyên nghiệp.</p>
 
         <div class="brand-features">
           <div class="feat-card">
-            <strong>Bảo Mật Xác Thực</strong>
+            <strong>Bảo mật xác thực</strong>
             <span>Khóa tạm 15 phút sau 5 lần sai</span>
           </div>
           <div class="feat-card">
-            <strong>Phiên Làm Việc 12h</strong>
+            <strong>Phiên làm việc 12 giờ</strong>
             <span>Tự động hết hạn an toàn</span>
           </div>
           <div class="feat-card">
-            <strong>6 Cấp Bậc Vai Trò</strong>
+            <strong>7 cấp bậc vai trò</strong>
             <span>Chỉ xem dự án mình tham gia</span>
           </div>
           <div class="feat-card">
-            <strong>Phân Rã Đa Tầng</strong>
+            <strong>Phân rã đa tầng</strong>
             <span>Cây WBS công trình mượt mà</span>
           </div>
         </div>
@@ -222,7 +222,7 @@
     <div class="form-side">
       <div class="login-card">
         <div class="login-header">
-          <h2>Đăng Nhập</h2>
+          <h2>Đăng nhập</h2>
           <p>Truy cập tài khoản cá nhân điều hành dự án</p>
         </div>
 
@@ -239,7 +239,7 @@
 
         <form id="form-login">
           <div class="form-group">
-            <label for="email">Địa chỉ Email</label>
+            <label for="email">Địa chỉ email</label>
             <input type="email" id="email" required placeholder="name@thicong.vn" autocomplete="email">
           </div>
 
@@ -247,11 +247,11 @@
             <label for="password">Mật khẩu</label>
             <div class="input-wrap">
               <input type="password" id="password" required placeholder="Nhập mật khẩu..." autocomplete="current-password">
-              <button type="button" id="btn-toggle-pwd" class="btn-toggle">Hiện</button>
+              <button type="button" id="btn-toggle-pwd" class="btn-toggle" title="Hiện hoặc ẩn mật khẩu" aria-label="Hiện hoặc ẩn mật khẩu">Hiện</button>
             </div>
           </div>
 
-          <button type="submit" id="btn-submit" class="btn-submit">Đăng Nhập</button>
+          <button type="submit" id="btn-submit" class="btn-submit">Đăng nhập</button>
         </form>
 
         <div class="register-prompt">
@@ -259,15 +259,19 @@
         </div>
 
         <div class="demo-box">
-          <div class="demo-title">Tài Khoản Kiểm Thử (Bấm điền nhanh)</div>
+          <div class="demo-title">Tài khoản kiểm thử (Bấm điền nhanh)</div>
           <div class="demo-btn-group">
-            <button type="button" class="btn-demo" onclick="fillAccount('dtc245160020@ictu.edu.vn', 'Dung@123')">
-              <strong>Trần Mạnh Dũng</strong>
-              <span>Chỉ huy trưởng (PM)</span>
+            <button type="button" class="btn-demo" title="Bấm để điền email Quản trị viên" onclick="fillAccount('admin@thicong.vn')">
+              <strong>Quản trị viên</strong>
+              <span>Admin</span>
             </button>
-            <button type="button" class="btn-demo" onclick="fillAccount('admin@thicong.vn', 'Admin@123')">
-              <strong>Quản Trị Viên</strong>
-              <span>Admin hệ thống</span>
+            <button type="button" class="btn-demo" title="Bấm để điền email Chỉ huy trưởng" onclick="fillAccount('dtc245160020@ictu.edu.vn')">
+              <strong>Chỉ huy trưởng</strong>
+              <span>Chỉ huy trưởng</span>
+            </button>
+            <button type="button" class="btn-demo" title="Bấm để điền email Người xem dự án" onclick="fillAccount('viewer@thicong.vn')">
+              <strong>Người xem dự án</strong>
+              <span>Người xem</span>
             </button>
           </div>
           <button type="button" class="btn-unlock" onclick="unlockDev()">
@@ -314,9 +318,9 @@
       pwd.type = pwd.type === 'password' ? 'text' : 'password';
     });
 
-    function fillAccount(email, pwd) {
+    function fillAccount(email) {
       document.getElementById('email').value = email;
-      document.getElementById('password').value = pwd;
+      document.getElementById('password').focus();
       clearAlerts();
     }
 
@@ -325,7 +329,7 @@
       document.getElementById('alert-lockout').style.display = 'none';
       if (countdownInterval) clearInterval(countdownInterval);
       document.getElementById('btn-submit').disabled = false;
-      document.getElementById('btn-submit').innerText = 'Đăng Nhập';
+      document.getElementById('btn-submit').innerText = 'Đăng nhập';
     }
 
     function startLockoutTimer(seconds) {
@@ -410,7 +414,7 @@
       } finally {
         if (localFailedAttempts < 5 && (!document.getElementById('alert-lockout').style.display || document.getElementById('alert-lockout').style.display === 'none')) {
           btn.disabled = false;
-          btn.innerText = 'Đăng Nhập';
+          btn.innerText = 'Đăng nhập';
         }
       }
     });
