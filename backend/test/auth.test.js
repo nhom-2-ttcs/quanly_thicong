@@ -3,8 +3,8 @@ const assert = require('node:assert');
 const { SEED_ROLES, findUserByEmail, updateUser, createSession, getSession, destroySession, SESSION_TTL_MS } = require('../src/models/store');
 const { verifyPassword } = require('../src/utils/security');
 
-test('T-04 (SCRUM-29): Kiểm tra định nghĩa và seed đủ 6 vai trò thi công', () => {
-  assert.strictEqual(SEED_ROLES.length, 6, 'Hệ thống phải có đủ 6 vai trò thi công');
+test('T-04 (SCRUM-29): Kiểm tra định nghĩa và seed đủ 7 vai trò hệ thống (6 vai trò thi công + 1 Người xem dự án)', () => {
+  assert.strictEqual(SEED_ROLES.length, 7, 'Hệ thống phải có đủ 7 vai trò (6 vai trò thi công + viewer)');
   
   const roleNames = SEED_ROLES.map(r => r.name);
   assert.ok(roleNames.includes('admin'), 'Phải có vai trò admin');
@@ -13,22 +13,35 @@ test('T-04 (SCRUM-29): Kiểm tra định nghĩa và seed đủ 6 vai trò thi c
   assert.ok(roleNames.includes('contractor'), 'Phải có vai trò contractor (Đội trưởng thi công)');
   assert.ok(roleNames.includes('accountant'), 'Phải có vai trò accountant (Kế toán & Vật tư)');
   assert.ok(roleNames.includes('client'), 'Phải có vai trò client (Chủ đầu tư)');
+  assert.ok(roleNames.includes('viewer'), 'Phải có vai trò viewer (Người xem dự án)');
 });
 
-test('T-05 (SCRUM-30): Đăng nhập thành công với tài khoản mẫu', () => {
-  const user = findUserByEmail('dtc245160020@ictu.edu.vn');
-  assert.ok(user, 'Tài khoản Trần Mạnh Dũng phải tồn tại');
-  assert.strictEqual(user.full_name, 'Trần Mạnh Dũng');
+test('T-05 (SCRUM-30): Đăng nhập thành công với tài khoản mẫu Chỉ huy trưởng và Người xem dự án', () => {
+  const pmUser = findUserByEmail('dtc245160020@ictu.edu.vn');
+  assert.ok(pmUser, 'Tài khoản Trần Mạnh Dũng phải tồn tại');
+  assert.strictEqual(pmUser.full_name, 'Trần Mạnh Dũng');
 
-  const isMatch = verifyPassword('Dung@123', user.salt, user.password_hash);
+  const isMatch = verifyPassword('Dung@123', pmUser.salt, pmUser.password_hash);
   assert.strictEqual(isMatch, true, 'Mật khẩu Dung@123 phải khớp hash');
 
-  const token = createSession(user);
+  const token = createSession(pmUser);
   assert.ok(token, 'Phải sinh token phiên làm việc');
 
   const session = getSession(token);
   assert.ok(session, 'Phiên phải hoạt động hợp lệ');
   assert.strictEqual(session.full_name, 'Trần Mạnh Dũng');
+
+  // Kiểm tra tài khoản Người xem dự án
+  const viewerUser = findUserByEmail('viewer@thicong.vn');
+  assert.ok(viewerUser, 'Tài khoản Người xem dự án phải tồn tại');
+  assert.strictEqual(viewerUser.role_name, 'viewer');
+  assert.strictEqual(viewerUser.role_id, 7);
+
+  const viewerToken = createSession(viewerUser);
+  assert.ok(viewerToken, 'Phải sinh token phiên làm việc cho Viewer');
+  const viewerSession = getSession(viewerToken);
+  assert.ok(viewerSession, 'Phiên của Viewer phải hoạt động hợp lệ');
+  assert.strictEqual(viewerSession.role_name, 'viewer');
 });
 
 test('T-04 & T-05: Đăng ký tài khoản mới và kiểm tra không cho trùng email', () => {
