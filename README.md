@@ -95,6 +95,20 @@ Hệ thống đã nạp sẵn 2 tài khoản mẫu phục vụ kiểm thử nhan
 
 ---
 
+## 🔗 Kịch Bản Kiểm Thử: Khai Quan Hệ Phụ Thuộc Đủ 4 Loại & Độ Trễ Thi Công
+
+> **User Story:** *Là ban quản lý dự án, tôi muốn khai việc nào phải chờ việc nào theo đúng loại quan hệ thực tế để hệ thống tính được tiến độ.*
+
+| Tiêu chí | Mô tả tiêu chí chấp nhận | Thao tác kiểm thử | Kết quả mong đợi |
+| :--- | :--- | :--- | :--- |
+| **TC 6** | **Lưu được đầy đủ 4 loại FS, SS, FF, SF** | Chọn 4 cặp công việc và gán lần lượt 4 loại quan hệ: `FS` (Kết thúc - Khởi đầu), `SS` (Khởi đầu - Khởi đầu), `FF` (Kết thúc - Kết thúc), `SF` (Khởi đầu - Kết thúc) | Cả 4 loại được lưu thành công vào CSDL/bộ nhớ với đúng mã chuẩn `FS`, `SS`, `FF`, `SF`. |
+| **TC 7** | **Độ trễ dương, bằng 0 hoặc âm** | Khai báo quan hệ với độ trễ: dương `+2 ngày`, bằng `0 ngày`, và âm `-1 ngày` (Lead time) | Hệ thống lưu chính xác giá trị số nguyên: `2`, `0`, `-1`. Giao diện hiển thị badge màu tương ứng: Cam (`+2d`), Xám (`0d`), Xanh cyan (`-1d`). |
+| **TC 8** | **Không cho một công việc phụ thuộc chính nó** | Chọn Công việc trước và Công việc sau trùng nhau (ví dụ: việc 5 và việc 5) | Hệ thống chặn ngay lập tức, trả mã `HTTP 400 Bad Request`, giao diện báo lỗi đỏ: *"Không cho một công việc phụ thuộc chính nó"*. |
+| **TC 9** | **Không cho trùng cặp công việc trước và sau** | Cố gắng tạo quan hệ giữa cặp công việc A và B khi đã có quan hệ A -> B trước đó | Hệ thống chặn trùng lặp, trả mã `HTTP 400 Bad Request`: *"Không cho trùng cặp công việc trước và công việc sau. Cặp quan hệ này đã tồn tại"*. |
+| **TC 10** | **Loại quan hệ lưu bằng mã cố định, không lưu chuỗi tiếng Việt** | Gửi loại quan hệ chuỗi tiếng Việt `"Kết thúc – Khởi đầu"` hoặc mã tùy tiện `"INVALID"` | Hệ thống từ chối lưu, trả mã `HTTP 400 Bad Request`: *"Chỉ chấp nhận mã cố định: FS, SS, FF, SF"*. Giá trị lưu trữ hoàn toàn là mã chuẩn viết hoa. |
+
+---
+
 ## 📋 Danh Sách 6 Vai Trò Thi Công Đã Seed (SCRUM-29 / T-04)
 
 1. **`admin`**: Quản trị viên hệ thống - Toàn quyền cấu hình hệ thống, phân quyền người dùng và duyệt dữ liệu.

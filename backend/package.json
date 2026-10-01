@@ -4,8 +4,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "lint": "node -c server.js wbs_routes.js",
-    "test": "echo \"All automated tests passed\" && exit 0"
+    "lint": "node -c server.js wbs_routes.js src/models/dependencyManager.js",
+    "test": "node --test"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -3,6 +3,7 @@ require('dotenv').config();
 const { SEED_ROLES, findUserByEmail } = require('./src/models/store');
 
 let pool = null;
+let isDbConnected = false;
 
 try {
   pool = mysql.createPool({
@@ -10,10 +11,11 @@ try {
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || 'secret',
     database: process.env.DB_NAME || 'quanly_thicong',
-  charset: "utf8mb4",
+    charset: "utf8mb4",
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    connectTimeout: 800
   }).promise();
 } catch (err) {
   console.warn('[DB] Không thể tạo MySQL pool, sẽ sử dụng in-memory store:', err.message);
@@ -21,8 +23,20 @@ try {
 
 // Hàm khởi tạo bảng và seed 6 vai trò khi kết nối MySQL thành công (SCRUM-29 / T-04)
 async function initDbSchema() {
-  if (!pool) return;
+  if (!pool) {
+    isDbConnected = false;
+    return;
+  }
   try {
+    // Kiểm tra kết nối nhanh với 800ms timeout
+    await Promise.race([
+      pool.query('SELECT 1'),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('MySQL connection timeout')), 800))
+    ]);
+
+    isDbConnected = true;
+    console.log('[DB] Kết nối CSDL MySQL container thành công!');
+
     // 1. Tạo bảng roles
     await pool.query(`
       CREATE TABLE IF NOT EXISTS roles (
@@ -97,12 +111,65 @@ async function initDbSchema() {
       }
     }
     console.log(`[DB] Đã đồng bộ ${inMemoryUsers.length} tài khoản người dùng sẵn sàng.`);
+
+    // 3. Tạo bảng projects (Quản lý dự án thi công)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        code VARCHAR(50) NOT NULL UNIQUE,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // 4. Tạo bảng work_items (Cây cơ cấu công việc WBS - tự tham chiếu parent_id)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS work_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        parent_id INT NULL,
+        name VARCHAR(255) NOT NULL,
+        code VARCHAR(50) NULL,
+        unit VARCHAR(50) NULL,
+        quantity DECIMAL(12,2) DEFAULT 0,
+        status ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (parent_id) REFERENCES work_items(id) ON DELETE RESTRICT
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // 5. Tạo bảng work_item_dependencies (Khai báo quan hệ phụ thuộc 4 loại và độ trễ)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS work_item_dependencies (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        predecessor_id INT NOT NULL,
+        successor_id INT NOT NULL,
+        dependency_type ENUM('FS', 'SS', 'FF', 'SF') NOT NULL DEFAULT 'FS',
+        lag INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (predecessor_id) REFERENCES work_items(id) ON DELETE CASCADE,
+        FOREIGN KEY (successor_id) REFERENCES work_items(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_predecessor_successor (predecessor_id, successor_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+    console.log('[DB] Đã khởi tạo schema WBS và quan hệ phụ thuộc thành công!');
   } catch (err) {
-    console.warn('[DB] Lưu ý khi tạo schema MySQL:', err.message);
+    isDbConnected = false;
+    console.log('[DB] Không có kết nối MySQL (' + err.message + '). Chuyển sang chế độ Standalone In-Memory phản hồi tức thì.');
   }
 }
 
 module.exports = {
-  pool,
+  get pool() {
+    return isDbConnected ? pool : null;
+  },
+  get isDbConnected() {
+    return isDbConnected;
+  },
   initDbSchema
 };
