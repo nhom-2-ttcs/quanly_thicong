@@ -1153,11 +1153,33 @@
     }
 
     async function saveDependency() {
+      const submitBtn = document.getElementById('btn-submit-dep');
+      const alertBox = document.getElementById('dep-validation-alert');
+      alertBox.style.display = 'none';
+
       const editId = document.getElementById('modal-dep-id').value;
       const predId = parseInt(document.getElementById('select-predecessor').value, 10);
       const succId = parseInt(document.getElementById('select-successor').value, 10);
       const type = document.getElementById('select-type').value;
       const lag = parseInt(document.getElementById('input-lag').value, 10) || 0;
+
+      // Tiêu chí: Không cho phụ thuộc chính nó
+      if (predId === succId) {
+        alertBox.innerText = '❌ Tiêu chí chấp nhận: Không cho một công việc phụ thuộc chính nó!';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      // Tiêu chí: Không cho trùng cặp
+      const isDuplicate = dependenciesList.some(d => {
+        if (editId && Number(d.id) === Number(editId)) return false;
+        return Number(d.predecessor_id) === predId && Number(d.successor_id) === succId;
+      });
+      if (isDuplicate) {
+        alertBox.innerText = '⚠️ Tiêu chí chấp nhận: Không cho trùng cặp công việc trước và công việc sau. Cặp quan hệ này đã tồn tại trong hệ thống!';
+        alertBox.style.display = 'block';
+        return;
+      }
 
       const payload = {
         project_id: 1,
@@ -1167,25 +1189,36 @@
         lag: lag
       };
 
+      // Đặt trạng thái đang lưu và khóa nút để chống click đúp
+      submitBtn.disabled = true;
+      submitBtn.innerText = '⏳ Đang lưu...';
+
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+
         let res;
         if (editId) {
           res = await fetch(`/api/dependencies/${editId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            signal: controller.signal
           });
         } else {
           res = await fetch('/api/dependencies', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            signal: controller.signal
           });
         }
+        clearTimeout(timeoutId);
 
         const data = await res.json();
         if (!res.ok || !data.success) {
-          alert('Lỗi: ' + (data.message || 'Không thể lưu quan hệ phụ thuộc'));
+          alertBox.innerText = '❌ ' + (data.message || 'Không thể lưu quan hệ phụ thuộc');
+          alertBox.style.display = 'block';
           return;
         }
 
@@ -1218,6 +1251,9 @@
         updateBadges();
         renderTree();
         renderFlow();
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Lưu Quan Hệ Phụ Thuộc';
       }
     }
 

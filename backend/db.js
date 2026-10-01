@@ -3,6 +3,7 @@ require('dotenv').config();
 const { SEED_ROLES, findUserByEmail } = require('./src/models/store');
 
 let pool = null;
+let isDbConnected = false;
 
 try {
   pool = mysql.createPool({
@@ -10,10 +11,11 @@ try {
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || 'secret',
     database: process.env.DB_NAME || 'quanly_thicong',
-  charset: "utf8mb4",
+    charset: "utf8mb4",
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    connectTimeout: 800
   }).promise();
 } catch (err) {
   console.warn('[DB] Không thể tạo MySQL pool, sẽ sử dụng in-memory store:', err.message);
@@ -21,8 +23,20 @@ try {
 
 // Hàm khởi tạo bảng và seed 6 vai trò khi kết nối MySQL thành công (SCRUM-29 / T-04)
 async function initDbSchema() {
-  if (!pool) return;
+  if (!pool) {
+    isDbConnected = false;
+    return;
+  }
   try {
+    // Kiểm tra kết nối nhanh với 800ms timeout
+    await Promise.race([
+      pool.query('SELECT 1'),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('MySQL connection timeout')), 800))
+    ]);
+
+    isDbConnected = true;
+    console.log('[DB] Kết nối CSDL MySQL container thành công!');
+
     // 1. Tạo bảng roles
     await pool.query(`
       CREATE TABLE IF NOT EXISTS roles (
@@ -145,11 +159,17 @@ async function initDbSchema() {
     `);
     console.log('[DB] Đã khởi tạo schema WBS và quan hệ phụ thuộc thành công!');
   } catch (err) {
-    console.warn('[DB] Lưu ý khi tạo schema MySQL:', err.message);
+    isDbConnected = false;
+    console.log('[DB] Không có kết nối MySQL (' + err.message + '). Chuyển sang chế độ Standalone In-Memory phản hồi tức thì.');
   }
 }
 
 module.exports = {
-  pool,
+  get pool() {
+    return isDbConnected ? pool : null;
+  },
+  get isDbConnected() {
+    return isDbConnected;
+  },
   initDbSchema
 };

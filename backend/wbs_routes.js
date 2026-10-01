@@ -25,13 +25,20 @@ let inMemoryWorkItems = [
 ];
 
 module.exports = (db) => {
-  const pool = db ? (db.pool || db) : null;
+  // Lấy pool an toàn: nếu MySQL không kết nối được thì trả về null ngay lập tức (không timeout DNS 20s)
+  const getPool = () => {
+    if (!db) return null;
+    if (db.isDbConnected === false) return null;
+    if (typeof db.pool !== 'undefined') return db.pool;
+    return null;
+  };
 
   // Hàm đệ quy kiểm tra targetParentId có phải con/cháu của itemId không
   async function isDescendant(itemId, targetParentId) {
     if (!targetParentId) return false;
     if (parseInt(itemId, 10) === parseInt(targetParentId, 10)) return true;
 
+    const pool = getPool();
     if (pool) {
       try {
         let currentParent = targetParentId;
@@ -66,6 +73,7 @@ module.exports = (db) => {
   // 1. Lấy danh sách hạng mục theo dự án
   router.get('/projects/:projectId/work-items', async (req, res) => {
     const projectId = parseInt(req.params.projectId, 10) || 1;
+    const pool = getPool();
     if (pool) {
       try {
         const [rows] = await pool.query(
@@ -91,6 +99,7 @@ module.exports = (db) => {
     }
     const projId = parseInt(project_id, 10);
     const pId = parent_id ? parseInt(parent_id, 10) : null;
+    const pool = getPool();
 
     if (pool) {
       try {
@@ -121,7 +130,7 @@ module.exports = (db) => {
     res.json({ success: true, id: newId, message: 'Thêm hạng mục thành công' });
   });
 
-  // 3. Cập nhật hạng mục (Chặn vòng lặp đệ quy T-10)
+  // 3. Cập nhật hạng mục (Chặn vòng lặp đệ quy)
   router.put('/work-items/:id', async (req, res) => {
     const { name, code, unit, quantity, status, parent_id } = req.body;
     const itemId = req.params.id;
@@ -131,7 +140,7 @@ module.exports = (db) => {
         if (parseInt(itemId, 10) === parseInt(parent_id, 10)) {
           return res.status(400).json({ 
             success: false, 
-            message: 'Lỗi quy tắc cây (T-10): Không thể đặt hạng mục làm con của chính nó!' 
+            message: 'Lỗi quy tắc cây: Không thể đặt hạng mục làm con của chính nó!' 
           });
         }
 
@@ -139,11 +148,12 @@ module.exports = (db) => {
         if (isLoop) {
           return res.status(400).json({ 
             success: false, 
-            message: 'Lỗi quy tắc cây (T-10): Không thể chuyển hạng mục làm con của chính nhánh con/cháu của nó (Tránh lặp vô tận)!' 
+            message: 'Lỗi quy tắc cây: Không thể chuyển hạng mục làm con của chính nhánh con/cháu của nó (Tránh lặp vô tận)!' 
           });
         }
       }
 
+      const pool = getPool();
       if (pool) {
         try {
           await pool.query(
@@ -180,17 +190,18 @@ module.exports = (db) => {
     }
   });
 
-  // 4. Xóa hạng mục (Chặn xóa khi có con T-10 & Tự động xóa quan hệ liên quan)
+  // 4. Xóa hạng mục
   router.delete('/work-items/:id', async (req, res) => {
     const itemId = parseInt(req.params.id, 10);
     try {
+      const pool = getPool();
       if (pool) {
         try {
           const [children] = await pool.query('SELECT id FROM work_items WHERE parent_id = ?', [itemId]);
           if (children && children.length > 0) {
             return res.status(400).json({ 
               success: false, 
-              message: `Lỗi ràng buộc (T-10): Không thể xoá vì hạng mục này đang có hạng mục con!` 
+              message: `Lỗi ràng buộc: Không thể xoá vì hạng mục này đang có hạng mục con!` 
             });
           }
 
@@ -211,7 +222,7 @@ module.exports = (db) => {
       if (hasChildren) {
         return res.status(400).json({ 
           success: false, 
-          message: `Lỗi ràng buộc (T-10): Không thể xoá vì hạng mục này đang có hạng mục con!` 
+          message: `Lỗi ràng buộc: Không thể xoá vì hạng mục này đang có hạng mục con!` 
         });
       }
 
@@ -244,6 +255,7 @@ module.exports = (db) => {
   // 2. Lấy danh sách toàn bộ quan hệ phụ thuộc theo dự án
   router.get('/projects/:projectId/dependencies', async (req, res) => {
     const projectId = parseInt(req.params.projectId, 10) || 1;
+    const pool = getPool();
 
     if (pool) {
       try {
@@ -299,6 +311,7 @@ module.exports = (db) => {
   router.post('/dependencies', async (req, res) => {
     const { project_id, predecessor_id, successor_id, dependency_type, lag } = req.body;
     const projId = parseInt(project_id, 10) || 1;
+    const pool = getPool();
 
     let existingDeps = [];
     if (pool) {
@@ -384,6 +397,7 @@ module.exports = (db) => {
   router.put('/dependencies/:id', async (req, res) => {
     const id = parseInt(req.params.id, 10);
     const { dependency_type, lag, predecessor_id, successor_id } = req.body;
+    const pool = getPool();
 
     let existingDeps = [];
     let currentRecord = null;
@@ -463,6 +477,7 @@ module.exports = (db) => {
   // 5. Xóa quan hệ phụ thuộc
   router.delete('/dependencies/:id', async (req, res) => {
     const id = parseInt(req.params.id, 10);
+    const pool = getPool();
     if (pool) {
       try {
         await pool.query('DELETE FROM work_item_dependencies WHERE id = ?', [id]);
