@@ -158,6 +158,31 @@
     .tab-btn:not(.active) .tab-badge {
       background: var(--brand-blue-soft); color: var(--brand-blue); border: 1px solid #bfdbfe;
     }
+    .tab-icon-wbs-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(203, 213, 225, 0.8);
+      flex-shrink: 0;
+      padding: 2px;
+      transition: all 0.2s ease;
+    }
+    .tab-btn.active .tab-icon-wbs-container {
+      background: #ffffff;
+      border-color: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+    .tab-icon-wbs {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
 
     .tab-pane { display: none; flex-direction: column; gap: 20px; }
     .tab-pane.active { display: flex; }
@@ -501,7 +526,10 @@
         <span class="tab-badge" id="dep-count-badge">5</span>
       </button>
       <button class="tab-btn" onclick="switchTab('tab-wbs')">
-        🌳 Cây Cơ Cấu Công Việc (WBS)
+        <span class="tab-icon-wbs-container">
+          <img src="/assets/wbs-icon.png" alt="WBS" class="tab-icon-wbs">
+        </span>
+        Cây Cơ Cấu Công Việc (WBS)
         <span class="tab-badge" id="wbs-count-badge">8</span>
       </button>
       <button class="tab-btn" onclick="switchTab('tab-flow')">
