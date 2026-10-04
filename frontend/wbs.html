@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cơ Cấu Công Việc (WBS) | Hệ Thống Quản Trị Thi Công</title>
+  <title>Cơ Cấu WBS & Quan Hệ Phụ Thuộc | Hệ Thống Quản Trị Thi Công</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
@@ -28,6 +28,15 @@
       --danger: #dc2626;
       --danger-bg: #fee2e2;
       --danger-border: #f87171;
+      --success: #059669;
+      --success-bg: #ecfdf5;
+      --success-border: #a7f3d0;
+      --purple: #7c3aed;
+      --purple-bg: #f5f3ff;
+      --purple-border: #c4b5fd;
+      --orange: #ea580c;
+      --orange-bg: #fff7ed;
+      --orange-border: #fdba74;
       --shadow-container: 0 4px 16px -2px rgba(15, 23, 42, 0.08);
       --shadow-node: 0 1px 3px rgba(15, 23, 42, 0.06);
     }
@@ -71,17 +80,17 @@
     .btn-logout:hover { background: #fecaca; }
 
     /* === KHU VỰC THÂN TRANG === */
-    .main-content { max-width: 1240px; width: 100%; margin: 0 auto; padding: 28px 24px 48px; display: flex; flex-direction: column; gap: 20px; }
+    .main-content { max-width: 1280px; width: 100%; margin: 0 auto; padding: 24px 24px 48px; display: flex; flex-direction: column; gap: 20px; }
 
     /* === BANNER CÔNG TRÌNH XÂY DỰNG ĐỒNG BỘ 100% === */
     .wbs-hero-banner {
       position: relative;
-      background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 58, 138, 0.8) 100%),
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.90) 0%, rgba(30, 58, 138, 0.82) 100%),
                   url('https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=2070&auto=format&fit=crop') center/cover no-repeat;
       border: 2px solid var(--border-outer);
       border-left: 6px solid #38bdf8;
       border-radius: 16px;
-      padding: 26px 32px;
+      padding: 24px 30px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -93,7 +102,7 @@
     }
 
     .wbs-title-box h2 {
-      font-size: 24px;
+      font-size: 23px;
       font-weight: 800;
       letter-spacing: -0.3px;
       color: #ffffff;
@@ -101,7 +110,7 @@
       text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     }
     .wbs-title-box p {
-      font-size: 14px;
+      font-size: 13.5px;
       color: #e2e8f0;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
@@ -112,41 +121,219 @@
       background: rgba(255, 255, 255, 0.15); color: #ffffff;
       border: 1.5px solid rgba(255, 255, 255, 0.4);
       backdrop-filter: blur(8px);
-      padding: 10px 18px; border-radius: 9px; font-size: 13.5px; font-weight: 800; cursor: pointer;
+      padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer;
       transition: all 0.2s;
     }
     .btn-add-project:hover { background: rgba(255, 255, 255, 0.25); border-color: #ffffff; }
 
-    .btn-add-root {
+    .btn-primary-action {
       display: inline-flex; align-items: center; gap: 8px;
       background: var(--brand-blue); color: #ffffff; border: 1.5px solid #38bdf8;
-      padding: 10px 20px; border-radius: 9px; font-size: 13.5px; font-weight: 700; cursor: pointer;
+      padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;
       box-shadow: 0 4px 14px rgba(29, 78, 216, 0.35); transition: all 0.2s;
     }
-    .btn-add-root:hover { background: var(--brand-blue-hover); transform: translateY(-1px); }
+    .btn-primary-action:hover { background: var(--brand-blue-hover); transform: translateY(-1px); }
 
-    /* Thanh thông tin chỉ số WBS */
-    .info-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    /* === THANH ĐIỀU HƯỚNG TAB CHUYÊN NGHIỆP === */
+    .tabs-nav {
+      display: flex; gap: 8px; background: #ffffff;
+      padding: 6px; border-radius: 12px; border: 2px solid var(--border-card);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+    }
+    .tab-btn {
+      flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 11px 18px; border-radius: 8px; border: none; background: transparent;
+      font-size: 13.5px; font-weight: 700; color: var(--text-muted); cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .tab-btn:hover { background: #f8fafc; color: var(--text-title); }
+    .tab-btn.active {
+      background: var(--brand-blue); color: #ffffff; font-weight: 800;
+      box-shadow: 0 3px 10px rgba(29, 78, 216, 0.25);
+    }
+    .tab-badge {
+      font-size: 11px; padding: 2px 8px; border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.25); color: #ffffff; font-weight: 800;
+    }
+    .tab-btn:not(.active) .tab-badge {
+      background: var(--brand-blue-soft); color: var(--brand-blue); border: 1px solid #bfdbfe;
+    }
+    .tab-icon-wbs-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(203, 213, 225, 0.8);
+      flex-shrink: 0;
+      padding: 2px;
+      transition: all 0.2s ease;
+    }
+    .tab-btn.active .tab-icon-wbs-container {
+      background: #ffffff;
+      border-color: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+    .tab-icon-wbs {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .tab-pane { display: none; flex-direction: column; gap: 20px; }
+    .tab-pane.active { display: flex; }
+
+    /* Thanh thông số vận hành */
+    .info-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .info-pill {
       background: #ffffff; border: 1.5px solid var(--border-card);
-      padding: 7px 16px; border-radius: 9999px; font-size: 12.5px; color: var(--text-body);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      padding: 6px 14px; border-radius: 9999px; font-size: 12px; color: var(--text-body);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03); display: flex; align-items: center; gap: 6px;
     }
     .info-pill strong { color: var(--text-title); font-weight: 800; }
     .info-pill.badge-count { border-color: #93c5fd; background: #f0f7ff; }
     .info-pill.badge-count strong { color: var(--brand-blue); }
 
-    /* Khung Cây WBS Viền Đanh Thép */
+    /* === S-06 USER STORY & 4 LOẠI QUAN HỆ CARDS === */
+    .s06-hero-card {
+      background: #ffffff; border: 2px solid var(--border-outer);
+      border-radius: 14px; padding: 20px 24px; box-shadow: var(--shadow-container);
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .s06-header {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    }
+    .s06-tag {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+      background: var(--brand-blue-soft); border: 1.5px solid #93c5fd;
+      color: var(--brand-blue); font-size: 11.5px; font-weight: 800; border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .s06-story-box {
+      background: #f8fafc; border: 1.5px solid var(--border-card);
+      border-left: 4px solid var(--brand-blue); border-radius: 8px; padding: 12px 18px;
+    }
+    .s06-story-title { font-size: 12px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 3px; }
+    .s06-story-text { font-size: 13.5px; font-weight: 600; color: var(--text-title); font-style: italic; }
+
+    /* Grid 4 loại quan hệ */
+    .type-cards-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    }
+    .type-card {
+      background: #ffffff; border: 1.5px solid var(--border-card);
+      border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 6px;
+      transition: all 0.2s;
+    }
+    .type-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08); }
+    .type-card-head { display: flex; align-items: center; justify-content: space-between; }
+    .type-code {
+      font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 800;
+      padding: 3px 8px; border-radius: 6px;
+    }
+    .type-card.type-fs { border-top: 3px solid var(--brand-blue); }
+    .type-card.type-fs .type-code { background: var(--brand-blue-soft); color: var(--brand-blue); border: 1px solid #bfdbfe; }
+    .type-card.type-ss { border-top: 3px solid var(--success); }
+    .type-card.type-ss .type-code { background: var(--success-bg); color: var(--success); border: 1px solid #a7f3d0; }
+    .type-card.type-ff { border-top: 3px solid var(--purple); }
+    .type-card.type-ff .type-code { background: var(--purple-bg); color: var(--purple); border: 1px solid #ddd6fe; }
+    .type-card.type-sf { border-top: 3px solid var(--orange); }
+    .type-card.type-sf .type-code { background: var(--orange-bg); color: var(--orange); border: 1px solid #fed7aa; }
+
+    .type-vn-title { font-size: 13px; font-weight: 800; color: var(--text-title); }
+    .type-desc { font-size: 11.5px; color: var(--text-muted); line-height: 1.4; }
+
+    /* === BẢNG QUẢN LÝ QUAN HỆ PHỤ THUỘC (TABLE) === */
+    .dep-table-container {
+      background: var(--card-bg); border: 2px solid var(--border-outer);
+      border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-container);
+    }
+    .table-toolbar {
+      padding: 16px 22px; background: #fafcff; border-bottom: 2px solid var(--border-card);
+      display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    }
+    .toolbar-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .toolbar-search {
+      padding: 8px 14px; border: 1.5px solid var(--border-card); border-radius: 8px;
+      font-size: 13px; outline: none; width: 240px; background: #ffffff;
+    }
+    .toolbar-search:focus { border-color: var(--brand-blue); }
+    .filter-select {
+      padding: 8px 12px; border: 1.5px solid var(--border-card); border-radius: 8px;
+      font-size: 13px; background: #ffffff; outline: none; font-weight: 600;
+    }
+
+    table.dep-table { width: 100%; border-collapse: collapse; text-align: left; }
+    table.dep-table th {
+      background: #f8fafc; color: var(--text-muted); font-size: 11.5px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.6px; padding: 12px 18px;
+      border-bottom: 2px solid var(--border-card);
+    }
+    table.dep-table td {
+      padding: 13px 18px; border-bottom: 1.5px solid var(--border-card);
+      font-size: 13px; vertical-align: middle;
+    }
+    table.dep-table tr:hover td { background: #f8fafc; }
+    table.dep-table tr:last-child td { border-bottom: none; }
+
+    /* Huy hiệu loại quan hệ mã cố định FS, SS, FF, SF */
+    .badge-type {
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 800;
+      padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .badge-type.FS { background: var(--brand-blue-soft); color: var(--brand-blue); border: 1.5px solid #93c5fd; }
+    .badge-type.SS { background: var(--success-bg); color: var(--success); border: 1.5px solid var(--success-border); }
+    .badge-type.FF { background: var(--purple-bg); color: var(--purple); border: 1.5px solid var(--purple-border); }
+    .badge-type.SF { background: var(--orange-bg); color: var(--orange); border: 1.5px solid var(--orange-border); }
+
+    /* Huy hiệu độ trễ Lag / Lead */
+    .badge-lag {
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
+      padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .badge-lag.positive { background: var(--amber-bg); color: var(--amber-text); border: 1.5px solid var(--amber-border); }
+    .badge-lag.zero { background: #f1f5f9; color: var(--text-muted); border: 1.5px solid var(--border-card); }
+    .badge-lag.negative { background: #ecfeff; color: #0891b2; border: 1.5px solid #67e8f9; }
+
+    .node-pill {
+      display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text-title);
+    }
+    .code-tag {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800;
+      padding: 2px 6px; background: #e2e8f0; border-radius: 4px; color: var(--text-body);
+    }
+
+    .dep-logic-text {
+      font-size: 12px; color: var(--text-muted); line-height: 1.4;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .dep-logic-text svg { width: 14px; height: 14px; stroke: var(--brand-blue); flex-shrink: 0; }
+
+    /* Thao tác action buttons */
+    .action-btns-group { display: flex; align-items: center; gap: 6px; }
+    .btn-table-action {
+      padding: 6px 10px; border-radius: 6px; border: 1.5px solid var(--border-card);
+      background: #ffffff; font-size: 12px; font-weight: 700; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s;
+    }
+    .btn-table-action:hover { border-color: var(--brand-blue); color: var(--brand-blue); background: var(--brand-blue-soft); }
+    .btn-table-action.delete:hover { border-color: var(--danger-border); color: var(--danger); background: var(--danger-bg); }
+
+    /* === KHUNG CÂY WBS (TAB 1) === */
     .wbs-card {
       background: var(--card-bg); border: 2px solid var(--border-outer);
-      border-radius: 16px; padding: 26px 30px; box-shadow: var(--shadow-container); min-height: 420px;
+      border-radius: 16px; padding: 24px 28px; box-shadow: var(--shadow-container); min-height: 420px;
     }
-    .tree-root { display: flex; flex-direction: column; gap: 12px; }
+    .tree-root { display: flex; flex-direction: column; gap: 10px; }
     .tree-node-wrap { display: flex; flex-direction: column; position: relative; }
 
     .tree-node-row {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 11px 18px; background: #ffffff; border: 1.5px solid var(--border-card);
+      padding: 10px 16px; background: #ffffff; border: 1.5px solid var(--border-card);
       border-radius: 10px; transition: all 0.2s; position: relative; box-shadow: var(--shadow-node);
     }
     .tree-node-row:hover { border-color: var(--brand-blue); background: var(--card-hover); transform: translateY(-1px); }
@@ -154,7 +341,7 @@
     .level-0 > .tree-node-row { border-left: 4px solid var(--brand-blue); background: #fafcff; }
     .level-1 > .tree-node-row { border-left: 3px solid #38bdf8; }
 
-    .tree-node-left { display: flex; align-items: center; gap: 14px; flex: 1; }
+    .tree-node-left { display: flex; align-items: center; gap: 12px; flex: 1; }
     .btn-toggle-caret {
       width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
       background: #f1f5f9; border: 1px solid var(--border-card); color: var(--text-body);
@@ -164,59 +351,135 @@
     .btn-toggle-caret svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.4; }
 
     .wbs-code-badge {
-      font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 800;
-      padding: 4px 10px; background: var(--amber-bg); border: 1.5px solid var(--amber-border);
+      font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 800;
+      padding: 3px 8px; background: var(--amber-bg); border: 1.5px solid var(--amber-border);
       color: var(--amber-text); border-radius: 6px;
     }
-    .wbs-node-name { font-size: 14px; font-weight: 700; color: var(--text-title); }
-    .level-0 .wbs-node-name { font-size: 14.5px; font-weight: 800; }
+    .wbs-node-name { font-size: 13.5px; font-weight: 700; color: var(--text-title); }
+    .level-0 .wbs-node-name { font-size: 14px; font-weight: 800; }
 
-    .tree-actions { display: flex; align-items: center; gap: 8px; }
+    .wbs-dep-tag {
+      font-size: 11px; padding: 2px 8px; border-radius: 9999px;
+      background: var(--brand-blue-soft); border: 1px solid #bfdbfe; color: var(--brand-blue);
+      font-weight: 700; cursor: pointer;
+    }
+    .wbs-dep-tag:hover { background: #dbeafe; }
+
+    .tree-actions { display: flex; align-items: center; gap: 6px; }
     .btn-action-icon {
-      width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid var(--border-card);
+      width: 30px; height: 30px; border-radius: 7px; border: 1.5px solid var(--border-card);
       background: #ffffff; color: var(--text-body); display: inline-flex; align-items: center; justify-content: center;
       cursor: pointer; transition: all 0.2s;
     }
     .btn-action-icon:hover { border-color: var(--brand-blue); color: var(--brand-blue); background: var(--brand-blue-soft); }
     .btn-action-icon.btn-delete:hover { border-color: var(--danger-border); color: var(--danger); background: var(--danger-bg); }
-    .btn-action-icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+    .btn-action-icon svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; }
 
-    /* Đường nối nhánh cây rõ ràng */
-    .tree-children { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; padding-left: 32px; position: relative; }
-    .tree-children::before { content: ''; position: absolute; left: 14px; top: 0; bottom: 16px; width: 2px; background: var(--tree-line); }
-    .tree-node-wrap::before { content: ''; position: absolute; left: -18px; top: 24px; width: 18px; height: 2px; background: var(--tree-line); }
+    .tree-children { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; padding-left: 28px; position: relative; }
+    .tree-children::before { content: ''; position: absolute; left: 12px; top: 0; bottom: 14px; width: 2px; background: var(--tree-line); }
+    .tree-node-wrap::before { content: ''; position: absolute; left: -16px; top: 22px; width: 16px; height: 2px; background: var(--tree-line); }
     .tree-root > .tree-node-wrap::before { display: none; }
 
-    /* Modal Form Doanh Nghiệp */
+    /* === SƠ ĐỒ LUỒNG TIẾN ĐỘ GRAPH (TAB 3) === */
+    .flow-card {
+      background: var(--card-bg); border: 2px solid var(--border-outer);
+      border-radius: 14px; padding: 24px; box-shadow: var(--shadow-container);
+    }
+    .flow-grid { display: flex; flex-direction: column; gap: 12px; }
+    .flow-item {
+      display: flex; align-items: center; gap: 14px; padding: 14px 18px;
+      background: #f8fafc; border: 1.5px solid var(--border-card); border-radius: 10px;
+    }
+    .flow-node-box {
+      padding: 8px 14px; background: #ffffff; border: 1.5px solid var(--border-card);
+      border-radius: 8px; font-weight: 700; font-size: 13px; color: var(--text-title);
+      min-width: 200px;
+    }
+    .flow-connector {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      flex: 1; position: relative;
+    }
+    .flow-line {
+      width: 100%; height: 2px; background: var(--brand-blue); position: relative;
+    }
+    .flow-line::after {
+      content: ''; position: absolute; right: -4px; top: -4px;
+      width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+      border-left: 8px solid var(--brand-blue);
+    }
+    .flow-meta-pill {
+      font-size: 11px; font-weight: 800; font-family: 'JetBrains Mono', monospace;
+      padding: 2px 8px; border-radius: 9999px; background: #ffffff; border: 1px solid var(--brand-blue);
+      color: var(--brand-blue);
+    }
+
+    /* === MODAL DIALOGS === */
     .modal-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55);
+      display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6);
       backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; padding: 20px;
     }
     .modal-box {
-      width: 100%; max-width: 460px; background: #ffffff;
+      width: 100%; max-width: 520px; background: #ffffff;
       border-radius: 16px; border: 2px solid var(--border-outer);
-      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.3); overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35); overflow: hidden;
     }
-    .modal-header { padding: 18px 24px; border-bottom: 2px solid var(--border-card); background: #f8fafc; display: flex; align-items: center; justify-content: space-between; }
+    .modal-header {
+      padding: 18px 24px; border-bottom: 2px solid var(--border-card); background: #fafcff;
+      display: flex; align-items: center; justify-content: space-between;
+    }
     .modal-header h3 { font-size: 16.5px; font-weight: 800; color: var(--text-title); }
-    .btn-close-modal { background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; }
-    .modal-body { padding: 22px 24px; display: flex; flex-direction: column; gap: 15px; }
+    .btn-close-modal { background: none; border: none; font-size: 22px; color: var(--text-muted); cursor: pointer; }
+    .modal-body { padding: 22px 24px; display: flex; flex-direction: column; gap: 16px; }
+
     .form-group label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-title); margin-bottom: 6px; }
-    .form-group input {
+    .form-group input, .form-group select {
       width: 100%; padding: 10px 14px; background: #f8fafc;
       border: 1.5px solid var(--border-card); border-radius: 8px;
-      font-size: 13.5px; color: var(--text-title); outline: none;
+      font-size: 13.5px; color: var(--text-title); outline: none; font-weight: 500;
     }
-    .form-group input:focus { border-color: var(--brand-blue); background: #ffffff; }
-    .modal-footer { padding: 16px 24px; border-top: 2px solid var(--border-card); background: #f8fafc; display: flex; justify-content: flex-end; gap: 10px; }
-    .btn-secondary { padding: 9px 18px; background: #ffffff; border: 1.5px solid var(--border-card); border-radius: 8px; font-weight: 700; cursor: pointer; }
-    .btn-save { padding: 9px 20px; background: var(--brand-blue); border: none; border-radius: 8px; color: #fff; font-weight: 700; cursor: pointer; }
+    .form-group input:focus, .form-group select:focus { border-color: var(--brand-blue); background: #ffffff; }
+
+    .live-preview-box {
+      background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; padding: 12px 16px;
+      font-size: 12.5px; color: var(--text-title); line-height: 1.5;
+    }
+    .live-preview-box strong { color: var(--brand-blue); }
+
+    .validation-alert {
+      display: none; padding: 10px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 700;
+      background: var(--danger-bg); border: 1.5px solid var(--danger-border); color: var(--danger);
+    }
+
+    .modal-footer {
+      padding: 16px 24px; border-top: 2px solid var(--border-card); background: #fafcff;
+      display: flex; justify-content: flex-end; gap: 10px;
+    }
+    .btn-secondary {
+      padding: 9px 18px; background: #ffffff; border: 1.5px solid var(--border-card);
+      border-radius: 8px; font-weight: 700; cursor: pointer;
+    }
+    .btn-save {
+      padding: 9px 22px; background: var(--brand-blue); border: none;
+      border-radius: 8px; color: #fff; font-weight: 700; cursor: pointer;
+    }
     .btn-save:hover { background: var(--brand-blue-hover); }
+    .btn-save:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    @media (max-width: 900px) {
+      .type-cards-grid { grid-template-columns: 1fr 1fr; }
+      .topbar { padding: 0 16px; }
+      .table-toolbar { flex-direction: column; align-items: stretch; }
+      .toolbar-search { width: 100%; }
+    }
+    @media (max-width: 600px) {
+      .type-cards-grid { grid-template-columns: 1fr; }
+      .tabs-nav { flex-direction: column; }
+    }
   </style>
 </head>
 <body>
 
-  <!-- TOPBAR -->
+  <!-- TOPBAR DOANH NGHIỆP -->
   <header class="topbar">
     <div class="brand-group">
       <div class="brand-icon">
@@ -224,7 +487,7 @@
       </div>
       <div class="brand-info">
         <h1>Hệ Thống Điều Hành Thi Công</h1>
-        <span>PHÂN HỆ CẤU TRÚC CÔNG VIỆC (WBS)</span>
+        <span>PHÂN HỆ CẤU TRÚC WBS & TIẾN ĐỘ THI CÔNG</span>
       </div>
     </div>
 
@@ -243,40 +506,264 @@
     <!-- Hero Banner Nền Ảnh Xây Dựng Đồng Bộ -->
     <div class="wbs-hero-banner">
       <div class="wbs-title-box">
-        <h2>Cây Cơ Cấu Công Việc (WBS)</h2>
+        <h2>Cơ Cấu WBS & Quan Hệ Phụ Thuộc</h2>
         <p id="project-display-title">Dự án: Tòa nhà phức hợp Staging Center — Khởi công: 01/10/2026</p>
       </div>
       <div class="header-btns">
         <button class="btn-add-project" onclick="openProjectModal()">
           📁 Tạo Dự Án Mới
         </button>
-        <button class="btn-add-root" onclick="openAddModal(null)">
-          Thêm Hạng Mục Gốc
+        <button class="btn-primary-action" id="header-primary-btn" onclick="openDependencyModal()">
+          🔗 Khai Báo Quan Hệ Mới
         </button>
       </div>
     </div>
 
-    <!-- Thanh thông số vận hành -->
-    <div class="info-bar">
-      <div class="info-pill badge-count">
-        Tổng số hạng mục: <strong id="total-count">0</strong>
+    <!-- THANH ĐIỀU HƯỚNG TAB -->
+    <nav class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('tab-dependencies')">
+        🔗 Khai Báo Quan Hệ Phụ Thuộc
+        <span class="tab-badge" id="dep-count-badge">5</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-wbs')">
+        <span class="tab-icon-wbs-container">
+          <img src="/assets/wbs-icon.png" alt="WBS" class="tab-icon-wbs">
+        </span>
+        Cây Cơ Cấu Công Việc (WBS)
+        <span class="tab-badge" id="wbs-count-badge">8</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-flow')">
+        📊 Sơ Đồ Luồng Tiến Độ
+      </button>
+    </nav>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: KHAI BÁO QUAN HỆ PHỤ THUỘC ĐỦ BỐN LOẠI VÀ ĐỘ TRỄ -->
+    <!-- ========================================================================= -->
+    <div class="tab-pane active" id="tab-dependencies">
+      
+      <!-- Thẻ đặc tả & User Story -->
+      <div class="s06-hero-card">
+        <div class="s06-header">
+          <div>
+            <span class="s06-tag">QUẢN LÝ TIẾN ĐỘ THI CÔNG</span>
+            <h3 style="font-size: 18px; font-weight: 800; color: var(--text-title); margin-top: 6px;">
+              Khai Báo Quan Hệ Phụ Thuộc Đủ Bốn Loại Và Độ Trễ
+            </h3>
+          </div>
+          <button class="btn-primary-action" onclick="openDependencyModal()">
+            + Khai Báo Quan Hệ Mới
+          </button>
+        </div>
+
+        <div class="s06-story-box">
+          <div class="s06-story-title">User Story Ban Quản Lý Dự Án</div>
+          <div class="s06-story-text">
+            “Là ban quản lý dự án, tôi muốn khai việc nào phải chờ việc nào theo đúng loại quan hệ thực tế để hệ thống tính được tiến độ.”
+          </div>
+        </div>
+
+        <!-- 4 LOẠI QUAN HỆ CHUẨN QUỐC TẾ LƯU BẰNG MÃ CỐ ĐỊNH FS, SS, FF, SF -->
+        <div class="type-cards-grid">
+          <div class="type-card type-fs">
+            <div class="type-card-head">
+              <span class="type-code">FS</span>
+              <span style="font-size: 11px; font-weight: 700; color: var(--brand-blue);">Mặc định</span>
+            </div>
+            <div class="type-vn-title">Kết thúc – Khởi đầu</div>
+            <div class="type-desc">Finish-to-Start: Công việc sau chỉ được bắt đầu khi việc trước đã hoàn thành.</div>
+          </div>
+
+          <div class="type-card type-ss">
+            <div class="type-card-head">
+              <span class="type-code">SS</span>
+              <span style="font-size: 11px; font-weight: 700; color: var(--success);">Song hành</span>
+            </div>
+            <div class="type-vn-title">Khởi đầu – Khởi đầu</div>
+            <div class="type-desc">Start-to-Start: Công việc sau có thể bắt đầu khi công việc trước khởi động.</div>
+          </div>
+
+          <div class="type-card type-ff">
+            <div class="type-card-head">
+              <span class="type-code">FF</span>
+              <span style="font-size: 11px; font-weight: 700; color: var(--purple);">Cùng về đích</span>
+            </div>
+            <div class="type-vn-title">Kết thúc – Kết thúc</div>
+            <div class="type-desc">Finish-to-Finish: Công việc sau chỉ kết thúc khi việc trước đã kết thúc.</div>
+          </div>
+
+          <div class="type-card type-sf">
+            <div class="type-card-head">
+              <span class="type-code">SF</span>
+              <span style="font-size: 11px; font-weight: 700; color: var(--orange);">Nối tiếp</span>
+            </div>
+            <div class="type-vn-title">Khởi đầu – Kết thúc</div>
+            <div class="type-desc">Start-to-Finish: Điểm kết thúc việc sau phụ thuộc thời điểm khởi đầu việc trước.</div>
+          </div>
+        </div>
+
+        <!-- Tiêu chí chấp nhận S-06 -->
+        <div class="info-bar">
+          <div class="info-pill badge-count">
+            Tổng quan hệ: <strong id="total-deps-count">0</strong>
+          </div>
+          <div class="info-pill">
+            Mã cố định: <strong>FS: <span id="count-fs">0</span> | SS: <span id="count-ss">0</span> | FF: <span id="count-ff">0</span> | SF: <span id="count-sf">0</span></strong>
+          </div>
+          <div class="info-pill">
+            Độ trễ: <strong>Dương (>0) | Bằng 0 | Âm (<0: Lead time)</strong>
+          </div>
+          <div class="info-pill">
+            Toàn vẹn: <strong>Chặn tự phụ thuộc & Chặn trùng cặp</strong>
+          </div>
+        </div>
       </div>
-      <div class="info-pill">
-        Mô hình phân rã: <strong>Phân Tầng Đa Cấp (parent_id)</strong>
+
+      <!-- Bảng Quản Lý Quan Hệ Phụ Thuộc -->
+      <div class="dep-table-container">
+        <div class="table-toolbar">
+          <div class="toolbar-left">
+            <input type="text" class="toolbar-search" id="dep-search-input" placeholder="🔍 Tìm theo mã hoặc tên việc..." oninput="filterDependencies()">
+            <select class="filter-select" id="dep-filter-type" onchange="filterDependencies()">
+              <option value="">Tất cả loại quan hệ</option>
+              <option value="FS">FS - Kết thúc – Khởi đầu</option>
+              <option value="SS">SS - Khởi đầu – Khởi đầu</option>
+              <option value="FF">FF - Kết thúc – Kết thúc</option>
+              <option value="SF">SF - Khởi đầu – Kết thúc</option>
+            </select>
+          </div>
+          <button class="btn-table-action" onclick="fetchDependencies()">
+            🔄 Làm mới danh sách
+          </button>
+        </div>
+
+        <table class="dep-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">STT</th>
+              <th>Công Việc Trước (Predecessor)</th>
+              <th style="width: 140px;">Loại Quan Hệ</th>
+              <th style="width: 130px;">Độ Trễ (Lag)</th>
+              <th>Công Việc Sau (Successor)</th>
+              <th>Ý Nghĩa Nghiệp Vụ Tiến Độ</th>
+              <th style="width: 110px; text-align: center;">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody id="dep-table-body">
+            <!-- Dữ liệu render từ JS -->
+          </tbody>
+        </table>
       </div>
-      <div class="info-pill">
-        Toàn vẹn dữ liệu: <strong>Chống vòng lặp & Chặn xóa lan truyền</strong>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: CÂY CƠ CẤU CÔNG VIỆC WBS TRUYỀN THỐNG -->
+    <!-- ========================================================================= -->
+    <div class="tab-pane" id="tab-wbs">
+      
+      <div class="info-bar">
+        <div class="info-pill badge-count">
+          Tổng số hạng mục: <strong id="total-count">0</strong>
+        </div>
+        <div class="info-pill">
+          Mô hình phân rã: <strong>Phân Tầng Đa Cấp (parent_id)</strong>
+        </div>
+        <div class="info-pill">
+          Toàn vẹn dữ liệu: <strong>Chống vòng lặp & Chặn xóa lan truyền</strong>
+        </div>
+        <button class="btn-primary-action" style="margin-left: auto;" onclick="openAddModal(null)">
+          + Thêm Hạng Mục Gốc
+        </button>
       </div>
-      <div class="info-pill">
-        Hiển thị: <strong>Thu gọn mặc định từ tầng 3 trở xuống</strong>
+
+      <div class="wbs-card">
+        <div class="tree-root" id="tree-container"></div>
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 3: SƠ ĐỒ LUỒNG TIẾN ĐỘ TRỰC QUAN -->
+    <!-- ========================================================================= -->
+    <div class="tab-pane" id="tab-flow">
+      <div class="flow-card">
+        <div style="margin-bottom: 18px;">
+          <h3 style="font-size: 16.5px; font-weight: 800; color: var(--text-title);">Sơ Đồ Luồng Quan Hệ Công Việc Thi Công</h3>
+          <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+            Mô phỏng trực quan thứ tự thực hiện theo 4 loại quan hệ (FS, SS, FF, SF) và độ trễ để ban quản lý tính đường găng tiến độ.
+          </p>
+        </div>
+        <div class="flow-grid" id="flow-container">
+          <!-- Render từ JS -->
+        </div>
       </div>
     </div>
 
-    <!-- Khung Cây WBS -->
-    <div class="wbs-card">
-      <div class="tree-root" id="tree-container"></div>
-    </div>
   </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL KHAI BÁO / CHỈNH SỬA QUAN HỆ PHỤ THUỘC (S-06) -->
+  <!-- ========================================================================= -->
+  <div class="modal-overlay" id="dep-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="dep-modal-title">Khai Báo Quan Hệ Phụ Thuộc</h3>
+        <button class="btn-close-modal" onclick="closeDependencyModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="modal-dep-id">
+
+        <!-- Cảnh báo Validation vi phạm tiêu chí chấp nhận -->
+        <div class="validation-alert" id="dep-validation-alert"></div>
+
+        <div class="form-group">
+          <label for="select-predecessor">1. Công Việc Trước (Predecessor - Phải làm trước) (*)</label>
+          <select id="select-predecessor" onchange="handleModalFormChange()"></select>
+        </div>
+
+        <div class="form-group">
+          <label for="select-successor">2. Công Việc Sau (Successor - Việc phải chờ) (*)</label>
+          <select id="select-successor" onchange="handleModalFormChange()"></select>
+        </div>
+
+        <div class="form-group">
+          <label for="select-type">3. Loại Quan Hệ Phụ Thuộc (Mã cố định chuẩn) (*)</label>
+          <select id="select-type" onchange="handleModalFormChange()">
+            <option value="FS">FS — Kết thúc – Khởi đầu (Finish-to-Start)</option>
+            <option value="SS">SS — Khởi đầu – Khởi đầu (Start-to-Start)</option>
+            <option value="FF">FF — Kết thúc – Kết thúc (Finish-to-Finish)</option>
+            <option value="SF">SF — Khởi đầu – Kết thúc (Start-to-Finish)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="input-lag">
+            4. Độ Trễ / Sớm (Lag/Lead - Tính bằng số ngày) (*)
+          </label>
+          <div style="display: flex; gap: 8px;">
+            <input type="number" id="input-lag" value="0" step="1" oninput="handleModalFormChange()" style="flex: 1;">
+            <button type="button" class="btn-secondary" onclick="quickSetLag(0)">= 0</button>
+            <button type="button" class="btn-secondary" onclick="quickSetLag(1)">+1d</button>
+            <button type="button" class="btn-secondary" onclick="quickSetLag(2)">+2d</button>
+            <button type="button" class="btn-secondary" onclick="quickSetLag(-1)">-1d</button>
+          </div>
+          <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">
+            💡 Dương (>0): Độ trễ chờ thêm ngày; Bằng 0: Ngay lập tức; Âm (&lt;0): Gối đầu sớm (Lead time).
+          </span>
+        </div>
+
+        <!-- Khung xem trước thời gian thực logic nghiệp vụ -->
+        <div class="live-preview-box" id="dep-live-preview">
+          Đang tính toán luồng logic quan hệ...
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeDependencyModal()">Hủy Bỏ</button>
+        <button type="button" class="btn-save" id="btn-submit-dep" onclick="saveDependency()">Lưu Quan Hệ Phụ Thuộc</button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL THÊM / SỬA HẠNG MỤC WBS -->
   <div class="modal-overlay" id="wbs-modal">
@@ -335,57 +822,519 @@
   </div>
 
   <script>
-    let wbsData = [
-      {
-        id: 1,
-        code: "HM-01",
-        name: "Phần ngầm & Móng",
-        children: [
-          {
-            id: 2,
-            code: "HM-01.01",
-            name: "Đào đất hố móng",
-            children: [
-              { id: 3, code: "HM-01.01.01", name: "Đào đất thủ công hố móng", children: [] },
-              { id: 4, code: "HM-01.01.02", name: "Vận chuyển đất thải", children: [] }
-            ]
-          },
-          {
-            id: 5,
-            code: "HM-01.02",
-            name: "Đổ bê tông lót móng",
-            children: []
-          }
-        ]
-      },
-      {
-        id: 6,
-        code: "HM-02",
-        name: "Phần thân & Kết cấu",
-        children: [
-          { id: 7, code: "HM-02.01", name: "Lắp dựng cốt thép cột vách", children: [] },
-          { id: 8, code: "HM-02.02", name: "Đổ bê tông sàn tầng 1", children: [] }
-        ]
-      }
+    // Dữ liệu hạng mục công việc WBS phẳng
+    let workItemsList = [
+      { id: 1, project_id: 1, parent_id: null, code: "HM-01", name: "Phần ngầm & Móng" },
+      { id: 2, project_id: 1, parent_id: 1, code: "HM-01.01", name: "Đào đất hố móng" },
+      { id: 3, project_id: 1, parent_id: 2, code: "HM-01.01.01", name: "Đào đất thủ công hố móng" },
+      { id: 4, project_id: 1, parent_id: 2, code: "HM-01.01.02", name: "Vận chuyển đất thải" },
+      { id: 5, project_id: 1, parent_id: 1, code: "HM-01.02", name: "Đổ bê tông lót móng" },
+      { id: 6, project_id: 1, parent_id: null, code: "HM-02", name: "Phần thân & Kết cấu" },
+      { id: 7, project_id: 1, parent_id: 6, code: "HM-02.01", name: "Lắp dựng cốt thép cột vách" },
+      { id: 8, project_id: 1, parent_id: 6, code: "HM-02.02", name: "Đổ bê tông sàn tầng 1" }
     ];
 
-    function countTotalNodes(nodes) {
-      let count = 0;
-      function traverse(list) {
-        for (const item of list) {
-          count++;
-          if (item.children) traverse(item.children);
-        }
+    // Dữ liệu quan hệ phụ thuộc S-06 (Bao gồm đủ 4 loại FS, SS, FF, SF và độ trễ dương, 0, âm)
+    let dependenciesList = [
+      { id: 1, project_id: 1, predecessor_id: 3, successor_id: 4, dependency_type: "FS", lag: 0 },
+      { id: 2, project_id: 1, predecessor_id: 4, successor_id: 5, dependency_type: "FS", lag: 1 },
+      { id: 3, project_id: 1, predecessor_id: 2, successor_id: 5, dependency_type: "SS", lag: 0 },
+      { id: 4, project_id: 1, predecessor_id: 5, successor_id: 7, dependency_type: "FF", lag: 2 },
+      { id: 5, project_id: 1, predecessor_id: 7, successor_id: 8, dependency_type: "SF", lag: -1 }
+    ];
+
+    const TYPE_META = {
+      FS: { vn: 'Kết thúc – Khởi đầu', desc: 'Việc sau chỉ bắt đầu khi việc trước kết thúc' },
+      SS: { vn: 'Khởi đầu – Khởi đầu', desc: 'Việc sau có thể bắt đầu khi việc trước bắt đầu' },
+      FF: { vn: 'Kết thúc – Kết thúc', desc: 'Việc sau chỉ kết thúc khi việc trước kết thúc' },
+      SF: { vn: 'Khởi đầu – Kết thúc', desc: 'Việc sau chỉ kết thúc khi việc trước bắt đầu' }
+    };
+
+    // =========================================================================
+    // I. XỬ LÝ TAB CHUYỂN ĐỔI
+    // =========================================================================
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+
+      const targetPane = document.getElementById(tabId);
+      if (targetPane) targetPane.classList.add('active');
+
+      const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const headerBtn = document.getElementById('header-primary-btn');
+      if (tabId === 'tab-wbs') {
+        headerBtn.innerHTML = '+ Thêm Hạng Mục Gốc';
+        headerBtn.setAttribute('onclick', 'openAddModal(null)');
+      } else {
+        headerBtn.innerHTML = '🔗 Khai Báo Quan Hệ Mới';
+        headerBtn.setAttribute('onclick', 'openDependencyModal()');
       }
-      traverse(nodes);
-      return count;
+
+      if (tabId === 'tab-flow') renderFlow();
     }
 
-    // Render Cây WBS - Thu gọn mặc định từ tầng 3 trở xuống
+    // =========================================================================
+    // II. TẢI DỮ LIỆU TỪ SERVER VÀ FALLBACK
+    // =========================================================================
+    async function fetchWorkItems() {
+      try {
+        const res = await fetch('/api/projects/1/work-items');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data && json.data.length > 0) {
+            workItemsList = json.data;
+          }
+        }
+      } catch (e) {
+        console.warn('Dùng bộ nhớ cục bộ cho Work Items:', e.message);
+      }
+      renderTree();
+      updateBadges();
+    }
+
+    async function fetchDependencies() {
+      try {
+        const res = await fetch('/api/projects/1/dependencies');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data) {
+            dependenciesList = json.data;
+          }
+        }
+      } catch (e) {
+        console.warn('Dùng bộ nhớ cục bộ cho Dependencies:', e.message);
+      }
+      renderDependenciesTable();
+      updateBadges();
+      renderFlow();
+    }
+
+    function updateBadges() {
+      document.getElementById('wbs-count-badge').innerText = workItemsList.length;
+      document.getElementById('total-count').innerText = workItemsList.length;
+      document.getElementById('dep-count-badge').innerText = dependenciesList.length;
+      document.getElementById('total-deps-count').innerText = dependenciesList.length;
+
+      const fsCount = dependenciesList.filter(d => d.dependency_type === 'FS').length;
+      const ssCount = dependenciesList.filter(d => d.dependency_type === 'SS').length;
+      const ffCount = dependenciesList.filter(d => d.dependency_type === 'FF').length;
+      const sfCount = dependenciesList.filter(d => d.dependency_type === 'SF').length;
+
+      document.getElementById('count-fs').innerText = fsCount;
+      document.getElementById('count-ss').innerText = ssCount;
+      document.getElementById('count-ff').innerText = ffCount;
+      document.getElementById('count-sf').innerText = sfCount;
+    }
+
+    function findItemById(id) {
+      return workItemsList.find(w => Number(w.id) === Number(id)) || null;
+    }
+
+    // =========================================================================
+    // III. RENDER BẢNG QUAN HỆ PHỤ THUỘC (TAB 1 - S-06)
+    // =========================================================================
+    function renderDependenciesTable(filteredList = null) {
+      const list = filteredList || dependenciesList;
+      const tbody = document.getElementById('dep-table-body');
+      tbody.innerHTML = '';
+
+      if (list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 36px; color: var(--text-muted);">
+              Chưa có quan hệ phụ thuộc nào được khai báo. Hãy bấm <strong>"+ Khai Báo Quan Hệ Mới"</strong> để thêm!
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      list.forEach((dep, index) => {
+        const pred = findItemById(dep.predecessor_id);
+        const succ = findItemById(dep.successor_id);
+        const predName = pred ? pred.name : (dep.predecessor_name || `Hạng mục #${dep.predecessor_id}`);
+        const predCode = pred ? pred.code : (dep.predecessor_code || `HM-${dep.predecessor_id}`);
+        const succName = succ ? succ.name : (dep.successor_name || `Hạng mục #${dep.successor_id}`);
+        const succCode = succ ? succ.code : (dep.successor_code || `HM-${dep.successor_id}`);
+
+        const type = dep.dependency_type;
+        const meta = TYPE_META[type] || { vn: type, desc: '' };
+        const lagNum = Number(dep.lag) || 0;
+
+        let lagBadgeClass = 'zero';
+        let lagText = '0 ngày (Ngay lập tức)';
+        if (lagNum > 0) {
+          lagBadgeClass = 'positive';
+          lagText = `+${lagNum} ngày (Trễ)`;
+        } else if (lagNum < 0) {
+          lagBadgeClass = 'negative';
+          lagText = `${lagNum} ngày (Sớm/Lead)`;
+        }
+
+        let logicSentence = '';
+        if (type === 'FS') {
+          logicSentence = `[${succCode}] bắt đầu sau khi [${predCode}] kết thúc ${lagNum !== 0 ? `(${lagNum > 0 ? '+' : ''}${lagNum} ngày)` : ''}`;
+        } else if (type === 'SS') {
+          logicSentence = `[${succCode}] bắt đầu sau khi [${predCode}] khởi đầu ${lagNum !== 0 ? `(${lagNum > 0 ? '+' : ''}${lagNum} ngày)` : ''}`;
+        } else if (type === 'FF') {
+          logicSentence = `[${succCode}] kết thúc sau khi [${predCode}] kết thúc ${lagNum !== 0 ? `(${lagNum > 0 ? '+' : ''}${lagNum} ngày)` : ''}`;
+        } else if (type === 'SF') {
+          logicSentence = `[${succCode}] kết thúc sau khi [${predCode}] khởi đầu ${lagNum !== 0 ? `(${lagNum > 0 ? '+' : ''}${lagNum} ngày)` : ''}`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight: 700; color: var(--text-muted);">${index + 1}</td>
+          <td>
+            <div class="node-pill">
+              <span class="code-tag">${escapeHtml(predCode)}</span>
+              <span>${escapeHtml(predName)}</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge-type ${type}" title="${meta.desc}">
+              ${type}
+              <small style="font-size: 10px; font-weight: 600; opacity: 0.85;">(${meta.vn.split('–')[0].trim()})</small>
+            </span>
+          </td>
+          <td>
+            <span class="badge-lag ${lagBadgeClass}">
+              ${lagText}
+            </span>
+          </td>
+          <td>
+            <div class="node-pill">
+              <span class="code-tag">${escapeHtml(succCode)}</span>
+              <span>${escapeHtml(succName)}</span>
+            </div>
+          </td>
+          <td>
+            <div class="dep-logic-text">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              <span>${escapeHtml(logicSentence)}</span>
+            </div>
+          </td>
+          <td>
+            <div class="action-btns-group">
+              <button class="btn-table-action" title="Chỉnh sửa" onclick="openDependencyModal(${dep.id})">
+                ✏️ Sửa
+              </button>
+              <button class="btn-table-action delete" title="Xóa" onclick="deleteDependencyAction(${dep.id})">
+                🗑️
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterDependencies() {
+      const q = document.getElementById('dep-search-input').value.trim().toLowerCase();
+      const type = document.getElementById('dep-filter-type').value;
+
+      const filtered = dependenciesList.filter(d => {
+        const pred = findItemById(d.predecessor_id);
+        const succ = findItemById(d.successor_id);
+        const predStr = (pred ? `${pred.code} ${pred.name}` : '').toLowerCase();
+        const succStr = (succ ? `${succ.code} ${succ.name}` : '').toLowerCase();
+
+        const matchQ = !q || predStr.includes(q) || succStr.includes(q);
+        const matchType = !type || d.dependency_type === type;
+        return matchQ && matchType;
+      });
+
+      renderDependenciesTable(filtered);
+    }
+
+    // =========================================================================
+    // IV. MODAL KHAI BÁO & CHỈNH SỬA QUAN HỆ PHỤ THUỘC (S-06)
+    // =========================================================================
+    function populateDropdowns(selectedPred = null, selectedSucc = null) {
+      const predSelect = document.getElementById('select-predecessor');
+      const succSelect = document.getElementById('select-successor');
+
+      predSelect.innerHTML = '';
+      succSelect.innerHTML = '';
+
+      workItemsList.forEach(item => {
+        const optText = `[${item.code}] ${item.name}`;
+        
+        const optP = document.createElement('option');
+        optP.value = item.id;
+        optP.textContent = optText;
+        predSelect.appendChild(optP);
+
+        const optS = document.createElement('option');
+        optS.value = item.id;
+        optS.textContent = optText;
+        succSelect.appendChild(optS);
+      });
+
+      if (selectedPred) predSelect.value = selectedPred;
+      if (selectedSucc) succSelect.value = selectedSucc;
+      else if (workItemsList.length > 1 && !selectedPred) {
+        succSelect.selectedIndex = 1; // Mặc định chọn 2 việc khác nhau
+      }
+    }
+
+    function openDependencyModal(editId = null, defaultPredId = null, defaultSuccId = null) {
+      document.getElementById('modal-dep-id').value = editId || '';
+      document.getElementById('dep-validation-alert').style.display = 'none';
+
+      if (editId) {
+        const dep = dependenciesList.find(d => Number(d.id) === Number(editId));
+        if (!dep) return;
+        document.getElementById('dep-modal-title').innerText = 'Chỉnh Sửa Quan Hệ Phụ Thuộc';
+        populateDropdowns(dep.predecessor_id, dep.successor_id);
+        document.getElementById('select-type').value = dep.dependency_type;
+        document.getElementById('input-lag').value = dep.lag;
+      } else {
+        document.getElementById('dep-modal-title').innerText = 'Khai Báo Quan Hệ Phụ Thuộc';
+        populateDropdowns(defaultPredId, defaultSuccId);
+        document.getElementById('select-type').value = 'FS';
+        document.getElementById('input-lag').value = 0;
+      }
+
+      handleModalFormChange();
+      document.getElementById('dep-modal').style.display = 'flex';
+    }
+
+    function closeDependencyModal() {
+      document.getElementById('dep-modal').style.display = 'none';
+    }
+
+    function quickSetLag(val) {
+      document.getElementById('input-lag').value = val;
+      handleModalFormChange();
+    }
+
+    // Xác thực thời gian thực và cập nhật hộp xem trước
+    function handleModalFormChange() {
+      const editId = document.getElementById('modal-dep-id').value;
+      const predId = parseInt(document.getElementById('select-predecessor').value, 10);
+      const succId = parseInt(document.getElementById('select-successor').value, 10);
+      const type = document.getElementById('select-type').value;
+      const lagVal = Number(document.getElementById('input-lag').value);
+
+      const alertBox = document.getElementById('dep-validation-alert');
+      const submitBtn = document.getElementById('btn-submit-dep');
+      const previewBox = document.getElementById('dep-live-preview');
+
+      alertBox.style.display = 'none';
+      submitBtn.disabled = false;
+
+      // 1. Tiêu chí 3: Không cho một công việc phụ thuộc chính nó
+      if (predId === succId) {
+        alertBox.innerText = '❌ Tiêu chí chấp nhận: Không cho một công việc phụ thuộc chính nó (Công việc trước và công việc sau không được trùng nhau)!';
+        alertBox.style.display = 'block';
+        submitBtn.disabled = true;
+        previewBox.innerHTML = '<span style="color: var(--danger);">Không thể thiết lập quan hệ cho cùng một công việc!</span>';
+        return;
+      }
+
+      // 2. Tiêu chí 4: Không cho trùng cặp công việc trước và công việc sau
+      const isDuplicate = dependenciesList.some(d => {
+        if (editId && Number(d.id) === Number(editId)) return false;
+        return Number(d.predecessor_id) === predId && Number(d.successor_id) === succId;
+      });
+
+      if (isDuplicate) {
+        alertBox.innerText = '⚠️ Tiêu chí chấp nhận: Không cho trùng cặp công việc trước và công việc sau. Cặp quan hệ này đã tồn tại trong hệ thống!';
+        alertBox.style.display = 'block';
+        submitBtn.disabled = true;
+        previewBox.innerHTML = '<span style="color: var(--danger);">Cặp quan hệ này đã tồn tại. Vui lòng chọn cặp khác hoặc chỉnh sửa quan hệ đã có.</span>';
+        return;
+      }
+
+      // 3. Tiêu chí 2: Độ trễ hợp lệ
+      if (isNaN(lagVal) || !Number.isInteger(lagVal)) {
+        alertBox.innerText = '❌ Độ trễ phải là số nguyên (cho phép số âm, 0, hoặc số dương)!';
+        alertBox.style.display = 'block';
+        submitBtn.disabled = true;
+        return;
+      }
+
+      // Hiển thị xem trước sống động
+      const pred = findItemById(predId);
+      const succ = findItemById(succId);
+      const pName = pred ? `[${pred.code}] ${pred.name}` : `Hạng mục #${predId}`;
+      const sName = succ ? `[${succ.code}] ${succ.name}` : `Hạng mục #${succId}`;
+
+      let lagDesc = '';
+      if (lagVal > 0) lagDesc = `chờ thêm <strong>${lagVal} ngày (độ trễ)</strong>`;
+      else if (lagVal < 0) lagDesc = `được làm gối đầu sớm trước <strong>${Math.abs(lagVal)} ngày (lead time)</strong>`;
+      else lagDesc = `<strong>ngay lập tức (liền kề, độ trễ 0)</strong>`;
+
+      let actionDesc = '';
+      if (type === 'FS') actionDesc = `kết thúc thì ${sName} mới được bắt đầu`;
+      else if (type === 'SS') actionDesc = `bắt đầu thì ${sName} mới được bắt đầu`;
+      else if (type === 'FF') actionDesc = `kết thúc thì ${sName} mới được kết thúc`;
+      else if (type === 'SF') actionDesc = `bắt đầu thì ${sName} mới được kết thúc`;
+
+      previewBox.innerHTML = `
+        <div>🔗 <strong>Luồng tiến độ:</strong> ${pName} ──(<strong>${type}</strong>: ${lagVal >= 0 ? '+' : ''}${lagVal}d)──▶ ${sName}</div>
+        <div style="margin-top: 4px;">📌 <strong>Mô tả thực tế:</strong> Khi ${pName} ${actionDesc}, sau khi ${lagDesc}.</div>
+      `;
+    }
+
+    async function saveDependency() {
+      const submitBtn = document.getElementById('btn-submit-dep');
+      const alertBox = document.getElementById('dep-validation-alert');
+      alertBox.style.display = 'none';
+
+      const editId = document.getElementById('modal-dep-id').value;
+      const predId = parseInt(document.getElementById('select-predecessor').value, 10);
+      const succId = parseInt(document.getElementById('select-successor').value, 10);
+      const type = document.getElementById('select-type').value;
+      const lag = parseInt(document.getElementById('input-lag').value, 10) || 0;
+
+      // Tiêu chí: Không cho phụ thuộc chính nó
+      if (predId === succId) {
+        alertBox.innerText = '❌ Tiêu chí chấp nhận: Không cho một công việc phụ thuộc chính nó!';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      // Tiêu chí: Không cho trùng cặp
+      const isDuplicate = dependenciesList.some(d => {
+        if (editId && Number(d.id) === Number(editId)) return false;
+        return Number(d.predecessor_id) === predId && Number(d.successor_id) === succId;
+      });
+      if (isDuplicate) {
+        alertBox.innerText = '⚠️ Tiêu chí chấp nhận: Không cho trùng cặp công việc trước và công việc sau. Cặp quan hệ này đã tồn tại trong hệ thống!';
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      const payload = {
+        project_id: 1,
+        predecessor_id: predId,
+        successor_id: succId,
+        dependency_type: type, // Mã cố định FS, SS, FF, SF
+        lag: lag
+      };
+
+      // Đặt trạng thái đang lưu và khóa nút để chống click đúp
+      submitBtn.disabled = true;
+      submitBtn.innerText = '⏳ Đang lưu...';
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+        let res;
+        if (editId) {
+          res = await fetch(`/api/dependencies/${editId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+        } else {
+          res = await fetch('/api/dependencies', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+        }
+        clearTimeout(timeoutId);
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          alertBox.innerText = '❌ ' + (data.message || 'Không thể lưu quan hệ phụ thuộc');
+          alertBox.style.display = 'block';
+          return;
+        }
+
+        // Cập nhật bộ nhớ cục bộ
+        if (editId) {
+          const idx = dependenciesList.findIndex(d => Number(d.id) === Number(editId));
+          if (idx !== -1) dependenciesList[idx] = { ...dependenciesList[idx], ...payload };
+        } else {
+          dependenciesList.push({
+            id: data.data ? data.data.id : Date.now(),
+            ...payload
+          });
+        }
+
+        closeDependencyModal();
+        renderDependenciesTable();
+        updateBadges();
+        renderTree();
+        renderFlow();
+      } catch (err) {
+        // Fallback lưu trực tiếp trong bộ nhớ
+        if (editId) {
+          const idx = dependenciesList.findIndex(d => Number(d.id) === Number(editId));
+          if (idx !== -1) dependenciesList[idx] = { ...dependenciesList[idx], ...payload };
+        } else {
+          dependenciesList.push({ id: Date.now(), ...payload });
+        }
+        closeDependencyModal();
+        renderDependenciesTable();
+        updateBadges();
+        renderTree();
+        renderFlow();
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Lưu Quan Hệ Phụ Thuộc';
+      }
+    }
+
+    async function deleteDependencyAction(id) {
+      const dep = dependenciesList.find(d => Number(d.id) === Number(id));
+      if (!dep) return;
+
+      const pred = findItemById(dep.predecessor_id);
+      const succ = findItemById(dep.successor_id);
+      const pName = pred ? `[${pred.code}]` : `#${dep.predecessor_id}`;
+      const sName = succ ? `[${succ.code}]` : `#${dep.successor_id}`;
+
+      if (confirm(`Bạn có chắc chắn muốn xóa quan hệ phụ thuộc giữa ${pName} và ${sName}?`)) {
+        try {
+          await fetch(`/api/dependencies/${id}`, { method: 'DELETE' });
+        } catch (e) {
+          console.warn('Xóa in-memory:', e.message);
+        }
+
+        dependenciesList = dependenciesList.filter(d => Number(d.id) !== Number(id));
+        renderDependenciesTable();
+        updateBadges();
+        renderTree();
+        renderFlow();
+      }
+    }
+
+    // =========================================================================
+    // V. RENDER CÂY CƠ CẤU CÔNG VIỆC WBS (TAB 2)
+    // =========================================================================
+    function buildTreeFromFlat(flatList) {
+      const idMap = {};
+      const roots = [];
+
+      flatList.forEach(item => {
+        idMap[item.id] = { ...item, children: [] };
+      });
+
+      flatList.forEach(item => {
+        if (item.parent_id && idMap[item.parent_id]) {
+          idMap[item.parent_id].children.push(idMap[item.id]);
+        } else {
+          roots.push(idMap[item.id]);
+        }
+      });
+
+      return roots;
+    }
+
     function renderTree() {
       const container = document.getElementById('tree-container');
       container.innerHTML = '';
-      document.getElementById('total-count').innerText = countTotalNodes(wbsData);
+      const tree = buildTreeFromFlat(workItemsList);
 
       function buildDOM(nodes, level) {
         const frag = document.createDocumentFragment();
@@ -394,9 +1343,10 @@
           const hasChildren = node.children && node.children.length > 0;
           const nodeWrap = document.createElement('div');
           nodeWrap.className = `tree-node-wrap level-${Math.min(level, 2)}`;
-
-          // Tầng 2 trở lên (tính từ 0, tức từ tầng 3) mặc định thu gọn
           const isCollapsedByDefault = level >= 2;
+
+          // Tìm các quan hệ liên quan đến node này
+          const relatedDeps = dependenciesList.filter(d => Number(d.predecessor_id) === Number(node.id) || Number(d.successor_id) === Number(node.id));
 
           nodeWrap.innerHTML = `
             <div class="tree-node-row">
@@ -408,8 +1358,16 @@
                 ` : `<span style="width: 24px;"></span>`}
                 <span class="wbs-code-badge">${escapeHtml(node.code)}</span>
                 <span class="wbs-node-name">${escapeHtml(node.name)}</span>
+                ${relatedDeps.length > 0 ? `
+                  <span class="wbs-dep-tag" title="Xem các quan hệ phụ thuộc của việc này" onclick="switchTab('tab-dependencies'); document.getElementById('dep-search-input').value = '${escapeHtml(node.code)}'; filterDependencies();">
+                    🔗 ${relatedDeps.length} quan hệ
+                  </span>
+                ` : ''}
               </div>
               <div class="tree-actions">
+                <button class="btn-action-icon" title="Thêm quan hệ phụ thuộc cho việc này" onclick="openDependencyModal(null, ${node.id}, null)">
+                  <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                </button>
                 <button class="btn-action-icon" title="Thêm hạng mục con" onclick="openAddModal(${node.id})">
                   <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
@@ -439,7 +1397,7 @@
         return frag;
       }
 
-      container.appendChild(buildDOM(wbsData, 0));
+      container.appendChild(buildDOM(tree, 0));
     }
 
     function toggleChildren(btn) {
@@ -450,17 +1408,6 @@
         childrenBox.style.display = isHidden ? 'flex' : 'none';
         btn.classList.toggle('collapsed', !isHidden);
       }
-    }
-
-    function findNodeById(id, list = wbsData) {
-      for (const item of list) {
-        if (item.id === id) return item;
-        if (item.children) {
-          const found = findNodeById(id, item.children);
-          if (found) return found;
-        }
-      }
-      return null;
     }
 
     function openAddModal(parentId) {
@@ -474,7 +1421,7 @@
     }
 
     function openEditModal(id) {
-      const node = findNodeById(id);
+      const node = findItemById(id);
       if (!node) return;
       document.getElementById('modal-title').innerText = 'Chỉnh Sửa Hạng Mục';
       document.getElementById('modal-parent-id').value = '';
@@ -488,7 +1435,7 @@
       document.getElementById('wbs-modal').style.display = 'none';
     }
 
-    function saveWbsItem() {
+    async function saveWbsItem() {
       const code = document.getElementById('input-code').value.trim();
       const name = document.getElementById('input-name').value.trim();
       const parentIdStr = document.getElementById('modal-parent-id').value;
@@ -499,51 +1446,121 @@
         return;
       }
 
+      const pId = parentIdStr ? parseInt(parentIdStr, 10) : null;
+
       if (editIdStr) {
-        const node = findNodeById(Number(editIdStr));
-        if (node) {
-          node.code = code;
-          node.name = name;
+        const id = parseInt(editIdStr, 10);
+        try {
+          await fetch(`/api/work-items/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, name })
+          });
+        } catch (e) {}
+
+        const item = findItemById(id);
+        if (item) {
+          item.code = code;
+          item.name = name;
         }
       } else {
-        const newNode = { id: Date.now(), code, name, children: [] };
-        if (parentIdStr) {
-          const parentNode = findNodeById(Number(parentIdStr));
-          if (parentNode) parentNode.children.push(newNode);
-        } else {
-          wbsData.push(newNode);
-        }
+        let newId = Date.now();
+        try {
+          const res = await fetch('/api/work-items', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ project_id: 1, parent_id: pId, name, code })
+          });
+          const json = await res.json();
+          if (json.success && json.id) newId = json.id;
+        } catch (e) {}
+
+        workItemsList.push({
+          id: newId,
+          project_id: 1,
+          parent_id: pId,
+          code,
+          name
+        });
       }
 
       closeModal();
       renderTree();
+      updateBadges();
+      populateDropdowns();
     }
 
-    // Chặn xóa lan truyền
-    function deleteNode(id) {
-      const node = findNodeById(id);
+    async function deleteNode(id) {
+      const node = findItemById(id);
       if (!node) return;
 
-      if (node.children && node.children.length > 0) {
-        alert(`Không thể xóa! Hạng mục "${node.name}" đang chứa các hạng mục con bên trong. Vui lòng xử lý các hạng mục con trước để bảo đảm toàn vẹn dữ liệu.`);
+      const hasChildren = workItemsList.some(w => Number(w.parent_id) === Number(id));
+      if (hasChildren) {
+        alert(`Không thể xóa! Hạng mục "${node.name}" đang chứa các hạng mục con bên trong. Vui lòng xử lý các hạng mục con trước.`);
         return;
       }
 
-      if (confirm(`Bạn có chắc chắn muốn xóa hạng mục [${node.code}] ${node.name}?`)) {
-        function removeRecursive(list) {
-          const index = list.findIndex(item => item.id === id);
-          if (index !== -1) {
-            list.splice(index, 1);
-            return true;
-          }
-          for (const item of list) {
-            if (item.children && removeRecursive(item.children)) return true;
-          }
-          return false;
-        }
-        removeRecursive(wbsData);
+      if (confirm(`Bạn có chắc chắn muốn xóa hạng mục [${node.code}] ${node.name}? Các quan hệ phụ thuộc liên quan cũng sẽ được dọn dẹp.`)) {
+        try {
+          await fetch(`/api/work-items/${id}`, { method: 'DELETE' });
+        } catch (e) {}
+
+        workItemsList = workItemsList.filter(w => Number(w.id) !== Number(id));
+        // Xóa cascade quan hệ phụ thuộc
+        dependenciesList = dependenciesList.filter(d => Number(d.predecessor_id) !== Number(id) && Number(d.successor_id) !== Number(id));
+
         renderTree();
+        renderDependenciesTable();
+        updateBadges();
+        renderFlow();
       }
+    }
+
+    // =========================================================================
+    // VI. RENDER SƠ ĐỒ LUỒNG TIẾN ĐỘ GRAPH (TAB 3)
+    // =========================================================================
+    function renderFlow() {
+      const container = document.getElementById('flow-container');
+      container.innerHTML = '';
+
+      if (dependenciesList.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 30px; color: var(--text-muted);">Chưa có quan hệ nào để hiển thị sơ đồ luồng.</div>';
+        return;
+      }
+
+      dependenciesList.forEach(dep => {
+        const pred = findItemById(dep.predecessor_id);
+        const succ = findItemById(dep.successor_id);
+        const pCode = pred ? pred.code : `HM-${dep.predecessor_id}`;
+        const pName = pred ? pred.name : `Việc #${dep.predecessor_id}`;
+        const sCode = succ ? succ.code : `HM-${dep.successor_id}`;
+        const sName = succ ? succ.name : `Việc #${dep.successor_id}`;
+
+        const lagNum = Number(dep.lag) || 0;
+        const lagSign = lagNum > 0 ? `+${lagNum}d` : (lagNum < 0 ? `${lagNum}d` : '0d');
+
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'flow-item';
+        itemDiv.innerHTML = `
+          <div class="flow-node-box">
+            <span class="code-tag" style="margin-right: 6px;">${escapeHtml(pCode)}</span>
+            <span>${escapeHtml(pName)}</span>
+          </div>
+
+          <div class="flow-connector">
+            <div class="flow-meta-pill">
+              ${dep.dependency_type} • ${lagSign}
+            </div>
+            <div class="flow-line"></div>
+          </div>
+
+          <div class="flow-node-box">
+            <span class="code-tag" style="margin-right: 6px;">${escapeHtml(sCode)}</span>
+            <span>${escapeHtml(sName)}</span>
+          </div>
+        `;
+        container.appendChild(itemDiv);
+      });
     }
 
     // Modal Dự Án Mới
@@ -569,6 +1586,7 @@
     }
 
     function escapeHtml(text) {
+      if (!text) return '';
       const div = document.createElement('div');
       div.innerText = text;
       return div.innerHTML;
@@ -582,8 +1600,9 @@
       }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      renderTree();
+    window.addEventListener('DOMContentLoaded', async () => {
+      await fetchWorkItems();
+      await fetchDependencies();
     });
   </script>
 </body>
