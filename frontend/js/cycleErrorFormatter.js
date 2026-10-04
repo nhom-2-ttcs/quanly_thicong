@@ -4,7 +4,17 @@
   function getTaskName(taskId, taskMap) {
     let value;
 
-    if (taskMap instanceof Map) {
+    if (Array.isArray(taskMap)) {
+      const task = taskMap.find(item => {
+        if (!item || typeof item !== 'object') return false;
+        const id = item.id ?? item.task_id ?? item.taskId;
+        return id !== undefined && String(id) === String(taskId);
+      });
+
+      if (task) {
+        value = task.name || task.title || task.task_name;
+      }
+    } else if (taskMap instanceof Map) {
       value = taskMap.get(taskId);
       if (value === undefined) value = taskMap.get(String(taskId));
       if (value === undefined && String(taskId).trim() !== '') {
@@ -31,7 +41,7 @@
 
   function formatCycleMessage(cycleIds, taskMap) {
     if (!Array.isArray(cycleIds) || cycleIds.length < 2) {
-      return 'Không thể tạo quan hệ: phát hiện chu trình phụ thuộc.';
+      return 'Không thể lưu quan hệ: phát hiện chu trình phụ thuộc.';
     }
 
     const links = [];
@@ -44,7 +54,7 @@
         : `'${from}' lại đang chờ '${to}'`);
     }
 
-    return `Không thể tạo quan hệ: ${links.join(', mà ')}`;
+    return `Không thể lưu quan hệ: ${links.join(', mà ')}`;
   }
 
   let componentLoad;
