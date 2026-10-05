@@ -442,6 +442,9 @@
         <button class="btn-check-schedule" title="Xem trình tự thi công và kiểm tra chu trình" onclick="openScheduleModal()">
           ⚡ Trình tự thi công (S-07)
         </button>
+        <a class="btn-check-schedule" id="btn-open-schedule-page" style="text-decoration:none;display:inline-flex;align-items:center;background:#1d4ed8;" href="schedule.html" title="Xem bảng tiến độ và việc găng (S-12)">
+          📊 Bảng tiến độ (S-12)
+        </a>
         <button class="btn-add-root" title="Thêm hạng mục cấp cao nhất" onclick="openAddModal(null)">
           + Thêm hạng mục gốc
         </button>
@@ -1420,14 +1423,22 @@
       await loadDependencies();
     }
 
-    // === KIỂM TRA THỨ TỰ THI CÔNG & VÒNG LẶP (S-07 / SCRUM-62) ===
-    async function openScheduleModal() {
+    // === KIỂM TRA THỨ TỰ THI CÔNG & VÒNG LẶP (S-07 & S-12) ===
+    async function openScheduleModal(criticalOnly = false) {
       const modal = document.getElementById('schedule-modal');
       const body = document.getElementById('schedule-modal-body');
       modal.style.display = 'flex';
-      body.innerHTML = '<div style="text-align: center; padding: 25px;">Đang phân tích trình tự thi công (thuật toán Topo Kahn)...</div>';
+      body.innerHTML = '<div style="text-align: center; padding: 25px;">Đang phân tích bảng tiến độ và việc găng CPM...</div>';
 
-      const { res, data } = await apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/scheduling/schedule`);
+      const url = `/api/projects/${CURRENT_PROJECT_ID}/scheduling/results?critical=${criticalOnly ? 'true' : 'false'}`;
+      let { res, data } = await apiRequest(url);
+
+      if (!res.ok && res.status === 404) {
+        // Fallback endpoint cũ nếu cần
+        const fallback = await apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/scheduling/schedule${criticalOnly ? '?critical=true' : ''}`);
+        res = fallback.res;
+        data = fallback.data;
+      }
 
       if (!res.ok && !data.hasCycle) {
         body.innerHTML = `<div class="alert-banner alert-danger">${escapeHtml(data.message || 'Không thể tính lịch thi công')}</div>`;
@@ -1443,37 +1454,25 @@
               const t = rawTasks.find(x => x.id === id);
               return t ? `[${escapeHtml(t.code || `CV-${t.id}`)}] ${escapeHtml(t.name)}` : `#${id}`;
             }).join(' ➔ ')}<br>` : ''}
-            Không thể thiết lập tiến độ thi công khi có chu trình khép kín. Vui lòng mở cửa sổ <strong>Quan hệ phụ thuộc</strong> để gỡ bỏ quan hệ vòng.
+            Không thể thiết lập tiến độ thi công khi có chu trình khép kín. Giao dịch đã được hủy (Rollback) an toàn. Vui lòng mở cửa sổ <strong>Quan hệ phụ thuộc</strong> để gỡ bỏ quan hệ vòng.
           </div>
         `;
         return;
       }
 
-      if (!data.success && !data.order) {
+      if (!data.success && !data.tasks && !data.order) {
         body.innerHTML = `<div class="alert-banner alert-danger">${escapeHtml(data.message || 'Lỗi tính toán tiến độ')}</div>`;
         return;
       }
 
       let integrationNote = '';
-      if (data.integrationStatus === 'INTEGRATED WITH S-06') {
-        const depCount = data.dependenciesCount !== undefined ? data.dependenciesCount : rawDependencies.length;
+      if (data.isCached) {
         integrationNote = `
           <div class="alert-banner alert-info" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
             <div>
-              ✅ <strong>Trạng thái tích hợp: ĐÃ TÍCH HỢP QUAN HỆ PHỤ THUỘC (S-06)</strong><br>
-              <span style="font-size: 12px; color: var(--text-muted);">Thuật toán sắp xếp Topo (S-07) đang tính toán trên dữ liệu quan hệ FS, SS, FF, SF và độ trễ lag thực tế từ MySQL.</span>
+              ⚡ <strong>Dữ liệu đọc từ bảng kết quả lưu sẵn (schedule_results)</strong><br>
+              <span style="font-size: 12px; color: var(--text-muted);">Kết quả không cần tính toán lại do chưa có thay đổi nào về thời lượng hoặc quan hệ phụ thuộc.</span>
             </div>
-            <span class="info-pill badge-tasks" style="font-size: 12px; padding: 4px 10px;">
-              Liên kết phụ thuộc: <strong>${depCount}</strong>
-            </span>
-          </div>
-        `;
-      } else if (data.integrationStatus === 'BLOCKED BY S-06 INTEGRATION') {
-        integrationNote = `
-          <div class="alert-banner alert-warning">
-            📌 <strong>Trạng thái tích hợp: BLOCKED BY S-06 INTEGRATION</strong><br>
-            Module quan hệ phụ thuộc FS, SS, FF, SF (S-06) chưa sẵn sàng.<br>
-            Thuật toán sắp xếp Topo (S-07) đang chạy với các công việc độc lập.
           </div>
         `;
       }
@@ -1481,19 +1480,19 @@
       const tasksList = data.tasks || [];
       let listHtml = '';
       if (tasksList.length === 0) {
-        listHtml = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">Dự án chưa có công việc nào để tính lịch thi công.</div>';
+        listHtml = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">Dự án chưa có công việc nào hoặc không có công việc nào thỏa mãn bộ lọc.</div>';
       } else {
         const rows = tasksList.map((t, idx) => `
-          <tr>
+          <tr class="${t.isCritical ? 'critical-row' : ''}">
             <td class="cell-center">${idx + 1}</td>
-            <td><span class="task-code-badge">${escapeHtml(t.code || `CV-${t.taskId}`)}</span> ${escapeHtml(t.name || `Công việc #${t.taskId}`)}</td>
+            <td><span class="task-code-badge">${escapeHtml(t.code || `CV-${t.taskId ?? t.id}`)}</span> ${escapeHtml(t.name || `Công việc #${t.taskId ?? t.id}`)}</td>
             <td class="cell-center">${formatDurationVN(t.duration)}</td>
             <td class="cell-center">${t.earlyStart}</td>
             <td class="cell-center">${t.earlyFinish}</td>
             <td class="cell-center">${t.lateStart}</td>
             <td class="cell-center">${t.lateFinish}</td>
             <td class="cell-center">${t.totalFloat}</td>
-            <td class="cell-center">${t.isCritical ? '<span class="dep-type-badge" style="background:#fee2e2;color:#b91c1c;">Công việc găng</span>' : '—'}</td>
+            <td class="cell-center">${t.isCritical ? '<span class="dep-type-badge" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;font-weight:800;">🔥 Việc găng</span>' : '—'}</td>
           </tr>
         `).join('');
         listHtml = `
@@ -1507,9 +1506,20 @@
 
       body.innerHTML = `
         ${integrationNote}
-        <h4 style="margin-bottom: 12px; font-size: 14.5px; color: var(--text-title);">
-          Tổng thời gian dự án: ${formatDurationVN(data.projectDuration)}
-        </h4>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <h4 style="font-size: 14.5px; color: var(--text-title);">
+            Tổng thời gian dự án: <strong>${formatDurationVN(data.projectDuration)}</strong>
+          </h4>
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; cursor: pointer;">
+              <input type="checkbox" id="modal-critical-toggle" ${criticalOnly ? 'checked' : ''} onchange="openScheduleModal(this.checked)">
+              🔥 Chỉ xem việc găng
+            </label>
+            <a href="schedule.html?projectId=${CURRENT_PROJECT_ID}" target="_blank" style="text-decoration: none; padding: 4px 10px; font-size: 12px; background: #eff6ff; color: #1d4ed8; border: 1px solid #93c5fd; border-radius: 6px; font-weight: 700;">
+              Mở toàn màn hình ↗
+            </a>
+          </div>
+        </div>
         <div style="max-height: 430px; overflow: auto;">
           ${listHtml}
         </div>

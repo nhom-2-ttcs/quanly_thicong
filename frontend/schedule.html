@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bảng Tiến Độ & Việc Găng (CPM) | Quản Lý Thi Công</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-canvas: #f8fafc;
+      --card-bg: #ffffff;
+      --border-card: #cbd5e1;
+      --border-outer: #94a3b8;
+      --brand-blue: #1d4ed8;
+      --brand-blue-hover: #1e40af;
+      --brand-blue-soft: #eff6ff;
+      --emerald-bg: #ecfdf5;
+      --emerald-border: #a7f3d0;
+      --emerald-text: #065f46;
+      --amber-bg: #fef3c7;
+      --amber-border: #f59e0b;
+      --amber-text: #92400e;
+      --danger: #dc2626;
+      --danger-bg: #fee2e2;
+      --danger-border: #f87171;
+      --text-title: #0f172a;
+      --text-body: #1e293b;
+      --text-muted: #64748b;
+      --critical-red: #b91c1c;
+      --critical-bg: #fef2f2;
+      --critical-border: #fca5a5;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: var(--bg-canvas); color: var(--text-body); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* Topbar */
+    .topbar {
+      height: 68px; background: #ffffff; border-bottom: 2px solid var(--border-card);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px; position: sticky; top: 0; z-index: 50;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+    .brand-group { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 40px; height: 40px; background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+      border-radius: 9px; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 10px rgba(29, 78, 216, 0.3); border: 1px solid rgba(255,255,255,0.3);
+      flex-shrink: 0;
+    }
+    .brand-icon svg { width: 22px; height: 22px; fill: none; stroke: #ffffff; stroke-width: 2.2; }
+    .brand-info h1 { font-size: 16.5px; font-weight: 800; color: var(--text-title); line-height: 1.2; }
+    .brand-info span { font-size: 10.5px; font-weight: 800; color: #1d4ed8; letter-spacing: 0.6px; text-transform: uppercase; }
+
+    .topbar-actions { display: flex; align-items: center; gap: 12px; }
+    .user-pill {
+      display: flex; align-items: center; gap: 10px;
+      padding: 5px 12px 5px 6px; background: #f8fafc;
+      border: 1.5px solid var(--border-card); border-radius: 9999px;
+    }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+      color: #ffffff; font-weight: 800; font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .user-meta { display: flex; flex-direction: column; text-align: left; }
+    .user-name { font-size: 12.5px; font-weight: 800; color: var(--text-title); line-height: 1.2; }
+    .user-role-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      color: #1e40af; background: #dbeafe; padding: 1px 6px;
+      border-radius: 4px; line-height: 1.3; align-self: flex-start;
+    }
+    .user-role-badge.role-viewer { color: #065f46; background: #d1fae5; }
+
+    .btn-nav {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #ffffff; border: 1.5px solid var(--border-outer);
+      padding: 8px 16px; border-radius: 8px;
+      color: var(--text-title); font-size: 13px; font-weight: 700;
+      text-decoration: none; transition: all 0.2s; cursor: pointer;
+    }
+    .btn-nav:hover { background: var(--brand-blue-soft); border-color: var(--brand-blue); color: var(--brand-blue); }
+
+    .btn-logout {
+      padding: 8px 16px; border-radius: 8px; background: var(--danger-bg);
+      border: 1.5px solid var(--danger-border); color: var(--danger);
+      font-size: 12.5px; font-weight: 800; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-logout:hover { background: #fecaca; }
+
+    /* Main Container */
+    .main-content {
+      max-width: 1380px; width: 100%; margin: 0 auto;
+      padding: 24px 20px 48px; display: flex; flex-direction: column; gap: 18px;
+    }
+
+    /* Header Card */
+    .schedule-header-card {
+      background: #ffffff; border: 1.5px solid var(--border-card);
+      border-radius: 12px; padding: 20px 24px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .header-row-top {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    }
+    .project-title-area h2 {
+      font-size: 20px; font-weight: 800; color: var(--text-title);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .project-badge {
+      font-size: 12px; font-weight: 700; background: #e0e7ff; color: #3730a3;
+      padding: 3px 8px; border-radius: 6px; font-family: 'JetBrains Mono', monospace;
+    }
+
+    .metrics-summary-bar {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .metric-card {
+      background: #f8fafc; border: 1.5px solid #e2e8f0;
+      border-radius: 10px; padding: 12px 16px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .metric-label { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+    .metric-value { font-size: 20px; font-weight: 800; color: var(--text-title); font-family: 'JetBrains Mono', monospace; }
+    .metric-value.highlight-critical { color: var(--critical-red); }
+    .metric-value.highlight-duration { color: var(--brand-blue); }
+
+    /* Control Toolbar */
+    .toolbar-card {
+      background: #ffffff; border: 1.5px solid var(--border-card);
+      border-radius: 10px; padding: 14px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 14px;
+    }
+    .toolbar-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .toolbar-right { display: flex; align-items: center; gap: 12px; }
+
+    /* Switch toggle styling */
+    .toggle-wrapper {
+      display: flex; align-items: center; gap: 10px; cursor: pointer;
+      user-select: none; font-size: 13.5px; font-weight: 700; color: var(--text-title);
+    }
+    .switch-input {
+      appearance: none; width: 44px; height: 24px; background: #cbd5e1;
+      border-radius: 9999px; position: relative; cursor: pointer; outline: none;
+      transition: background-color 0.2s ease;
+    }
+    .switch-input::before {
+      content: ''; position: absolute; width: 18px; height: 18px;
+      border-radius: 50%; background: #ffffff; top: 3px; left: 3px;
+      transition: transform 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .switch-input:checked { background: var(--critical-red); }
+    .switch-input:checked::before { transform: translateX(20px); }
+
+    .cache-indicator {
+      font-size: 12px; font-weight: 700; padding: 4px 10px;
+      border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .cache-cached { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .cache-fresh { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+
+    .btn-action {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px; border-radius: 7px; font-size: 13px; font-weight: 700;
+      border: 1.5px solid var(--border-outer); background: #ffffff; color: var(--text-title);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn-action:hover { background: #f1f5f9; border-color: var(--brand-blue); }
+    .btn-primary { background: var(--brand-blue); border-color: var(--brand-blue); color: #ffffff; }
+    .btn-primary:hover { background: var(--brand-blue-hover); }
+
+    /* Alert Banner */
+    .alert-banner {
+      padding: 14px 18px; border-radius: 10px; font-size: 13.5px;
+      display: flex; flex-direction: column; gap: 6px; line-height: 1.5;
+    }
+    .alert-danger {
+      background: var(--danger-bg); border: 1.5px solid var(--danger-border);
+      color: #7f1d1d;
+    }
+
+    /* Table Styles */
+    .table-container {
+      background: #ffffff; border: 1.5px solid var(--border-card);
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+    .table-responsive {
+      max-height: 600px; overflow: auto;
+    }
+    .schedule-table {
+      width: 100%; border-collapse: collapse; text-align: left;
+      min-width: 980px; font-size: 13px;
+    }
+    .schedule-table th {
+      background: #f1f5f9; color: #334155; font-size: 12px;
+      font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 12px 14px; border-bottom: 2px solid var(--border-card);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .schedule-table td {
+      padding: 11px 14px; border-bottom: 1px solid #e2e8f0;
+      color: var(--text-body); vertical-align: middle;
+    }
+    .schedule-table tr:hover { background: #f8fafc; }
+    .schedule-table tr.critical-row {
+      background: #fff8f8;
+    }
+    .schedule-table tr.critical-row:hover {
+      background: #fee2e2;
+    }
+
+    .cell-center { text-align: center; }
+    .cell-mono { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+    /* Badges */
+    .task-code {
+      display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+      font-weight: 700; color: #1e3a8a; background: #e0e7ff; padding: 2px 7px;
+      border-radius: 4px; border: 1px solid #c7d2fe;
+    }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700;
+    }
+    .status-critical {
+      background: var(--critical-bg); color: var(--critical-red);
+      border: 1.5px solid var(--critical-border);
+    }
+    .status-normal {
+      background: #f1f5f9; color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+
+    .loading-state {
+      padding: 48px; text-align: center; color: var(--text-muted);
+      font-size: 14px; font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="brand-group">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 16h8M7 11h12M7 6h5"/></svg>
+      </div>
+      <div class="brand-info">
+        <h1>TIẾN ĐỘ THI CÔNG & ĐƯỜNG GĂNG (CPM)</h1>
+        <span>Hệ thống điều hành thi công công trình</span>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <div class="user-pill" id="user-info-pill">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-meta">
+          <span class="user-name" id="user-name">Đang tải...</span>
+          <span class="user-role-badge" id="user-role">...</span>
+        </div>
+      </div>
+
+      <a href="index.html" class="btn-nav" id="btn-back-home" title="Trang tổng quan">
+        🏠 Dự án
+      </a>
+      <a href="wbs.html" class="btn-nav" id="btn-back-wbs" title="Cơ cấu công việc">
+        🌳 WBS
+      </a>
+      <button class="btn-logout" id="btn-logout" onclick="handleLogout()">Đăng xuất</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-content">
+
+    <!-- Header Summary Card -->
+    <div class="schedule-header-card">
+      <div class="header-row-top">
+        <div class="project-title-area">
+          <h2 id="project-display-title">
+            Dự án: <span id="project-name-text">Đang tải thông tin...</span>
+            <span class="project-badge" id="project-code-badge">DA-01</span>
+          </h2>
+        </div>
+        <div id="cache-status-container">
+          <span class="cache-indicator cache-fresh" id="cache-indicator">Đang khởi tạo...</span>
+        </div>
+      </div>
+
+      <div class="metrics-summary-bar">
+        <div class="metric-card">
+          <span class="metric-label">Tổng thời gian dự án</span>
+          <span class="metric-value highlight-duration" id="metric-duration">—</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Tổng số công việc</span>
+          <span class="metric-value" id="metric-total-tasks">—</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Công việc găng (Critical)</span>
+          <span class="metric-value highlight-critical" id="metric-critical-tasks">—</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Thời điểm tính toán</span>
+          <span class="metric-value" style="font-size: 14px; font-weight: 700;" id="metric-calculated-at">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cycle Warning Alert (nếu có chu trình) -->
+    <div id="cycle-alert-area" style="display: none;"></div>
+
+    <!-- Toolbar: Filter & Actions -->
+    <div class="toolbar-card">
+      <div class="toolbar-left">
+        <label class="toggle-wrapper" for="critical-only-toggle" title="Lọc hiển thị chỉ các công việc nằm trên đường găng (Total Float = 0)">
+          <input type="checkbox" id="critical-only-toggle" class="switch-input" onchange="handleFilterToggle(this.checked)">
+          <span>🔥 Chỉ xem việc găng (Critical path only)</span>
+        </label>
+        <span style="color: var(--border-outer); font-size: 18px;">|</span>
+        <input type="text" id="task-search-input" placeholder="🔍 Tìm kiếm mã hoặc tên công việc..." 
+               style="padding: 7px 12px; border: 1.5px solid var(--border-card); border-radius: 7px; font-size: 13px; width: 260px;"
+               oninput="handleSearch(this.value)">
+      </div>
+
+      <div class="toolbar-right">
+        <button class="btn-action" id="btn-refresh" onclick="loadSchedule(false)" title="Tải lại từ bộ nhớ đệm đã lưu">
+          🔄 Làm mới
+        </button>
+        <button class="btn-action btn-primary" id="btn-recalculate" onclick="loadSchedule(true)" title="Buộc giải thuật CPM tính toán lại và cập nhật bộ nhớ đệm">
+          ⚡ Tính toán lại
+        </button>
+      </div>
+    </div>
+
+    <!-- Schedule Results Table -->
+    <div class="table-container">
+      <div class="table-responsive">
+        <table class="schedule-table" id="schedule-table">
+          <thead>
+            <tr>
+              <th class="cell-center" style="width: 50px;">STT</th>
+              <th style="width: 110px;">Mã CV</th>
+              <th>Tên công việc</th>
+              <th class="cell-center" style="width: 100px;">Thời lượng (ngày)</th>
+              <th class="cell-center" style="width: 95px;" title="Khởi sớm (Early Start)">Khởi sớm (ES)</th>
+              <th class="cell-center" style="width: 95px;" title="Kết sớm (Early Finish)">Kết sớm (EF)</th>
+              <th class="cell-center" style="width: 95px;" title="Khởi muộn (Late Start)">Khởi muộn (LS)</th>
+              <th class="cell-center" style="width: 95px;" title="Kết muộn (Late Finish)">Kết muộn (LF)</th>
+              <th class="cell-center" style="width: 95px;" title="Độ trễ toàn phần (Total Float)">Độ trễ (Float)</th>
+              <th class="cell-center" style="width: 140px;">Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody id="schedule-tbody">
+            <tr>
+              <td colspan="10" class="loading-state">Đang tải bảng kết quả tiến độ CPM...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // === XSS Prevention & Formatting Helpers ===
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatNumberVN(val) {
+      const num = Number(val);
+      if (!Number.isFinite(num)) return '0';
+      return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 }).format(num);
+    }
+
+    function formatDateVN(dateStr) {
+      if (!dateStr) return '—';
+      try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        const pad = (n) => String(n).padStart(2, '0');
+        const day = pad(d.getDate());
+        const month = pad(d.getMonth() + 1);
+        const year = d.getFullYear();
+        const hours = pad(d.getHours());
+        const minutes = pad(d.getMinutes());
+        const seconds = pad(d.getSeconds());
+        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+      } catch {
+        return dateStr;
+      }
+    }
+
+    // === Global State ===
+    let CURRENT_PROJECT_ID = 1;
+    let currentUser = null;
+    let allTasksData = [];
+    let currentFilteredTasks = [];
+
+    // Parse URL param
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramProjectId = Number(urlParams.get('projectId'));
+    if (Number.isInteger(paramProjectId) && paramProjectId > 0) {
+      CURRENT_PROJECT_ID = paramProjectId;
+    }
+
+    // === Authentication & User Info ===
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (!res.ok) {
+          window.location.href = '/login.html';
+          return;
+        }
+        const data = await res.json();
+        currentUser = data.user;
+        renderUserInfo();
+      } catch (err) {
+        window.location.href = '/login.html';
+      }
+    }
+
+    function renderUserInfo() {
+      if (!currentUser) return;
+      document.getElementById('user-name').textContent = currentUser.full_name || currentUser.email;
+      const roleElem = document.getElementById('user-role');
+      roleElem.textContent = currentUser.role_display_name || currentUser.role_name || 'Người dùng';
+      if (currentUser.role_id === 7 || currentUser.role_name === 'viewer') {
+        roleElem.classList.add('role-viewer');
+        // Viewer không được bấm tính toán lại
+        const btnRecalc = document.getElementById('btn-recalculate');
+        if (btnRecalc) {
+          btnRecalc.disabled = true;
+          btnRecalc.style.opacity = '0.6';
+          btnRecalc.style.cursor = 'not-allowed';
+          btnRecalc.title = 'Người xem dự án (Viewer) ở chế độ chỉ đọc';
+        }
+      }
+      const avatarElem = document.getElementById('user-avatar');
+      const initials = (currentUser.full_name || currentUser.email).substring(0, 1).toUpperCase();
+      avatarElem.textContent = initials;
+    }
+
+    async function handleLogout() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } finally {
+        window.location.href = '/login.html';
+      }
+    }
+
+    // === Load Schedule Results API (T-27) ===
+    async function loadSchedule(forceRecalculate = false) {
+      const tbody = document.getElementById('schedule-tbody');
+      const criticalOnly = document.getElementById('critical-only-toggle').checked;
+      const cycleAlertArea = document.getElementById('cycle-alert-area');
+      cycleAlertArea.style.display = 'none';
+      cycleAlertArea.innerHTML = '';
+
+      tbody.innerHTML = '<tr><td colspan="10" class="loading-state">⏳ Đang tải dữ liệu tiến độ...</td></tr>';
+
+      try {
+        let url = `/api/projects/${CURRENT_PROJECT_ID}/scheduling/results?`;
+        if (criticalOnly) url += 'critical=true&';
+        if (forceRecalculate) url += 'recalculate=true&';
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (res.status === 422 || data.hasCycle) {
+          // Hiển thị thông báo chu trình vòng lặp phụ thuộc tiếng Việt rõ ràng (T-28 AC 7)
+          cycleAlertArea.style.display = 'block';
+          cycleAlertArea.innerHTML = `
+            <div class="alert-banner alert-danger">
+              <div style="font-weight: 800; font-size: 15px;">⚠️ Phát hiện chu trình vòng lặp phụ thuộc (Circular Dependency)!</div>
+              <div>Không thể thiết lập tiến độ thi công khi có chu trình khép kín giữa các công việc. Giao dịch đã được hủy (Rollback) an toàn.</div>
+              ${data.cyclePath ? `<div><strong>Đường dẫn chu trình:</strong> <code style="background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 4px;">${escapeHtml(data.cyclePath)}</code></div>` : ''}
+              <div>Vui lòng mở trang <strong>WBS</strong> để gỡ bỏ quan hệ phụ thuộc gây chu trình trước khi tính lại.</div>
+            </div>
+          `;
+          tbody.innerHTML = '<tr><td colspan="10" class="loading-state" style="color: var(--danger);">Không thể lập tiến độ do mạng công việc có chu trình. Vui lòng khắc phục chu trình trước.</td></tr>';
+          return;
+        }
+
+        if (!res.ok) {
+          tbody.innerHTML = `<tr><td colspan="10" class="loading-state" style="color: var(--danger);">${escapeHtml(data.message || 'Lỗi khi tải bảng tiến độ')}</td></tr>`;
+          return;
+        }
+
+        // Cập nhật thẻ trạng thái cache
+        const cacheIndicator = document.getElementById('cache-indicator');
+        if (data.isCached) {
+          cacheIndicator.className = 'cache-indicator cache-cached';
+          cacheIndicator.innerHTML = '⚡ Dữ liệu lưu sẵn (Cached)';
+          cacheIndicator.title = 'Kết quả được đọc từ bảng schedule_results lưu sẵn, không tính lại';
+        } else {
+          cacheIndicator.className = 'cache-indicator cache-fresh';
+          cacheIndicator.innerHTML = '🔄 Vừa tính toán mới';
+          cacheIndicator.title = 'Dữ liệu vừa được tính toán bằng giải thuật CPM và ghi vào CSDL';
+        }
+
+        // Cập nhật thanh chỉ số
+        document.getElementById('metric-duration').textContent = `${formatNumberVN(data.projectDuration)} ngày`;
+        document.getElementById('metric-total-tasks').textContent = formatNumberVN(data.totalTasks || data.tasks?.length || 0);
+        document.getElementById('metric-critical-tasks').textContent = formatNumberVN(data.criticalTasksCount || 0);
+        document.getElementById('metric-calculated-at').textContent = formatDateVN(data.calculatedAt);
+
+        allTasksData = Array.isArray(data.tasks) ? data.tasks : [];
+        currentFilteredTasks = [...allTasksData];
+
+        renderTable(currentFilteredTasks);
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="10" class="loading-state" style="color: var(--danger);">Lỗi kết nối máy chủ: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    // === Render Table with High Performance & XSS Escaping (T-28) ===
+    function renderTable(tasks) {
+      const tbody = document.getElementById('schedule-tbody');
+
+      if (!tasks || tasks.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="loading-state">Không có công việc nào thỏa mãn điều kiện lọc.</td></tr>';
+        return;
+      }
+
+      // Tạo các dòng thông qua array join để tối ưu hiệu năng đạt dưới 1 giây với 500 task
+      const rows = [];
+      const len = tasks.length;
+      for (let i = 0; i < len; i++) {
+        const t = tasks[i];
+        const isCrit = Boolean(t.isCritical);
+        const rowClass = isCrit ? 'critical-row' : '';
+        const statusHtml = isCrit 
+          ? '<span class="status-badge status-critical">🔥 Việc găng</span>' 
+          : `<span class="status-badge status-normal">Bình thường (${formatNumberVN(t.totalFloat)}d)</span>`;
+
+        rows.push(`
+          <tr class="${rowClass}">
+            <td class="cell-center">${i + 1}</td>
+            <td><span class="task-code">${escapeHtml(t.code || `CV-${t.taskId}`)}</span></td>
+            <td><strong>${escapeHtml(t.name || `Công việc #${t.taskId}`)}</strong></td>
+            <td class="cell-center cell-mono">${formatNumberVN(t.duration)}</td>
+            <td class="cell-center cell-mono">${formatNumberVN(t.earlyStart)}</td>
+            <td class="cell-center cell-mono">${formatNumberVN(t.earlyFinish)}</td>
+            <td class="cell-center cell-mono">${formatNumberVN(t.lateStart)}</td>
+            <td class="cell-center cell-mono">${formatNumberVN(t.lateFinish)}</td>
+            <td class="cell-center cell-mono" style="${isCrit ? 'color: var(--critical-red); font-weight:800;' : ''}">${formatNumberVN(t.totalFloat)}</td>
+            <td class="cell-center">${statusHtml}</td>
+          </tr>
+        `);
+      }
+
+      tbody.innerHTML = rows.join('');
+    }
+
+    // === Filter Handlers ===
+    function handleFilterToggle(checked) {
+      loadSchedule(false);
+    }
+
+    function handleSearch(query) {
+      const q = (query || '').trim().toLowerCase();
+      if (!q) {
+        renderTable(allTasksData);
+        return;
+      }
+      const filtered = allTasksData.filter(t => 
+        (t.name && t.name.toLowerCase().includes(q)) ||
+        (t.code && t.code.toLowerCase().includes(q)) ||
+        String(t.taskId).includes(q)
+      );
+      renderTable(filtered);
+    }
+
+    // === Load Project Details ===
+    async function loadProjectDetails() {
+      try {
+        const res = await fetch(`/api/projects/${CURRENT_PROJECT_ID}`);
+        if (res.ok) {
+          const data = await res.json();
+          const p = data.project || data.data;
+          if (p) {
+            document.getElementById('project-name-text').textContent = p.name;
+            document.getElementById('project-code-badge').textContent = p.code || `DA-${p.id}`;
+            document.getElementById('btn-back-wbs').href = `wbs.html?projectId=${p.id}`;
+          }
+        }
+      } catch {}
+    }
+
+    // Khởi chạy khi trang tải xong
+    document.addEventListener('DOMContentLoaded', async () => {
+      await checkAuth();
+      await loadProjectDetails();
+      await loadSchedule(false);
+    });
+  </script>
+</body>
+</html>
