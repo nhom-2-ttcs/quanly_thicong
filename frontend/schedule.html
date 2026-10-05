@@ -421,9 +421,18 @@
 
     // === Authentication & User Info ===
     async function checkAuth() {
+      const token = localStorage.getItem('quanly_token');
+      if (!token) {
+        window.location.href = '/login.html';
+        return;
+      }
       try {
-        const res = await fetch('/api/auth/me');
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (!res.ok) {
+          localStorage.removeItem('quanly_token');
+          localStorage.removeItem('quanly_user');
           window.location.href = '/login.html';
           return;
         }
@@ -458,8 +467,16 @@
 
     async function handleLogout() {
       try {
-        await fetch('/api/auth/logout', { method: 'POST' });
+        const token = localStorage.getItem('quanly_token');
+        if (token) {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+        }
       } finally {
+        localStorage.removeItem('quanly_token');
+        localStorage.removeItem('quanly_user');
         window.location.href = '/login.html';
       }
     }
@@ -479,7 +496,10 @@
         if (criticalOnly) url += 'critical=true&';
         if (forceRecalculate) url += 'recalculate=true&';
 
-        const res = await fetch(url);
+        const token = localStorage.getItem('quanly_token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+        const res = await fetch(url, { headers });
         const data = await res.json();
 
         if (res.status === 422 || data.hasCycle) {

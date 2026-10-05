@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node server.js",
     "lint": "node -c server.js wbs_routes.js src/routes/taskRoutes.js src/routes/dependencyRoutes.js src/routes/schedulingRoutes.js src/routes/projectRoutes.js src/repositories/dependencyRepository.js src/repositories/scheduleResultRepository.js src/services/dependencyService.js src/utils/rbac.js src/domain/scheduling/graph.js src/domain/scheduling/topologicalSort.js src/domain/scheduling/contracts.js src/domain/scheduling/schedulerService.js src/algorithms/dependencyConstraints.js src/algorithms/forwardPass.js src/algorithms/topologicalSort.js src/algorithms/backwardPass.js middlewares/checkCycleMiddleware.js services/cycleDetectorService.js",
-    "test": "node --test"
+    "test": "node --test",
+    "benchmark": "node scripts/run_real_benchmark.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -13,5 +14,8 @@
     "dotenv": "^18.0.4",
     "express": "^4.22.3",
     "mysql2": "^3.24.4"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.63.0"
   }
 }

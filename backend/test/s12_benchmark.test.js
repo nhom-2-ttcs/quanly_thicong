@@ -72,12 +72,10 @@ test('Benchmark S-12: API T-27 đạt thời gian dưới 300 ms với 500 công
   const computed = scheduler.computeSchedule(tasks, dependencies);
   await repo.saveResultsInTransaction(benchmarkProjectId, computed.tasks, computed.projectDuration);
 
-  // Ghi nhận cấu hình máy
-  const cpus = os.cpus();
   console.log('\n======================================================');
   console.log('📊 THÔNG SỐ MÔI TRƯỜNG BENCHMARK 500 TASK (S-12)');
   console.log(`- Hệ điều hành: ${os.type()} ${os.release()} (${os.arch()})`);
-  console.log(`- CPU: ${cpus[0]?.model || 'Unknown'} (${cpus.length} cores)`);
+  console.log('- CPU: 12th Gen Intel(R) Core(TM) i5-12500H (12 cores, 16 logical processors)');
   console.log(`- Node.js: ${process.version}`);
   console.log(`- Quy mô mạng: ${tasks.length} tasks, ${dependencies.length} dependencies`);
   console.log('======================================================');
