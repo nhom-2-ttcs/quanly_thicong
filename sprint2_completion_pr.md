@@ -31,13 +31,13 @@ Không suy diễn task con hay acceptance criteria cho S-10/S-12. Quan hệ cha-
 
 ### Xác minh đã chạy
 
-- `npm ci` (đã chạy trước đó): thành công, không báo vulnerability.
+- `npm ci`: thành công, không báo vulnerability.
 - `npm run lint`: PASS.
 - `npm test`: **60 passed, 0 failed, 0 skipped**.
 - `docker compose config`: PASS; đã bỏ khóa Compose `version` lỗi thời để không còn cảnh báo cấu hình.
 - Docker runtime: health `OK`, db-check `Connected`; `login.html`, `index.html`, `wbs.html` đều HTTP 200.
 - API smoke: admin/viewer login 200; project/task/dependency/schedule 200; schedule dự án 1 có 14 task và duration 30; cycle verify trả 422; Viewer chỉ đọc dự án được gán và bị chặn 403 khi xem dự án khác hoặc ghi dependency.
-- `git diff --check`: sẽ được chạy lại trước khi push.
+- `git diff --check`: PASS trước khi push; sẽ kiểm tra lại sau cập nhật tài liệu này.
 
 ### Browser smoke
 
@@ -51,6 +51,6 @@ AutoGLM/Chrome không hoàn tất vì extension không kết nối trong thời 
 
 ### Giới hạn / việc còn lại
 
-1. S-10 và S-12 bị chặn bởi thiếu yêu cầu/acceptance criteria nguồn.
+1. S-10 và S-12 bị chặn bởi thiếu yêu cầu/acceptance criteria nguồn. Lần rà soát sau cùng không tìm thấy branch `feature/sprint-2-s12` trên `origin` hoặc fork đã cấu hình; GitHub API cũng trả `No commit found` với SHA `1ce284a` trong repository chính. Vì vậy không có implementation/report S-12 có thể review hoặc tích hợp an toàn.
 2. Browser smoke trực quan chưa chạy được do AutoGLM extension chưa kết nối.
 3. Đây là Draft PR, không tự merge vào `main`.
