@@ -77,6 +77,7 @@ function checkProjectReadAccess(req, res, projectId) {
   const authHeader = req.headers?.['authorization'] || req.headers?.['Authorization'];
   const token = authHeader ? authHeader.replace(/^Bearer\s+/i, '').trim() : (req.query?.token || null);
 
+  let user = req.user;
   if (token) {
     const session = getSession(token);
     if (!session) {
@@ -86,9 +87,12 @@ function checkProjectReadAccess(req, res, projectId) {
       });
       return true;
     }
+    user = session;
     req.user = session;
+  }
 
-    if (!canUserAccessProject(session, projectId)) {
+  if (user) {
+    if (!canUserAccessProject(user, projectId)) {
       res.status(403).json({
         success: false,
         message: 'Quyền truy cập bị từ chối: Bạn không được cấp quyền xem dự án này.'

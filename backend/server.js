@@ -70,6 +70,10 @@ app.get('/register', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/register.html'));
 });
 
+app.get('/schedule', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/schedule.html'));
+});
+
 // Middleware xác thực token phiên
 const { authenticate } = require('./src/utils/rbac');
 app.use(authenticate);
