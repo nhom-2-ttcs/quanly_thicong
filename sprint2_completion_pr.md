@@ -1,17 +1,38 @@
 ## Sprint 2 Integration: Hoàn thiện toàn diện S-05 đến S-12
 
+### Trạng thái tổng quan nghiệm thu
+
+```text
+SPRINT 2 STATUS:
+TECHNICAL IMPLEMENTATION COMPLETE — FORMAL ACCEPTANCE PENDING
+```
+
+- **Nhánh tích hợp:** `feature/sprint-2-s05-s12-integration`
+- **Base commit (origin/main):** `494117ddb0765e64de3ea236af06f3ca738d9a14`
+- **HEAD commit:** `9a687ec04aab42ad78b7ba4e466ff672b2cfc7f6`
+- **Đồng bộ Git:**
+  - Local so với remote feature branch (`origin/feature/sprint-2-s05-s12-integration`): `ahead 0, behind 0` (đồng bộ hoàn toàn)
+  - Feature branch so với nhánh đích (`origin/main`): `ahead 24, behind 0`
+- **GitHub Actions CI Status:**
+  - PR Workflow: Run ID [37367670336](https://github.com/nhom-2-ttcs/quanly_thicong/actions/runs/37367670336)
+  - Push Workflow: Run ID [37367665844](https://github.com/nhom-2-ttcs/quanly_thicong/actions/runs/37367665844)
+  - Trạng thái: `BLOCKED BY GITHUB HOSTED RUNNER INFRASTRUCTURE` (Hạ tầng hosted runner của GitHub Actions trên repository đang bị nghẽn hàng đợi, không được cấp phát runner sau 15 phút).
+- **Trạng thái kiểm toán T-23 (Story S-10):** `PENDING INDEPENDENT REVIEW` (Chờ người thứ hai đối chiếu độc lập ngoài đời thực, tuân thủ nguyên tắc không khai khống).
+
+---
+
 ### Phạm vi đối chiếu Stories và Tasks (Jira Official)
 
-| Story | Trạng thái | Bằng chứng & Triển khai |
-| --- | --- | --- |
-| S-05 | Integrated / Verified | Task có thời lượng, WBS ownership, validation và RBAC regression |
-| S-06 | Integrated / Verified | `task_dependencies`, migration idempotent, CRUD và RBAC |
-| S-07 | Integrated / Verified | Kahn topo, cycle handling 422, dữ liệu dependency thật |
-| S-08 | Integrated / Verified | Forward pass ES/EF, FS/SS/FF/SF và độ trễ lag |
-| S-09 | Integrated / Verified | Backward pass LS/LF, float, critical task, API/UI schedule |
-| S-10 | **Completed (Implementation & Tests)**<br>*(Chờ independent manual review)* | SCRUM-65 (Parent: SCRUM-14 [E-02], SP: 2)<br>• T-22 (SCRUM-79): Chuyển bảng đáp án K-01 thành test tự động tĩnh<br>• T-23 (SCRUM-80): Thêm 2 mạng kiểm thử độc lập (đủ FS/SS/FF/SF + lag âm, 2 nhánh lệch 3 ngày)<br>• Test mutation/negative phát hiện sai lệch mốc |
-| S-11 | Integrated / Verified | Chu trình bị chặn trước khi tính lịch, rollback an toàn, thông báo tiếng Việt |
-| S-12 | **Completed & Verified** | SCRUM-67 (Parent: SCRUM-16 [E-04], SP: 3)<br>• T-26 (SCRUM-83): Bảng `schedule_results`, database transaction, cache invalidation<br>• T-27 (SCRUM-84): Endpoint API trả kết quả lưu sẵn, backend filter critical, sort ES<br>• T-28 (SCRUM-85): Màn hình `schedule.html` hiển thị bảng tiến độ, lọc việc găng |
+| Story | Trạng thái | Bằng chứng & Triển khai kỹ thuật |
+| :--- | :---: | :--- |
+| **S-05** | **COMPLETED & VERIFIED** | **T-11, T-12:** Khai báo công việc có thời lượng (ngày) gắn vào WBS, ràng buộc tính toàn vẹn khóa ngoại, chặn xóa WBS đang chứa task (HTTP 409 Conflict), từ chối thời lượng âm/rỗng/sai kiểu. |
+| **S-06** | **COMPLETED & VERIFIED** | **T-13, T-14:** Bảng `task_dependencies`, migration idempotent, 4 loại quan hệ FS/SS/FF/SF và độ trễ lag (kể cả lag âm), CRUD, bảo vệ chu trình (HTTP 422), phân quyền RBAC. |
+| **S-07** | **COMPLETED & VERIFIED** | **T-15..T-17:** Giải thuật Kahn Topological Sort $O(V+E)$, phát hiện chu trình tất định (deterministic), tích hợp dữ liệu phụ thuộc thật từ S-06. |
+| **S-08** | **COMPLETED & VERIFIED** | **T-18, T-19:** Forward pass tính Khởi sớm (ES), Kết sớm (EF) và thời lượng dự án trên mạng công việc hỗ trợ cả 4 loại quan hệ và lead time. |
+| **S-09** | **COMPLETED & VERIFIED** | **T-20, T-21:** Backward pass tính Khởi muộn (LS), Kết muộn (LF), độ trễ (Total Float) và nhận diện công việc găng (Critical tasks). |
+| **S-10** | **TECHNICAL COMPLETE**<br>*(Chờ independent review)* | **T-22, T-23 (Parent: SCRUM-14 [E-02], 2 SP):**<br>• Fixture tĩnh K-01, Mạng 1 (đủ 4 quan hệ + lag âm), Mạng 2 (2 nhánh song song lệch 3 ngày float).<br>• Expected tĩnh không phụ thuộc scheduler.<br>• Negative mismatch test đạt yêu cầu phát hiện sai lệch.<br>• Chờ chữ ký xác nhận của thành viên thứ hai ngoài đời thực. |
+| **S-11** | **COMPLETED & VERIFIED** | **T-24, T-25:** Chu trình bị chặn trước khi lập lịch, rollback an toàn CSDL, thông báo lỗi tiếng Việt thân thiện không lộ stack trace. |
+| **S-12** | **COMPLETED & VERIFIED** | **T-26..T-28 (Parent: SCRUM-16 [E-04], 3 SP):**<br>• CSDL `schedule_results` và `project_schedule_status` với migration idempotent.<br>• Giao dịch Database transaction toàn vẹn, rollback khi lỗi chu trình.<br>• Cache invalidation (`is_stale = TRUE`) cô lập theo từng project khi task/dependency thay đổi.<br>• API `GET /api/projects/:projectId/scheduling/results` đọc cache, sort ES/task_id, filter `critical`.<br>• Màn hình `schedule.html` hiển thị đầy đủ cột, icon `🔥` việc găng, tiếng Việt, chống XSS.<br>• Benchmark 500 tasks đạt cả API và Chromium. |
 
 ### Quan hệ Jira
 
@@ -79,20 +100,20 @@
 #### 1. T-27: Request HTTP thật đến Backend container (Port 5001)
 *Phương pháp:* Gọi HTTP request thật qua mạng TCP đến backend container, qua middleware xác thực JWT, kiểm tra phân quyền RBAC, truy vấn cache bảng `schedule_results` trong MySQL container `quanly_thicong_db`, và thực hiện tuần tự hóa JSON 500 công việc.
 - **Số lần chạy:** 10 lần (sau 3 lần warm-up)
-- **Tối thiểu (Min):** **14.470 ms**
-- **Trung vị (Median):** **15.188 ms**
-- **Phân vị 95 (P95):** **19.126 ms**
-- **Tối đa (Max):** **19.126 ms**
+- **Tối thiểu (Min):** **13.210 ms**
+- **Trung vị (Median):** **15.476 ms**
+- **Phân vị 95 (P95):** **19.568 ms**
+- **Tối đa (Max):** **19.568 ms**
 - **Ngưỡng AC:** `< 300 ms`
 - **Kết luận:** **✅ PASS** (Vượt xa yêu cầu)
 
 #### 2. T-28: Hiển thị giao diện thật qua Playwright / Chromium (Port 8081)
 *Phương pháp:* Dùng Playwright tự động hóa trình duyệt Chromium thật (`C:\Program Files\Google\Chrome\Application\chrome.exe`), đăng nhập và mở trang `http://localhost:8081/schedule.html?projectId=9500`, đo thời gian từ khi yêu cầu API được gửi đi đến khi toàn bộ 500 dòng bảng tiến độ được render vào cây DOM (`#schedule-tbody tr:nth-child(500)`).
 - **Số lần chạy:** 10 lần (sau 3 lần warm-up)
-- **Tối thiểu (Min):** **203.940 ms**
-- **Trung vị (Median):** **230.075 ms**
-- **Phân vị 95 (P95):** **438.652 ms**
-- **Tối đa (Max):** **438.652 ms**
+- **Tối thiểu (Min):** **189.020 ms**
+- **Trung vị (Median):** **354.861 ms**
+- **Phân vị 95 (P95):** **398.602 ms**
+- **Tối đa (Max):** **398.602 ms**
 - **Ngưỡng AC:** `< 1000 ms`
 - **Kết luận:** **✅ PASS** (Vượt xa yêu cầu)
 
