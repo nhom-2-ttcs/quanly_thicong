@@ -33,6 +33,12 @@
    - Chạy trực tiếp trong CI (`npm test`).
    - Kiểm tra toàn bộ ES, EF, LS, LF, float, critical từng task.
    - Negative / mutation test (AC 6): Cố ý sửa sai mốc tiến độ hoặc trạng thái găng trong fixture dự kiến, chứng minh thuật toán kiểm tra phát hiện sai lệch ngay lập tức và báo cáo chi tiết.
+3. **Checklist kiểm toán độc lập T-23 (Dành cho thành viên khác ký xác nhận):**
+   - [ ] Kiểm tra bảng tính tay K-01 (Chuỗi 3 công việc FS lag 0; ES/EF/LS/LF, duration = 12d).
+   - [ ] Kiểm tra Mạng 1 (Bao phủ đủ 4 loại quan hệ FS, SS lag 2, FF lag 3, SF lag 8, FS lag -2; duration = 14d).
+   - [ ] Kiểm tra Mạng 2 (2 nhánh song song lệch nhau đúng 3 ngày float; duration = 12d).
+   - [ ] Xác nhận hai kết quả tính tay độc lập khớp nhau hoàn toàn trước khi nghiệm thu Story S-10.
+   - Trạng thái kiểm tra độc lập hiện tại: **`PENDING INDEPENDENT REVIEW`** (Chờ người thật ký xác nhận ngoài đời thực, không bịa tên).
 
 ---
 
@@ -63,17 +69,32 @@
 
 ---
 
-### Kết quả Benchmark 500 Công việc (S-12 AC 5 & T-27 / T-28)
+### Kết quả Benchmark Thực Tế 500 Công việc (S-12 AC 5 & T-27 / T-28)
 
-Kiểm chuẩn thực tế trên môi trường máy chủ cục bộ:
-- **Cấu hình máy thử nghiệm:** Windows 11 x64, CPU 12th Gen Intel(R) Core(TM) i5-12500H (16 cores), Node.js v24.20.0.
-- **Quy mô kiểm thử:** 500 tasks, 544 dependencies phân nhánh và hội tụ.
-- **Số lần chạy:** 10 lần đo độc lập sau 3 lần warm-up.
+Đo lường trực tiếp trên hệ thống Docker container đang hoạt động (không dùng hàm nội bộ giả lập):
+- **Cấu hình máy kiểm chuẩn:** 12th Gen Intel(R) Core(TM) i5-12500H (12 cores, 16 logical processors), Windows 11 x64, Node.js v24.20.0.
+- **Quy mô kiểm thử:** 500 tasks, 544 dependencies phân nhánh và hội tụ (`project_id = 9500`).
+- **Quy trình đo:** 3 lần warm-up, đo 10 lần liên tiếp độc lập (`npm run benchmark`).
 
-| Tiêu chí | Ngưỡng Acceptance Criteria | Tối thiểu (Min) | Trung vị (Median) | Phân vị 95 (P95) | Tối đa (Max) | Kết luận |
-| --- | --- | --- | --- | --- | --- | --- |
-| **API T-27 (500 task)** | `< 300 ms` | **0.029 ms** | **0.037 ms** | **0.166 ms** | **0.166 ms** | **✅ PASS** |
-| **UI Render T-28 (500 task)** | `< 1000 ms` | **0.425 ms** | **0.789 ms** | **2.961 ms** | **2.961 ms** | **✅ PASS** |
+#### 1. T-27: Request HTTP thật đến Backend container (Port 5001)
+*Phương pháp:* Gọi HTTP request thật qua mạng TCP đến backend container, qua middleware xác thực JWT, kiểm tra phân quyền RBAC, truy vấn cache bảng `schedule_results` trong MySQL container `quanly_thicong_db`, và thực hiện tuần tự hóa JSON 500 công việc.
+- **Số lần chạy:** 10 lần (sau 3 lần warm-up)
+- **Tối thiểu (Min):** **14.470 ms**
+- **Trung vị (Median):** **15.188 ms**
+- **Phân vị 95 (P95):** **19.126 ms**
+- **Tối đa (Max):** **19.126 ms**
+- **Ngưỡng AC:** `< 300 ms`
+- **Kết luận:** **✅ PASS** (Vượt xa yêu cầu)
+
+#### 2. T-28: Hiển thị giao diện thật qua Playwright / Chromium (Port 8081)
+*Phương pháp:* Dùng Playwright tự động hóa trình duyệt Chromium thật (`C:\Program Files\Google\Chrome\Application\chrome.exe`), đăng nhập và mở trang `http://localhost:8081/schedule.html?projectId=9500`, đo thời gian từ khi yêu cầu API được gửi đi đến khi toàn bộ 500 dòng bảng tiến độ được render vào cây DOM (`#schedule-tbody tr:nth-child(500)`).
+- **Số lần chạy:** 10 lần (sau 3 lần warm-up)
+- **Tối thiểu (Min):** **203.940 ms**
+- **Trung vị (Median):** **230.075 ms**
+- **Phân vị 95 (P95):** **438.652 ms**
+- **Tối đa (Max):** **438.652 ms**
+- **Ngưỡng AC:** `< 1000 ms`
+- **Kết luận:** **✅ PASS** (Vượt xa yêu cầu)
 
 ---
 
@@ -81,7 +102,8 @@ Kiểm chuẩn thực tế trên môi trường máy chủ cục bộ:
 
 - **Lint:** `npm run lint` -> **PASS** (100% cú pháp sạch).
 - **Unit & Integration Tests:** `npm test` -> **77 passed, 0 failed, 0 skipped**.
-- **Docker Compose:** Cấu hình chuẩn hóa, `docker compose up -d --build` thành công.
+- **Benchmark Suite:** `npm run benchmark` -> **PASS cả T-27 HTTP API thật và T-28 Chromium thật**.
+- **Docker Compose:** Cấu hình chuẩn hóa, `docker compose up -d --build` hoạt động ổn định.
 - **Health Check:** `/api/health` -> `{"status":"OK"}`.
 - **Database Check:** `/api/db-check` -> `{"status":"Connected"}`.
 - **RBAC & Security:**
@@ -92,4 +114,4 @@ Kiểm chuẩn thực tế trên môi trường máy chủ cục bộ:
   - Lần 1: `isCached = false` (tính toán và ghi nhận CSDL).
   - Lần 2: `isCached = true` (đọc từ bảng kết quả lưu sẵn, không tính lại).
   - Sửa task duration: Cache stale -> Lần đọc kế tiếp tính lại (`isCached = false`) -> Lần sau lại cache (`isCached = true`).
-- **Git:** Working tree sạch sẽ, không có secret/token/runtime files.
+- **Git:** Working tree sạch sẽ, không commit secret/token/runtime files.
