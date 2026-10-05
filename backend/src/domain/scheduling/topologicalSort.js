@@ -63,6 +63,10 @@ function traceCycle(graph, candidateIds) {
   return Array.from(candidateIds);
 }
 
+function compareIds(a, b) {
+  return String(a).localeCompare(String(b), 'en', { numeric: true, sensitivity: 'base' });
+}
+
 /**
  * Thực hiện sắp xếp thứ tự phụ thuộc (Topological Sort) bằng thuật toán Kahn
  * @param {TaskDependencyGraph} graph 
@@ -94,11 +98,12 @@ function topologicalSort(graph) {
   for (const edge of graph.edges) {
     if (edge.predecessorId === edge.successorId) {
       const selfNode = graph.getNode(edge.predecessorId);
+      const selfId = selfNode?.id ?? edge.predecessorId;
       const name = selfNode ? `[${selfNode.code || selfNode.id}] ${selfNode.name}` : `Task #${edge.predecessorId}`;
       return {
         success: false,
         hasCycle: true,
-        cycleNodes: [edge.predecessorId, edge.predecessorId],
+        cycleNodes: [selfId, selfId],
         cyclePath: `${name} -> ${name}`,
         message: `Phát hiện quan hệ phụ thuộc tự trỏ (Self-loop) tại công việc: ${name}`
       };
@@ -107,8 +112,8 @@ function topologicalSort(graph) {
 
   // 3. Sao chép in-degree để tính toán
   const inDegreeMap = new Map();
-  for (const node of graph.getNodes()) {
-    inDegreeMap.set(node.id, graph.getInDegree(node.id));
+  for (const id of graph.nodes.keys()) {
+    inDegreeMap.set(id, graph.getInDegree(id));
   }
 
   // 4. Khởi tạo hàng đợi chứa các node có in-degree = 0
@@ -119,7 +124,7 @@ function topologicalSort(graph) {
       zeroQueue.push(id);
     }
   }
-  zeroQueue.sort((a, b) => a - b);
+  zeroQueue.sort(compareIds);
 
   const orderedIds = [];
   const orderedNodes = [];
@@ -135,8 +140,9 @@ function topologicalSort(graph) {
     }
 
     const currentId = zeroQueue.shift();
-    orderedIds.push(currentId);
-    orderedNodes.push(graph.getNode(currentId));
+    const currentNode = graph.getNode(currentId);
+    orderedIds.push(currentNode?.id ?? currentId);
+    orderedNodes.push(currentNode);
 
     const successors = graph.getSuccessors(currentId);
     // Sắp xếp successors để đưa vào queue một cách deterministic
@@ -151,12 +157,12 @@ function topologicalSort(graph) {
       }
     }
 
-    newlyZeroNodes.sort((a, b) => a - b);
+    newlyZeroNodes.sort(compareIds);
     for (const nz of newlyZeroNodes) {
       zeroQueue.push(nz);
     }
     // Duy trì hàng đợi luôn sắp xếp tăng dần để deterministic khi có nhiều nhánh
-    zeroQueue.sort((a, b) => a - b);
+    zeroQueue.sort(compareIds);
   }
 
   // 6. Kiểm tra kết quả sắp xếp
@@ -178,8 +184,9 @@ function topologicalSort(graph) {
     }
   }
 
-  const cycleNodes = traceCycle(graph, remainingIds);
-  const cyclePath = cycleNodes
+  const cycleKeys = traceCycle(graph, remainingIds);
+  const cycleNodes = cycleKeys.map(id => graph.getNode(id)?.id ?? id);
+  const cyclePath = cycleKeys
     .map(id => {
       const n = graph.getNode(id);
       return n ? `${n.code || n.id}` : `#${id}`;

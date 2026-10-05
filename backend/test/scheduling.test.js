@@ -168,15 +168,13 @@ test('S-07 Test 10: Xử lý Duplicate edge (không tăng in-degree thừa)', ()
   assert.deepStrictEqual(result.orderedIds, [1, 2]);
 });
 
-test('S-07 Test 11: Node xuất hiện trong edge nhưng thiếu trong danh sách nodes', () => {
+test('S-07 Test 11: Từ chối dependency trỏ đến node không tồn tại', () => {
   const graph = new TaskDependencyGraph();
-  // Không gọi addNode trước, chỉ thêm edge
-  graph.addEdge({ predecessorId: 100, successorId: 200 });
-
-  assert.strictEqual(graph.getNodeCount(), 2, 'Tự động tạo placeholder node');
-  const result = topologicalSort(graph);
-  assert.strictEqual(result.success, true);
-  assert.deepStrictEqual(result.orderedIds, [100, 200]);
+  assert.throws(
+    () => graph.addEdge({ predecessorId: 100, successorId: 200 }),
+    /không tồn tại/,
+    'Dependency không được tự tạo placeholder task'
+  );
 });
 
 test('S-07 Test 12: Đồ thị lớn 100 node đảm bảo O(V+E) và không treo', () => {

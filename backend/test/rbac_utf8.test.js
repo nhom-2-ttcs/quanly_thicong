@@ -225,15 +225,15 @@ test('ProjectRoutes: GET danh sách dự án lọc theo quyền của user (Admi
 });
 
 // ==========================================
-// 5. REGRESSION: S-07 GIỮ NGUYÊN TRẠNG THÁI CHẶN BỞI S-06
+// 5. REGRESSION: S-06 -> S-09 ĐÃ TÍCH HỢP
 // ==========================================
 
-test('Regression S-07: Endpoint tính toán trình tự thi công trả về BLOCKED BY S-06 INTEGRATION', async () => {
+test('Regression S-07/S-09: Endpoint trả lịch tích hợp từ task_dependencies', async () => {
   const mockPool = {
     async query(sql) {
       const upper = sql.trim().toUpperCase();
-      if (upper.includes("SHOW TABLES LIKE 'TASK_DEPENDENCIES'")) {
-        return [[]]; // Bảng task_dependencies chưa tồn tại do S-06 đang làm
+      if (upper.includes('FROM TASK_DEPENDENCIES')) {
+        return [[]];
       }
       return [[
         { id: 1, project_id: 1, name: 'Công việc 1', code: 'CV-01', duration: 2, status: 'pending' },
@@ -251,6 +251,7 @@ test('Regression S-07: Endpoint tính toán trình tự thi công trả về BLO
   await orderLayer.route.stack[orderLayer.route.stack.length - 1].handle(req, res);
 
   assert.strictEqual(res.statusCode, 200);
-  assert.strictEqual(res.body.integrationStatus, 'BLOCKED BY S-06 INTEGRATION', 'Hợp đồng tích hợp S-07 phải ghi rõ BLOCKED BY S-06 INTEGRATION');
+  assert.strictEqual(res.body.integrationStatus, 'INTEGRATED WITH S-06');
   assert.ok(Array.isArray(res.body.order), 'Phải trả về danh sách thứ tự thi công');
+  assert.ok(Array.isArray(res.body.tasks), 'Phải trả về ES/EF/LS/LF/float của S-09');
 });

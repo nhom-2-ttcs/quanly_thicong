@@ -526,10 +526,10 @@ test('S-07 Integration: Đồ thị rẽ nhánh và hội tụ xử lý chính x
   const scheduler = new SchedulerService({});
 
   const tasks = [
-    { id: 1, name: 'Khởi đầu' },
-    { id: 2, name: 'Nhánh A' },
-    { id: 3, name: 'Nhánh B' },
-    { id: 4, name: 'Hội tụ' }
+    { id: 1, name: 'Khởi đầu', duration: 1 },
+    { id: 2, name: 'Nhánh A', duration: 1 },
+    { id: 3, name: 'Nhánh B', duration: 1 },
+    { id: 4, name: 'Hội tụ', duration: 1 }
   ];
 
   // Rẽ nhánh: 1 -> 2, 1 -> 3; Hội tụ: 2 -> 4, 3 -> 4
@@ -555,11 +555,11 @@ test('S-07 Integration: Đồ thị rời rạc (nhiều thành phần liên th�
   const scheduler = new SchedulerService({});
 
   const tasks = [
-    { id: 10, name: 'Cụm 1 - A' },
-    { id: 11, name: 'Cụm 1 - B' },
-    { id: 20, name: 'Cụm 2 - A' },
-    { id: 21, name: 'Cụm 2 - B' },
-    { id: 30, name: 'Độc lập' }
+    { id: 10, name: 'Cụm 1 - A', duration: 1 },
+    { id: 11, name: 'Cụm 1 - B', duration: 1 },
+    { id: 20, name: 'Cụm 2 - A', duration: 1 },
+    { id: 21, name: 'Cụm 2 - B', duration: 1 },
+    { id: 30, name: 'Độc lập', duration: 1 }
   ];
 
   const dependencies = [

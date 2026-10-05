@@ -1,122 +1,119 @@
-/**
- * Scheduler Service (S-07 / SCRUM-62)
- * Tích hợp công việc (S-05) với quan hệ phụ thuộc (S-06)
- */
-
 const { TaskDependencyGraph } = require('./graph');
 const { topologicalSort } = require('./topologicalSort');
 const { validateDependencyContract } = require('./contracts');
+const { calculateForwardPass } = require('../../algorithms/forwardPass');
+const { calculateBackwardPass, normalizeId } = require('../../algorithms/backwardPass');
 
 class SchedulerService {
   constructor(db) {
-    this.db = db;
     this.pool = db?.pool || db;
   }
 
-  /**
-   * Tính toán thứ tự phụ thuộc từ danh sách tasks và dependencies truyền vào
-   * @param {Array<Object>} tasks Danh sách công việc (S-05)
-   * @param {Array<Object>} dependencies Danh sách quan hệ phụ thuộc (S-06 contract)
-   */
   computeSchedule(tasks = [], dependencies = []) {
-    // 1. Validate các dependency records theo contract
-    const validEdges = [];
-    for (const dep of dependencies) {
-      const val = validateDependencyContract(dep);
-      if (!val.valid) {
-        // Nếu là self-loop, cho phép đồ thị phát hiện để báo chi tiết
-        if (val.error && val.error.includes('Self-loop')) {
-          validEdges.push(dep);
-        } else {
-          return {
-            success: false,
-            hasCycle: false,
-            error: val.error,
-            message: `Lỗi hợp đồng quan hệ phụ thuộc: ${val.error}`
-          };
-        }
-      } else {
-        validEdges.push(dep);
-      }
+    if (!Array.isArray(tasks) || !Array.isArray(dependencies)) {
+      throw new Error('tasks và dependencies phải là mảng');
     }
 
-    // 2. Xây dựng đồ thị
-    const graph = new TaskDependencyGraph();
-    graph.setNodes(tasks);
-    graph.setEdges(validEdges);
+    const normalizedTasks = tasks.map(task => {
+      const id = normalizeId(task?.id, 'task.id');
+      const duration = Number(task?.duration);
+      if (!Number.isFinite(duration) || duration < 0) {
+        throw new Error(`duration của task ${id} phải là số không âm hữu hạn`);
+      }
+      return { ...task, normalizedId: id, duration, predecessors: [] };
+    });
 
-    // 3. Thực hiện Topological Sort & Cycle Detection
-    const result = topologicalSort(graph);
+    const normalizedDependencies = dependencies.map((dependency, index) => {
+      const candidate = {
+        predecessorId: dependency?.predecessorId,
+        successorId: dependency?.successorId,
+        type: dependency?.type,
+        lag: dependency?.lag
+      };
+      const validation = validateDependencyContract(candidate);
+      if (!validation.valid && !validation.error?.includes('Self-loop')) {
+        throw new Error(`Dependency ${index + 1}: ${validation.error}`);
+      }
+      return {
+        predecessorId: normalizeId(candidate.predecessorId, `dependency[${index}].predecessorId`),
+        successorId: normalizeId(candidate.successorId, `dependency[${index}].successorId`),
+        type: String(candidate.type ?? 'FS').toUpperCase(),
+        lag: Number(candidate.lag ?? 0)
+      };
+    });
+
+    const taskById = new Map(normalizedTasks.map(task => [task.normalizedId, task]));
+    for (const dependency of normalizedDependencies) {
+      if (!taskById.has(dependency.predecessorId) || !taskById.has(dependency.successorId)) {
+        throw new Error(`Dependency tham chiếu task không tồn tại: ${dependency.predecessorId} -> ${dependency.successorId}`);
+      }
+      taskById.get(dependency.successorId).predecessors.push({
+        id: dependency.predecessorId,
+        type: dependency.type,
+        lag: dependency.lag
+      });
+    }
+
+    const graph = new TaskDependencyGraph().setNodes(normalizedTasks).setEdges(normalizedDependencies);
+    const topology = topologicalSort(graph);
+    if (topology.hasCycle) {
+      return { ...topology, nodeCount: graph.getNodeCount(), edgeCount: graph.getEdgeCount(), projectDuration: null, tasks: [] };
+    }
+    if (normalizedTasks.length === 0) {
+      return { ...topology, nodeCount: 0, edgeCount: 0, projectDuration: 0, tasks: [] };
+    }
+
+    const earlySchedule = calculateForwardPass(normalizedTasks, topology.orderedIds, 0);
+    const schedule = calculateBackwardPass(normalizedTasks, topology.orderedIds, earlySchedule, normalizedDependencies);
+    const sourceById = new Map(tasks.map(task => [normalizeId(task.id, 'task.id'), task]));
+    const scheduledTasks = schedule.map(item => {
+      const source = sourceById.get(normalizeId(item.taskId, 'taskId'));
+      return { ...item, name: source?.name, code: source?.code, status: source?.status };
+    });
+    const projectDuration = Math.max(...scheduledTasks.map(task => task.earlyFinish));
+
     return {
-      ...result,
+      ...topology,
       nodeCount: graph.getNodeCount(),
-      edgeCount: graph.getEdgeCount()
+      edgeCount: graph.getEdgeCount(),
+      projectDuration,
+      tasks: scheduledTasks
     };
   }
 
-  /**
-   * Tính toán thứ tự cho một dự án cụ thể từ cơ sở dữ liệu
-   * @param {number} projectId 
-   * @param {Array<Object>} [mockDependencies] Tùy chọn mock dependencies khi S-06 chưa có bảng CSDL
-   */
   async getProjectSchedule(projectId, mockDependencies = null) {
-    if (!this.pool) {
-      throw new Error('Database pool chưa được khởi tạo');
-    }
-
-    // 1. Đọc tasks của dự án từ S-05
+    if (!this.pool?.query) throw new Error('Database pool chưa được khởi tạo');
     const [tasks] = await this.pool.query(
       'SELECT id, project_id, work_item_id, name, code, duration, status FROM tasks WHERE project_id = ? ORDER BY id ASC',
       [projectId]
     );
 
-    // 2. Đọc dependencies (S-06)
-    let dependencies = [];
-    let integrationStatus = 'READY';
-
-    if (mockDependencies !== null && Array.isArray(mockDependencies)) {
+    let dependencies;
+    let integrationStatus;
+    if (Array.isArray(mockDependencies)) {
       dependencies = mockDependencies;
       integrationStatus = 'USING_MOCK_DEPENDENCIES';
     } else {
-      // Đọc bảng task_dependencies (S-06)
-      try {
-        const [tables] = await this.pool.query(
-          "SHOW TABLES LIKE 'task_dependencies'"
-        );
-        if (tables && tables.length > 0) {
-          const [deps] = await this.pool.query(
-            'SELECT id, project_id, predecessor_task_id, successor_task_id, dependency_type, lag_days FROM task_dependencies WHERE project_id = ? ORDER BY id ASC',
-            [projectId]
-          );
-          // Chuyển sang contract chuẩn { predecessorId, successorId, type, lag }
-          dependencies = deps.map(d => ({
-            id: d.id,
-            predecessorId: d.predecessor_task_id,
-            successorId: d.successor_task_id,
-            type: d.dependency_type,
-            lag: Number(d.lag_days || 0)
-          }));
-          integrationStatus = 'INTEGRATED WITH S-06';
-        } else {
-          // Bảng chưa được tạo -> Báo trạng thái blocked
-          integrationStatus = 'BLOCKED BY S-06 INTEGRATION';
-        }
-      } catch {
-        integrationStatus = 'BLOCKED BY S-06 INTEGRATION';
-      }
+      const [rows] = await this.pool.query(
+        'SELECT id, project_id, predecessor_task_id, successor_task_id, dependency_type, lag_days FROM task_dependencies WHERE project_id = ? ORDER BY id ASC',
+        [projectId]
+      );
+      dependencies = rows.map(row => ({
+        predecessorId: row.predecessor_task_id,
+        successorId: row.successor_task_id,
+        type: row.dependency_type,
+        lag: Number(row.lag_days)
+      }));
+      integrationStatus = 'INTEGRATED WITH S-06';
     }
-
-    const scheduleResult = this.computeSchedule(tasks, dependencies);
 
     return {
       projectId,
       integrationStatus,
       dependenciesCount: dependencies.length,
-      ...scheduleResult
+      ...this.computeSchedule(tasks, dependencies)
     };
   }
 }
 
-module.exports = {
-  SchedulerService
-};
+module.exports = { SchedulerService };

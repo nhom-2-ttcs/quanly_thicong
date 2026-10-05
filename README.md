@@ -230,3 +230,49 @@ npm run lint
 npm test
 ```
 *Toàn bộ 49 test suites kiểm thử tự động (bao gồm Auth, RBAC, UTF-8, Tasks S-05, Dependencies S-06, Cycle detection 422 và S-07 Kahn topo) đều đạt kết quả PASS 100%.*
+
+---
+
+## 📈 S-09: Duyệt ngược, tính LS/LF, độ trễ và công việc găng
+
+Sprint 2 Story `SCRUM-64`/`SCRUM-77`/`SCRUM-78` bổ sung lịch muộn cho các task đã được sắp xếp topo và tính ES/EF theo duyệt xuôi.
+
+### Công thức cơ bản
+- `projectDuration = max(EF)`
+- `LS = LF - duration`
+- `LF = LS + duration`
+- `totalFloat = LS - ES`
+- `isCritical = abs(totalFloat) <= 1e-9`
+
+### Các mối quan hệ được hỗ trợ
+- `FS`: `startS >= startP + durationP + lag`
+- `SS`: `startS >= startP + lag`
+- `FF`: `startS >= startP + durationP + lag - durationS`
+- `SF`: `startS >= startP + lag - durationS`
+
+### Ví dụ tính tay
+Mạng cốt lõi:
+
+```text
+A(3) ──> B(2) ──> D(1)
+  └──> C(1) ───┘
+```
+
+- `A`: ES=0, EF=3, LS=0, LF=3, float=0, critical=true
+- `B`: ES=3, EF=5, LS=3, LF=5, float=0, critical=true
+- `C`: ES=3, EF=4, LS=4, LF=5, float=1, critical=false
+- `D`: ES=5, EF=6, LS=5, LF=6, float=0, critical=true
+
+### Chạy kiểm thử S-09
+```bash
+cd backend
+npm test
+```
+
+Các test đi kèm kiểm tra:
+- mạng rỗng / một task / chuỗi / phân nhánh / hội tụ
+- ngày/thời lượng thập phân
+- công việc găng theo float bằng 0
+- tránh `-0` và sai số epsilon
+
+---

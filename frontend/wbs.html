@@ -678,11 +678,11 @@
     </div>
   </div>
 
-  <!-- MODAL KIỂM TRA THỨ TỰ THI CÔNG & VÒNG LẶP (S-07 / SCRUM-62) -->
+  <!-- MODAL LỊCH CPM, ĐỘ TRỄ VÀ CÔNG VIỆC GĂNG (S-07 -> S-09) -->
   <div class="modal-overlay" id="schedule-modal">
     <div class="modal-box modal-large">
       <div class="modal-header">
-        <h3>Trình tự thi công và kiểm tra vòng lặp (S-07)</h3>
+        <h3>Lịch thi công CPM và công việc găng (S-07 → S-09)</h3>
         <button class="btn-close-modal" title="Đóng" aria-label="Đóng" onclick="closeScheduleModal()">&times;</button>
       </div>
       <div class="modal-body" id="schedule-modal-body">
@@ -1427,7 +1427,12 @@
       modal.style.display = 'flex';
       body.innerHTML = '<div style="text-align: center; padding: 25px;">Đang phân tích trình tự thi công (thuật toán Topo Kahn)...</div>';
 
-      const { res, data } = await apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/scheduling/order`);
+      const { res, data } = await apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/scheduling/schedule`);
+
+      if (!res.ok && !data.hasCycle) {
+        body.innerHTML = `<div class="alert-banner alert-danger">${escapeHtml(data.message || 'Không thể tính lịch thi công')}</div>`;
+        return;
+      }
 
       if (data.hasCycle) {
         body.innerHTML = `
@@ -1473,29 +1478,39 @@
         `;
       }
 
-      const tasksList = data.order || [];
+      const tasksList = data.tasks || [];
       let listHtml = '';
       if (tasksList.length === 0) {
-        listHtml = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">Dự án chưa có công việc nào để sắp xếp trình tự thi công.</div>';
+        listHtml = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">Dự án chưa có công việc nào để tính lịch thi công.</div>';
       } else {
-        listHtml = tasksList.map((t, idx) => `
-          <div class="schedule-step-item">
-            <div class="schedule-step-num">${idx + 1}</div>
-            <div style="flex: 1;">
-              <span class="task-code-badge">${escapeHtml(t.code || `CV-${t.id}`)}</span>
-              <strong>${escapeHtml(t.name)}</strong>
-            </div>
-            <span class="task-duration-badge">⏱️ ${formatDurationVN(t.duration)}</span>
-          </div>
+        const rows = tasksList.map((t, idx) => `
+          <tr>
+            <td class="cell-center">${idx + 1}</td>
+            <td><span class="task-code-badge">${escapeHtml(t.code || `CV-${t.taskId}`)}</span> ${escapeHtml(t.name || `Công việc #${t.taskId}`)}</td>
+            <td class="cell-center">${formatDurationVN(t.duration)}</td>
+            <td class="cell-center">${t.earlyStart}</td>
+            <td class="cell-center">${t.earlyFinish}</td>
+            <td class="cell-center">${t.lateStart}</td>
+            <td class="cell-center">${t.lateFinish}</td>
+            <td class="cell-center">${t.totalFloat}</td>
+            <td class="cell-center">${t.isCritical ? '<span class="dep-type-badge" style="background:#fee2e2;color:#b91c1c;">Công việc găng</span>' : '—'}</td>
+          </tr>
         `).join('');
+        listHtml = `
+          <div class="dep-table-wrapper" style="overflow-x:auto;">
+            <table class="dep-table" style="min-width:900px;">
+              <thead><tr><th>STT</th><th>Công việc</th><th>Thời lượng</th><th>ES</th><th>EF</th><th>LS</th><th>LF</th><th>Độ trễ</th><th>Trạng thái</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
       }
 
       body.innerHTML = `
         ${integrationNote}
         <h4 style="margin-bottom: 12px; font-size: 14.5px; color: var(--text-title);">
-          Trình tự thi công đề xuất (thuật toán Topo):
+          Tổng thời gian dự án: ${formatDurationVN(data.projectDuration)}
         </h4>
-        <div style="max-height: 400px; overflow-y: auto;">
+        <div style="max-height: 430px; overflow: auto;">
           ${listHtml}
         </div>
       `;
