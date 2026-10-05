@@ -21,7 +21,7 @@ git pull origin main
 
 ### Cách 1: Khởi chạy bằng Docker Compose (Khuyến nghị cho Staging / Mạng LAN)
 
-Phương pháp này sẽ khởi chạy 3 container: CSDL MySQL, Backend Node.js (cổng 5000) và Frontend Nginx (cổng 8080 có Reverse Proxy):
+Phương pháp này sẽ khởi chạy 3 container: CSDL MySQL (cổng 3306), Backend Node.js (host cổng 5001) và Frontend Nginx (host cổng 8081 trong cấu hình môi trường hiện tại; mặc định 8080 nếu không đặt `FRONTEND_PORT`).
 
 1. **Khởi động hệ thống:**
    ```bash
@@ -34,16 +34,16 @@ Phương pháp này sẽ khởi chạy 3 container: CSDL MySQL, Backend Node.js 
 
 2. **Truy cập ứng dụng:**
    * **Truy cập trên máy chạy:**
-     * Màn hình Đăng nhập: [http://localhost:8080/login.html](http://localhost:8080/login.html) hoặc [http://localhost:5000/login.html](http://localhost:5000/login.html)
-     * Màn hình Đăng ký tài khoản: [http://localhost:8080/register.html](http://localhost:8080/register.html)
-     * Kiểm tra trạng thái Backend: [http://localhost:5000/api/health](http://localhost:5000/api/health)
+     * Màn hình Đăng nhập: [http://localhost:8081/login.html](http://localhost:8081/login.html)
+     * Màn hình Đăng ký tài khoản: [http://localhost:8081/register.html](http://localhost:8081/register.html)
+     * Kiểm tra trạng thái Backend: [http://localhost:5001/api/health](http://localhost:5001/api/health)
    * **Truy cập từ máy khác trong cùng mạng LAN / Wi-Fi:**
      * Lấy địa chỉ IP của máy chủ bằng lệnh `ipconfig` (Windows) hoặc `ifconfig` (Linux/Mac) (ví dụ: `192.168.153.133`).
      * Mở trình duyệt trên máy khác và truy cập:
-       * Đăng ký: `http://<IP_MÁY_CHỦ>:8080/register.html`
-       * Đăng nhập: `http://<IP_MÁY_CHỦ>:8080/login.html`
+       * Đăng ký: `http://<IP_MÁY_CHỦ>:8081/register.html`
+       * Đăng nhập: `http://<IP_MÁY_CHỦ>:8081/login.html`
 
-> 💡 **Lưu ý tường lửa (Firewall):** Nếu máy khác không mở được web, hãy đảm bảo Windows Firewall đã cho phép cổng `8080` và `5000`.
+> 💡 **Lưu ý tường lửa (Firewall):** Nếu máy khác không mở được web, hãy đảm bảo Windows Firewall đã cho phép cổng frontend đang cấu hình (hiện là `8081`) và backend `5001`.
 
 ---
 
@@ -209,7 +209,11 @@ Hệ thống đã nạp sẵn 2 tài khoản mẫu phục vụ kiểm thử nhan
 | **S-07 (Core)** / T-15..17 | Thuật toán Topo Kahn & phát hiện vòng lặp $O(V+E)$ | **IMPLEMENTED** | Độc lập, deterministic, không treo |
 | **S-07 (Tích hợp)** | Tích hợp thuật toán với dữ liệu phụ thuộc thật từ S-06 | **IMPLEMENTED** | Trạng thái: `INTEGRATED WITH S-06` |
 | **RBAC & UTF-8** | Phân quyền Viewer/Admin và chuẩn hóa tiếng Việt | **DONE / IN REVIEW** | Tiếng Việt chuẩn, Viewer 403 on write |
-| **S-08 trở đi** | Tính toán ngày CPM (Early/Late), đường găng, Gantt | **NOT STARTED** | Nằm ngoài phạm vi Sprint 2, không mở rộng |
+| **S-08** | Forward pass: ES/EF, thời lượng dự án và các quan hệ FS/SS/FF/SF | **IMPLEMENTED / IN REVIEW** | Dùng dependency thực từ S-06; được kiểm thử hồi quy |
+| **S-09** | Backward pass: LS/LF, total float và công việc găng | **IMPLEMENTED / IN REVIEW** | API schedule và giao diện WBS hiển thị lịch tính thực |
+| **S-10** | Chưa có yêu cầu/acceptance criteria nguồn | **BLOCKED BY MISSING REQUIREMENT** | Không tự suy diễn phạm vi |
+| **S-11** | Xử lý cycle | **INTEGRATED / IN REVIEW** | Đã có trong `main`; chỉ chạy regression khi tích hợp |
+| **S-12** | Chưa có yêu cầu/acceptance criteria nguồn | **BLOCKED BY MISSING REQUIREMENT** | Không tự suy diễn phạm vi |
 
 ---
 
@@ -229,7 +233,7 @@ npm ci
 npm run lint
 npm test
 ```
-*Toàn bộ 49 test suites kiểm thử tự động (bao gồm Auth, RBAC, UTF-8, Tasks S-05, Dependencies S-06, Cycle detection 422 và S-07 Kahn topo) đều đạt kết quả PASS 100%.*
+*Lần kiểm tra tích hợp gần nhất chạy 60 bài kiểm thử tự động bằng `node --test`: 60 passed, 0 failed, 0 skipped. Phạm vi gồm Auth, RBAC, UTF-8, Tasks S-05, Dependencies S-06, cycle 422, topo S-07, forward pass S-08 và backward pass/float S-09.*
 
 ---
 
