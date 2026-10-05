@@ -81,9 +81,12 @@ app.use('/api', projectRoutes(db));
 const wbsRoutes = require("./wbs_routes");
 app.use("/api", wbsRoutes(db));
 
-// Sprint 2: S-05 (Tasks có thời lượng) & S-07 (Thứ tự phụ thuộc & phát hiện vòng)
+// Sprint 2: S-05 (Tasks có thời lượng) & S-06 (Quan hệ phụ thuộc) & S-07 (Thứ tự phụ thuộc & phát hiện vòng)
 const taskRoutes = require("./src/routes/taskRoutes");
 app.use("/api", taskRoutes(db));
+
+const dependencyRoutes = require("./src/routes/dependencyRoutes");
+app.use("/api", dependencyRoutes(db));
 
 const schedulingRoutes = require("./src/routes/schedulingRoutes");
 app.use("/api", schedulingRoutes(db));

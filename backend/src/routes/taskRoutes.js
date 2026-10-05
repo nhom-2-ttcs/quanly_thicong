@@ -245,9 +245,31 @@ module.exports = (db) => {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' });
       }
 
+      // S-06: Chặn xóa công việc khi đang có quan hệ phụ thuộc (predecessor hoặc successor) -> HTTP 409 Conflict
+      try {
+        const [depRows] = await pool.query(
+          'SELECT id FROM task_dependencies WHERE predecessor_task_id = ? OR successor_task_id = ? LIMIT 1',
+          [taskId, taskId]
+        );
+        if (depRows && depRows.length > 0) {
+          return res.status(409).json({
+            success: false,
+            message: 'Không thể xóa công việc vì đang có quan hệ phụ thuộc liên kết với công việc khác. Vui lòng xóa quan hệ phụ thuộc trước.'
+          });
+        }
+      } catch {
+        // Bỏ qua nếu bảng task_dependencies chưa sẵn sàng trong mock pool
+      }
+
       await pool.query('DELETE FROM tasks WHERE id = ?', [taskId]);
       res.json({ success: true, message: 'Xóa công việc thành công' });
     } catch (err) {
+      if (err.errno === 1451 || err.code === 'ER_ROW_IS_REFERENCED_2') {
+        return res.status(409).json({
+          success: false,
+          message: 'Không thể xóa công việc vì đang có quan hệ phụ thuộc liên kết với công việc khác. Vui lòng xóa quan hệ phụ thuộc trước.'
+        });
+      }
       res.status(500).json({ success: false, message: err.message });
     }
   });

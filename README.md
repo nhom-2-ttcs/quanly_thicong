@@ -130,22 +130,103 @@ Hệ thống đã nạp sẵn 2 tài khoản mẫu phục vụ kiểm thử nhan
   - `PUT /api/tasks/:id`: Cập nhật thông tin công việc.
   - `DELETE /api/tasks/:id`: Xóa công việc.
 
-### 2. S-06 / SCRUM-61: Hợp đồng tích hợp quan hệ phụ thuộc (T-13, T-14)
-* **Trạng thái:** Thành viên khác đang thực hiện.
-* **Hợp đồng giao diện (Internal Contract):** Định nghĩa tại `backend/src/domain/scheduling/contracts.js`.
-  - Định dạng quan hệ: `{ predecessorId, successorId, type, lag }`
-  - Các loại quan hệ hỗ trợ: `FS` (Finish-to-Start), `SS` (Start-to-Start), `FF` (Finish-to-Finish), `SF` (Start-to-Finish).
-  - Độ trễ `lag`: Hỗ trợ số hữu hạn (âm, 0, dương).
-  - Trạng thái tích hợp hiện tại: `BLOCKED BY S-06 INTEGRATION` (S-07 hoạt động độc lập và sẵn sàng kết nối ngay khi CSDL S-06 hoàn thiện).
+### 2. S-06 / SCRUM-61: Quản lý quan hệ phụ thuộc giữa các công việc (T-13, T-14)
+* **Trạng thái:** **IMPLEMENTED / IN REVIEW**
+* **Nhiệm vụ bàn giao:** Đã chính thức tiếp nhận và triển khai đầy đủ T-13 (Khai báo quan hệ phụ thuộc) và T-14 (Quản lý bốn loại quan hệ FS/SS/FF/SF và lag).
+* **Mô hình CSDL (`task_dependencies`):**
+  - Bảng được tạo thông qua migration idempotent `migration_s06_task_dependencies.sql`:
+    ```sql
+    CREATE TABLE IF NOT EXISTS `task_dependencies` (
+      `id` INT AUTO_INCREMENT PRIMARY KEY,
+      `project_id` INT NOT NULL,
+      `predecessor_task_id` INT NOT NULL,
+      `successor_task_id` INT NOT NULL,
+      `dependency_type` ENUM('FS', 'SS', 'FF', 'SF') NOT NULL DEFAULT 'FS',
+      `lag_days` DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT `fk_dep_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_dep_predecessor` FOREIGN KEY (`predecessor_task_id`) REFERENCES `tasks` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_dep_successor` FOREIGN KEY (`successor_task_id`) REFERENCES `tasks` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `uk_dep_pair` UNIQUE KEY (`predecessor_task_id`, `successor_task_id`),
+      CONSTRAINT `chk_dep_no_self_loop` CHECK (`predecessor_task_id` <> `successor_task_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ```
+  - **Khóa ngoại bảo vệ:** `ON DELETE RESTRICT` cho hai task liên kết. Khi xóa task đang có quan hệ phụ thuộc, hệ thống từ chối và trả về mã lỗi `HTTP 409 Conflict` kèm thông báo rõ ràng, không âm thầm cascade.
+  - **Toàn vẹn dự án:** Service kiểm tra bắt buộc cả hai task phải thuộc đúng `project_id` trên URL; từ chối liên kết chéo dự án (`HTTP 400`).
+
+* **Bảng 4 loại quan hệ phụ thuộc (Dependency Types):**
+  | Mã | Tên tiếng Việt | Ý nghĩa quản lý thi công | Tên quốc tế |
+  | :---: | :--- | :--- | :--- |
+  | **FS** | **Kết thúc – Bắt đầu** | Công việc sau bắt đầu khi công việc trước kết thúc | Finish-to-Start |
+  | **SS** | **Bắt đầu – Bắt đầu** | Công việc sau bắt đầu theo thời điểm bắt đầu của công việc trước | Start-to-Start |
+  | **FF** | **Kết thúc – Kết thúc** | Công việc sau kết thúc theo thời điểm kết thúc của công việc trước | Finish-to-Finish |
+  | **SF** | **Bắt đầu – Kết thúc** | Công việc sau kết thúc theo thời điểm bắt đầu của công việc trước | Start-to-Finish |
+
+* **Quy ước độ trễ (Lag / Lead Time):**
+  - **Lag dương (`> 0`):** Thời gian chờ cần thiết giữa hai công việc (ví dụ: Chờ bảo dưỡng bê tông 2 ngày trước khi tháo cốp pha).
+  - **Lag bằng 0 (`= 0`):** Nối tiếp trực tiếp ngay khi điều kiện kích hoạt thỏa mãn.
+  - **Lag âm (`< 0`):** Thời gian gối đầu / lead time cho phép làm song song trước (ví dụ: Bắt đầu gia công thép trước khi đào đất xong 1.5 ngày).
+  - **Hỗ trợ số thực/thập phân:** Đơn vị ngày với bước 0.5 ngày (đồng bộ với thời lượng của S-05).
+
+* **Phát hiện chu trình khi ghi (Cycle Guard):**
+  - Khi thêm hoặc sửa quan hệ phụ thuộc, hệ thống giả lập đồ thị với cạnh mới và chạy thuật toán kiểm tra chu trình trong transaction trước khi commit.
+  - Nếu xuất hiện chu trình: Lập tức Rollback transaction, trả về `HTTP 422 Unprocessable Entity` kèm `cyclePath` và `cycleNodes`, đảm bảo không bao giờ lưu cạnh lỗi vào CSDL.
+
+* **API Endpoints Quản Lý Quan Hệ Phụ Thuộc:**
+  - `GET /api/projects/:projectId/dependencies`: Lấy danh sách quan hệ phụ thuộc của dự án (kèm tên và mã công việc).
+  - `POST /api/projects/:projectId/dependencies`: Khai báo quan hệ phụ thuộc mới (Payload: `{ predecessorId, successorId, type, lag }`).
+  - `GET /api/dependencies/:id`: Xem chi tiết quan hệ phụ thuộc.
+  - `PUT /api/dependencies/:id`: Chỉnh sửa loại quan hệ và độ trễ.
+  - `DELETE /api/dependencies/:id`: Xóa quan hệ phụ thuộc.
+
+* **Ma trận phân quyền (RBAC S-06):**
+  - **Admin:** Toàn quyền xem, tạo, sửa, xóa quan hệ phụ thuộc trên mọi dự án.
+  - **Project Manager:** Quản lý quan hệ phụ thuộc trong phạm vi dự án được phân công.
+  - **Viewer (Người xem dự án):** Chỉ được xem danh sách (`GET` trả `200`); mọi thao tác ghi (`POST`/`PUT`/`DELETE`) bị backend chặn với `HTTP 403 Forbidden`, đồng thời ẩn toàn bộ nút thao tác trên giao diện.
+
+---
 
 ### 3. S-07 / SCRUM-62: Sắp thứ tự phụ thuộc và phát hiện vòng lặp (T-15, T-16, T-17)
-* **Thuật toán:** Kahn BFS In-Degree tự triển khai tại `backend/src/domain/scheduling/topologicalSort.js`.
-* **Độ phức tạp:** $O(V + E)$ thời gian và $O(V + E)$ bộ nhớ.
-* **Tính tất định (Deterministic):** Sắp xếp hàng đợi theo chỉ số ID khi in-degree = 0, đảm bảo kết quả luôn đồng nhất qua mọi lần chạy.
-* **Phát hiện vòng lặp (Cycle Detection):**
-  - Tự động phát hiện Self-loop ($A \to A$), Vòng 2 node ($A \to B \to A$), Vòng nhiều node ($A \to B \to C \to A$).
-  - Truy vết chu trình cụ thể và trả về mã lỗi `HTTP 422 Unprocessable Entity` kèm cấu trúc: `{ hasCycle: true, cycleNodes: [...], cyclePath: "..." }`.
-  - Có cơ chế guard bảo vệ chống lặp vô hạn, cam kết không bao giờ bị treo khi đồ thị có chu trình.
+* **Trạng thái:** **IMPLEMENTED / IN REVIEW** (Đã tích hợp hoàn chỉnh với CSDL S-06).
+* **Trạng thái tích hợp:** `INTEGRATED WITH S-06` (Thay thế trạng thái tạm thời `BLOCKED BY S-06 INTEGRATION`).
+* **Cơ chế tích hợp thực tế:**
+  - `SchedulerService.getProjectSchedule(projectId)` tự động truy vấn bảng `task_dependencies` của MySQL.
+  - Chuyển đổi dữ liệu bảng thành hợp đồng chuẩn `{ predecessorId, successorId, type, lag }`.
+  - Thực thi thuật toán sắp xếp Topo Kahn $O(V + E)$ xác định thứ tự thi công logic.
 * **API Endpoints:**
-  - `GET /api/projects/:projectId/scheduling/order`: Lấy thứ tự sắp xếp topo và kiểm tra chu trình của dự án.
-  - `POST /api/projects/:projectId/scheduling/verify-order`: Xác thực đồ thị và kiểm tra vòng lặp theo payload tùy chỉnh.
+  - `GET /api/projects/:projectId/scheduling/order`: Trả về trình tự thi công xác định từ dữ liệu MySQL thật. Nếu có chu trình, trả về `HTTP 422 Unprocessable Entity` kèm cấu trúc chu trình chi tiết.
+  - `POST /api/projects/:projectId/scheduling/verify-order`: Kiểm tra xác thực đồ thị với payload tùy chỉnh phục vụ kiểm thử.
+
+---
+
+## 📊 Bảng Theo Dõi Trạng Thái Sprint 2
+
+| Mã Story / Task | Hạng mục công việc | Trạng thái kỹ thuật | Ghi chú nghiệm thu |
+| :--- | :--- | :---: | :--- |
+| **S-05** / T-11, T-12 | Khai báo công việc có thời lượng (ngày) gắn vào WBS | **DONE / IN REVIEW** | Hoàn thành, 100% test pass |
+| **S-06** / T-13, T-14 | Quản lý quan hệ phụ thuộc (FS/SS/FF/SF & lag) | **IMPLEMENTED / IN REVIEW** | Migration idempotent, CRUD, Cycle guard 422 |
+| **S-07 (Core)** / T-15..17 | Thuật toán Topo Kahn & phát hiện vòng lặp $O(V+E)$ | **IMPLEMENTED** | Độc lập, deterministic, không treo |
+| **S-07 (Tích hợp)** | Tích hợp thuật toán với dữ liệu phụ thuộc thật từ S-06 | **IMPLEMENTED** | Trạng thái: `INTEGRATED WITH S-06` |
+| **RBAC & UTF-8** | Phân quyền Viewer/Admin và chuẩn hóa tiếng Việt | **DONE / IN REVIEW** | Tiếng Việt chuẩn, Viewer 403 on write |
+| **S-08 trở đi** | Tính toán ngày CPM (Early/Late), đường găng, Gantt | **NOT STARTED** | Nằm ngoài phạm vi Sprint 2, không mở rộng |
+
+---
+
+## 🛠️ Hướng Dẫn Chạy Migration & Kiểm Thử Tự Động
+
+### 1. Chạy migration CSDL S-06
+Migration được thiết kế idempotent, an toàn khi chạy lại nhiều lần và không làm mất dữ liệu hiện có:
+```bash
+# Áp dụng migration vào container MySQL đang chạy:
+docker exec -i quanly_thicong_db mysql -u root -p<DB_PASSWORD> quanly_thicong < migration_s06_task_dependencies.sql
+```
+
+### 2. Chạy kiểm thử tự động (Unit & Integration Tests)
+```bash
+cd backend
+npm ci
+npm run lint
+npm test
+```
+*Toàn bộ 49 test suites kiểm thử tự động (bao gồm Auth, RBAC, UTF-8, Tasks S-05, Dependencies S-06, Cycle detection 422 và S-07 Kahn topo) đều đạt kết quả PASS 100%.*

@@ -116,6 +116,28 @@ async function initDbSchema() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    // 7. Tạo bảng task_dependencies (S-06 / SCRUM-61: Quan hệ phụ thuộc công việc FS, SS, FF, SF và lag)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS task_dependencies (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        predecessor_task_id INT NOT NULL,
+        successor_task_id INT NOT NULL,
+        dependency_type ENUM('FS', 'SS', 'FF', 'SF') NOT NULL DEFAULT 'FS',
+        lag_days DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (predecessor_task_id) REFERENCES tasks(id) ON DELETE RESTRICT,
+        FOREIGN KEY (successor_task_id) REFERENCES tasks(id) ON DELETE RESTRICT,
+        UNIQUE KEY unique_dependency_pair (predecessor_task_id, successor_task_id),
+        INDEX idx_deps_project (project_id),
+        INDEX idx_deps_pred (predecessor_task_id),
+        INDEX idx_deps_succ (successor_task_id),
+        CONSTRAINT chk_no_self_loop CHECK (predecessor_task_id <> successor_task_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
     // Seed 7 vai trò thi công xây dựng
     for (const r of SEED_ROLES) {
       await pool.query(`
@@ -156,6 +178,18 @@ async function initDbSchema() {
       UPDATE tasks
       SET name = 'Đổ bê tông lót móng'
       WHERE code = 'CV-02' OR (project_id = 1 AND (name LIKE '%b% t%ng l%t m%ng%' OR name LIKE '%l%t m%ng%'));
+    `);
+
+    // Seed quan hệ phụ thuộc mẫu: CV-01 -> CV-02, Loại FS, lag 0
+    await pool.query(`
+      INSERT IGNORE INTO task_dependencies (project_id, predecessor_task_id, successor_task_id, dependency_type, lag_days)
+      SELECT 1, 1, 2, 'FS', 0.00
+      FROM DUAL
+      WHERE EXISTS (SELECT 1 FROM tasks WHERE id = 1)
+        AND EXISTS (SELECT 1 FROM tasks WHERE id = 2)
+        AND NOT EXISTS (
+          SELECT 1 FROM task_dependencies WHERE predecessor_task_id = 1 AND successor_task_id = 2
+        );
     `);
 
     // Đồng bộ người dùng đã đăng ký từ MySQL vào bộ nhớ

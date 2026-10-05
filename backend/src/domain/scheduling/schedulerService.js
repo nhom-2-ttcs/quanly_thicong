@@ -78,22 +78,30 @@ class SchedulerService {
       dependencies = mockDependencies;
       integrationStatus = 'USING_MOCK_DEPENDENCIES';
     } else {
-      // Kiểm tra xem bảng task_dependencies (S-06) đã được tạo bởi thành viên khác chưa
+      // Đọc bảng task_dependencies (S-06)
       try {
         const [tables] = await this.pool.query(
           "SHOW TABLES LIKE 'task_dependencies'"
         );
         if (tables && tables.length > 0) {
           const [deps] = await this.pool.query(
-            'SELECT * FROM task_dependencies WHERE project_id = ?',
+            'SELECT id, project_id, predecessor_task_id, successor_task_id, dependency_type, lag_days FROM task_dependencies WHERE project_id = ? ORDER BY id ASC',
             [projectId]
           );
-          dependencies = deps;
+          // Chuyển sang contract chuẩn { predecessorId, successorId, type, lag }
+          dependencies = deps.map(d => ({
+            id: d.id,
+            predecessorId: d.predecessor_task_id,
+            successorId: d.successor_task_id,
+            type: d.dependency_type,
+            lag: Number(d.lag_days || 0)
+          }));
+          integrationStatus = 'INTEGRATED WITH S-06';
         } else {
-          // Bảng chưa được tạo bởi thành viên S-06 -> Báo đúng trạng thái blocked theo Quy tắc 2
+          // Bảng chưa được tạo -> Báo trạng thái blocked
           integrationStatus = 'BLOCKED BY S-06 INTEGRATION';
         }
-      } catch (e) {
+      } catch {
         integrationStatus = 'BLOCKED BY S-06 INTEGRATION';
       }
     }
@@ -103,6 +111,7 @@ class SchedulerService {
     return {
       projectId,
       integrationStatus,
+      dependenciesCount: dependencies.length,
       ...scheduleResult
     };
   }
