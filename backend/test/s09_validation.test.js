@@ -29,6 +29,25 @@ test('S-09: ID số MySQL cho đúng kết quả mạng tính tay', () => {
   ]);
 });
 
+test('S-09: nhánh phụ ngắn hơn có total float bằng 2', () => {
+  const result = new SchedulerService({}).computeSchedule([
+    { id: 'T1', duration: 3 },
+    { id: 'T2', duration: 4 },
+    { id: 'T3', duration: 2 },
+    { id: 'T4', duration: 2 }
+  ], [
+    { predecessorId: 'T1', successorId: 'T2', type: 'FS', lag: 0 },
+    { predecessorId: 'T1', successorId: 'T3', type: 'FS', lag: 0 },
+    { predecessorId: 'T2', successorId: 'T4', type: 'FS', lag: 0 },
+    { predecessorId: 'T3', successorId: 'T4', type: 'FS', lag: 0 }
+  ]);
+  assert.equal(result.projectDuration, 9);
+  const byId = new Map(result.tasks.map(task => [task.taskId, task]));
+  assert.equal(byId.get('T4').lateFinish, 9);
+  assert.equal(byId.get('T3').totalFloat, 2);
+  assert.equal(byId.get('T3').isCritical, false);
+});
+
 test('S-09: ID chuỗi, duration thập phân, nhiều task cuối và không có -0', () => {
   const result = new SchedulerService({}).computeSchedule([
     { id: 'A', duration: 1.5 },
