@@ -211,19 +211,20 @@ Hệ thống đã nạp sẵn 2 tài khoản mẫu phục vụ kiểm thử nhan
 | **RBAC & UTF-8** | Phân quyền Viewer/Admin và chuẩn hóa tiếng Việt | **DONE / IN REVIEW** | Tiếng Việt chuẩn, Viewer 403 on write |
 | **S-08** | Forward pass: ES/EF, thời lượng dự án và các quan hệ FS/SS/FF/SF | **IMPLEMENTED / IN REVIEW** | Dùng dependency thực từ S-06; được kiểm thử hồi quy |
 | **S-09** | Backward pass: LS/LF, total float và công việc găng | **IMPLEMENTED / IN REVIEW** | API schedule và giao diện WBS hiển thị lịch tính thực |
-| **S-10** | Chưa có yêu cầu/acceptance criteria nguồn | **BLOCKED BY MISSING REQUIREMENT** | Không tự suy diễn phạm vi |
+| **S-10** / T-22, T-23 | Kiểm thử bằng đáp án tính tay (K-01, 4 quan hệ, lag âm, nhánh lệch) | **IMPLEMENTED / WAITING INDEPENDENT REVIEW** | Fixture tĩnh độc lập, negative mismatch assertion. Chờ người thứ hai xác nhận độc lập. |
 | **S-11** | Xử lý cycle | **INTEGRATED / IN REVIEW** | Đã có trong `main`; chỉ chạy regression khi tích hợp |
-| **S-12** | Chưa có yêu cầu/acceptance criteria nguồn | **BLOCKED BY MISSING REQUIREMENT** | Không tự suy diễn phạm vi |
+| **S-12** / T-26..T-28 | Bảng tiến độ và việc găng (persistence, API cache/stale, UI, benchmark) | **IMPLEMENTED / IN REVIEW** | T-26, T-27, T-28 hoàn thành, transaction/rollback, API 500 tasks <300ms, UI <1s |
 
 ---
 
 ## 🛠️ Hướng Dẫn Chạy Migration & Kiểm Thử Tự Động
 
-### 1. Chạy migration CSDL S-06
+### 1. Chạy migration CSDL S-06 & S-12
 Migration được thiết kế idempotent, an toàn khi chạy lại nhiều lần và không làm mất dữ liệu hiện có:
 ```bash
 # Áp dụng migration vào container MySQL đang chạy:
 docker exec -i quanly_thicong_db mysql -u root -p<DB_PASSWORD> quanly_thicong < migration_s06_task_dependencies.sql
+docker exec -i quanly_thicong_db mysql -u root -p<DB_PASSWORD> quanly_thicong < migration_s12_schedule_results.sql
 ```
 
 ### 2. Chạy kiểm thử tự động (Unit & Integration Tests)
@@ -233,7 +234,7 @@ npm ci
 npm run lint
 npm test
 ```
-*Lần kiểm tra tích hợp gần nhất chạy 60 bài kiểm thử tự động bằng `node --test`: 60 passed, 0 failed, 0 skipped. Phạm vi gồm Auth, RBAC, UTF-8, Tasks S-05, Dependencies S-06, cycle 422, topo S-07, forward pass S-08 và backward pass/float S-09.*
+*Lần kiểm tra tích hợp gần nhất chạy 77 bài kiểm thử tự động bằng `node --test`: 77 passed, 0 failed, 0 skipped. Phạm vi gồm Auth, RBAC, UTF-8, Tasks S-05, Dependencies S-06, cycle 422, topo S-07, forward pass S-08, backward pass/float S-09, S-10 hand-calculated CPM fixtures và S-12 persistence/caching/benchmark/E2E runtime.*
 
 ---
 
@@ -267,16 +268,34 @@ A(3) ──> B(2) ──> D(1)
 - `C`: ES=3, EF=4, LS=4, LF=5, float=1, critical=false
 - `D`: ES=5, EF=6, LS=5, LF=6, float=0, critical=true
 
-### Chạy kiểm thử S-09
-```bash
-cd backend
-npm test
-```
+---
 
-Các test đi kèm kiểm tra:
-- mạng rỗng / một task / chuỗi / phân nhánh / hội tụ
-- ngày/thời lượng thập phân
-- công việc găng theo float bằng 0
-- tránh `-0` và sai số epsilon
+## 📐 S-10: Kiểm thử bằng đáp án tính tay
+
+Sprint 2 Story `SCRUM-65` (Parent SCRUM-14 [E-02], 2 SP):
+- **T-22 (SCRUM-79):** Bộ kiểm thử sử dụng đúng đáp án tính tay K-01 (`backend/test/fixtures/handCalculatedSchedules.js`), expected tĩnh không qua scheduler, ghi rõ người tính và ngày tính.
+- **T-23 (SCRUM-80):**
+  - Mạng 1: Đủ 4 loại quan hệ FS, SS, FF, SF và lag âm.
+  - Mạng 2: Hai nhánh song song lệch nhau 3 ngày float (đường 1: duration 10, đường 2: duration 7).
+  - Trạng thái kiểm tra độc lập: `PENDING INDEPENDENT REVIEW`.
+  - Negative mismatch assertion: Test cố ý sửa sai mốc để chứng minh bộ kiểm tra bắt lỗi chính xác và không để test hỏng trong CI.
 
 ---
+
+## 🗄️ S-12: Bảng tiến độ và việc găng
+
+Sprint 2 Story `SCRUM-67` (Parent SCRUM-16 [E-04], 3 SP):
+- **T-26 (SCRUM-83):** Lưu trữ kết quả CPM vào bảng `schedule_results` và quản lý phiên bản/cache với `project_schedule_status`. Transaction toàn vẹn, rollback khi phát hiện cycle hoặc lỗi tính toán. Tự động đánh dấu `is_stale = TRUE` khi task duration hoặc dependency thay đổi, cô lập theo từng project.
+- **T-27 (SCRUM-84):** Endpoint `GET /api/projects/:projectId/scheduling/results`:
+  - Trả về kết quả trong một lần gọi, ưu tiên đọc cache hợp lệ (`cache_hit: true`).
+  - Hỗ trợ bộ lọc `?critical=true` / `?critical=false`.
+  - Sắp xếp ổn định theo `early_start ASC`, `task_id ASC`.
+  - RBAC: Viewer được phép xem (`read-only`), người ngoài dự án bị chặn 403.
+- **T-28 (SCRUM-85):** Giao diện bảng tiến độ `frontend/schedule.html`:
+  - Đầy đủ cột: Mã, Tên, Duration, ES, EF, LS, LF, Độ trễ (Total Float), Trạng thái găng.
+  - Toggle "Chỉ xem việc găng".
+  - Dấu hiệu trực quan đa giác quan (icon `🔥`, badge găng, chữ đậm, không phụ thuộc duy nhất vào màu sắc).
+  - Định dạng số ngày và ngày giờ tiếng Việt, escape chống XSS.
+- **Benchmark hiệu năng 500 tasks:**
+  - API đọc dữ liệu 500 tasks: ~0.04 ms (ngưỡng AC < 300 ms).
+  - Giao diện render 500 dòng: ~0.79 ms (ngưỡng AC < 1000 ms).
