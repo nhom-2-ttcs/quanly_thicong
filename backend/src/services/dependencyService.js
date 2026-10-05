@@ -6,11 +6,13 @@
 const { DEPENDENCY_TYPES, validateDependencyContract } = require('../domain/scheduling/contracts');
 const { TaskDependencyGraph } = require('../domain/scheduling/graph');
 const { topologicalSort } = require('../domain/scheduling/topologicalSort');
+const { ScheduleResultRepository } = require('../repositories/scheduleResultRepository');
 
 class DependencyService {
   constructor(dependencyRepo, db = null) {
     this.repo = dependencyRepo;
     this.pool = db?.pool || db;
+    this.scheduleResultRepo = new ScheduleResultRepository(db);
   }
 
   /**
@@ -168,6 +170,10 @@ class DependencyService {
         lagDays: lag
       }, conn);
 
+      try {
+        await this.scheduleResultRepo.markStale(pId, conn);
+      } catch {}
+
       if (conn) await conn.commit();
       return { status: 201, success: true, data: created, message: 'Tạo quan hệ phụ thuộc thành công' };
     } catch (err) {
@@ -217,6 +223,9 @@ class DependencyService {
 
     try {
       const updated = await this.repo.update(depId, { dependencyType: type, lagDays: lag }, conn);
+      try {
+        await this.scheduleResultRepo.markStale(existing.project_id, conn);
+      } catch {}
       if (conn) await conn.commit();
       return { status: 200, success: true, data: updated, message: 'Cập nhật quan hệ phụ thuộc thành công' };
     } catch (err) {
@@ -253,6 +262,9 @@ class DependencyService {
 
     try {
       await this.repo.delete(depId, conn);
+      try {
+        await this.scheduleResultRepo.markStale(existing.project_id, conn);
+      } catch {}
       if (conn) await conn.commit();
       return { status: 200, success: true, message: 'Đã xóa quan hệ phụ thuộc thành công' };
     } catch (err) {

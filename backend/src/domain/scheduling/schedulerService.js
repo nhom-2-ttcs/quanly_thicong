@@ -3,10 +3,12 @@ const { topologicalSort } = require('./topologicalSort');
 const { validateDependencyContract } = require('./contracts');
 const { calculateForwardPass } = require('../../algorithms/forwardPass');
 const { calculateBackwardPass, normalizeId } = require('../../algorithms/backwardPass');
+const { ScheduleResultRepository } = require('../../repositories/scheduleResultRepository');
 
 class SchedulerService {
   constructor(db) {
     this.pool = db?.pool || db;
+    this.resultRepo = new ScheduleResultRepository(db);
   }
 
   computeSchedule(tasks = [], dependencies = []) {
@@ -112,6 +114,81 @@ class SchedulerService {
       integrationStatus,
       dependenciesCount: dependencies.length,
       ...this.computeSchedule(tasks, dependencies)
+    };
+  }
+
+  async invalidateProjectSchedule(projectId) {
+    return this.resultRepo.markStale(projectId);
+  }
+
+  async getProjectScheduleResults(projectId, { criticalOnly = false, forceRecalculate = false } = {}) {
+    const pId = Number(projectId);
+    if (!Number.isInteger(pId) || pId <= 0) {
+      throw new Error('projectId không hợp lệ');
+    }
+
+    const isStale = forceRecalculate || (await this.resultRepo.isStale(pId));
+    if (!isStale) {
+      const saved = await this.resultRepo.getSavedResults(pId, { criticalOnly });
+      if (!saved.error && (saved.totalTasks > 0 || (saved.tasks && saved.tasks.length === 0 && saved.totalTasks === 0))) {
+        return {
+          success: true,
+          projectId: pId,
+          isCached: true,
+          projectDuration: saved.projectDuration,
+          totalTasks: saved.totalTasks,
+          criticalTasksCount: saved.criticalTasksCount,
+          calculatedAt: saved.calculatedAt,
+          tasks: saved.tasks
+        };
+      }
+    }
+
+    // Nếu stale hoặc chưa có kết quả lưu, tiến hành tính toán
+    const schedule = await this.getProjectSchedule(pId);
+    if (schedule.hasCycle) {
+      // Transaction rollback: Không lưu bảng kết quả dở dang khi có cycle (T-26)
+      return {
+        success: false,
+        projectId: pId,
+        hasCycle: true,
+        cyclePath: schedule.cyclePath,
+        cycleNodes: schedule.cycleNodes,
+        message: `Phát hiện chu trình vòng lặp phụ thuộc (circular dependency): ${schedule.cyclePath}`
+      };
+    }
+
+    // Lưu toàn bộ kết quả vào schedule_results trong một database transaction duy nhất (T-26)
+    await this.resultRepo.saveResultsInTransaction(pId, schedule.tasks, schedule.projectDuration);
+
+    const sortedTasks = [...schedule.tasks].sort((a, b) => {
+      if (a.earlyStart !== b.earlyStart) return a.earlyStart - b.earlyStart;
+      return String(a.taskId ?? a.id).localeCompare(String(b.taskId ?? b.id));
+    });
+
+    const filteredTasks = criticalOnly ? sortedTasks.filter(t => t.isCritical) : sortedTasks;
+    const criticalCount = sortedTasks.filter(t => t.isCritical).length;
+
+    return {
+      success: true,
+      projectId: pId,
+      isCached: false,
+      projectDuration: schedule.projectDuration,
+      totalTasks: sortedTasks.length,
+      criticalTasksCount: criticalCount,
+      calculatedAt: new Date().toISOString(),
+      tasks: filteredTasks.map(t => ({
+        taskId: t.taskId ?? t.id,
+        name: t.name,
+        code: t.code,
+        duration: t.duration,
+        earlyStart: t.earlyStart,
+        earlyFinish: t.earlyFinish,
+        lateStart: t.lateStart,
+        lateFinish: t.lateFinish,
+        totalFloat: t.totalFloat,
+        isCritical: Boolean(t.isCritical)
+      }))
     };
   }
 }

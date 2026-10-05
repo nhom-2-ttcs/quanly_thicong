@@ -1,9 +1,11 @@
 const express = require('express');
 const { checkViewerForbidden, checkProjectReadAccess } = require('../utils/rbac');
+const { ScheduleResultRepository } = require('../repositories/scheduleResultRepository');
 
 module.exports = (db) => {
   const router = express.Router();
   const pool = db?.pool || db;
+  const scheduleResultRepo = new ScheduleResultRepository(db);
 
   // 1. Lấy danh sách công việc theo dự án (hỗ trợ lọc theo work_item_id)
   router.get('/projects/:projectId/tasks', async (req, res) => {
@@ -123,6 +125,10 @@ module.exports = (db) => {
         [projectId, workItemId, name.trim(), taskCode, durationNum, taskStatus]
       );
 
+      try {
+        await scheduleResultRepo.markStale(projectId);
+      } catch {}
+
       res.status(201).json({
         success: true,
         id: result.insertId,
@@ -228,6 +234,10 @@ module.exports = (db) => {
         [updatedName, updatedCode, updatedDuration, updatedWorkItemId, updatedStatus, taskId]
       );
 
+      try {
+        await scheduleResultRepo.markStale(task.project_id);
+      } catch {}
+
       res.json({ success: true, message: 'Cập nhật công việc thành công' });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
@@ -240,10 +250,11 @@ module.exports = (db) => {
 
     const taskId = Number(req.params.id);
     try {
-      const [existing] = await pool.query('SELECT id FROM tasks WHERE id = ?', [taskId]);
+      const [existing] = await pool.query('SELECT id, project_id FROM tasks WHERE id = ?', [taskId]);
       if (existing.length === 0) {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' });
       }
+      const taskProjectId = existing[0].project_id;
 
       // S-06: Chặn xóa công việc khi đang có quan hệ phụ thuộc (predecessor hoặc successor) -> HTTP 409 Conflict
       try {
@@ -262,6 +273,10 @@ module.exports = (db) => {
       }
 
       await pool.query('DELETE FROM tasks WHERE id = ?', [taskId]);
+
+      try {
+        await scheduleResultRepo.markStale(taskProjectId);
+      } catch {}
       res.json({ success: true, message: 'Xóa công việc thành công' });
     } catch (err) {
       if (err.errno === 1451 || err.code === 'ER_ROW_IS_REFERENCED_2') {
