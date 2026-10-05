@@ -9,14 +9,14 @@ TECHNICAL IMPLEMENTATION COMPLETE — FORMAL ACCEPTANCE PENDING
 
 - **Nhánh tích hợp:** `feature/sprint-2-s05-s12-integration`
 - **Base commit (origin/main):** `494117ddb0765e64de3ea236af06f3ca738d9a14`
-- **HEAD commit:** `9a687ec04aab42ad78b7ba4e466ff672b2cfc7f6`
+- **HEAD commit:** `e82f08f364e1a0b6a3cfe29bad8d9882f9233ed9` (commit `e82f08f`)
 - **Đồng bộ Git:**
   - Local so với remote feature branch (`origin/feature/sprint-2-s05-s12-integration`): `ahead 0, behind 0` (đồng bộ hoàn toàn)
-  - Feature branch so với nhánh đích (`origin/main`): `ahead 24, behind 0`
+  - Feature branch so với nhánh đích (`origin/main`): `ahead 25, behind 0`
 - **GitHub Actions CI Status:**
-  - PR Workflow: Run ID [37367670336](https://github.com/nhom-2-ttcs/quanly_thicong/actions/runs/37367670336)
-  - Push Workflow: Run ID [37367665844](https://github.com/nhom-2-ttcs/quanly_thicong/actions/runs/37367665844)
-  - Trạng thái: `BLOCKED BY GITHUB HOSTED RUNNER INFRASTRUCTURE` (Hạ tầng hosted runner của GitHub Actions trên repository đang bị nghẽn hàng đợi, không được cấp phát runner sau 15 phút).
+  - Pull Request Workflow: Run ID [37367670336](https://github.com/nhom-2-ttcs/quanly_thicong/actions/runs/37367670336) (Trạng thái: `queued`) & Run ID [37371047330](https://github.com/nhom-2-ttcs/quanly_thicong/actions/runs/37371047330) (Trạng thái: `queued`)
+  - Push Workflow: Run ID [37367665844](https://github.com/nhom-2-ttcs/quanly_thicong/actions/runs/37367665844) (Trạng thái: `failure` sau 15m2s nghẽn hàng đợi: *"The job was not acquired by Runner of type hosted even after multiple attempts"*) & Run ID [37371042707](https://github.com/nhom-2-ttcs/quanly_thicong/actions/runs/37371042707) (Trạng thái: `queued`)
+  - Kết luận CI: `BLOCKED BY GITHUB HOSTED RUNNER INFRASTRUCTURE` (Hạ tầng runner của GitHub Actions trên repository đang bị nghẽn hàng đợi, không được cấp phát runner; kiểm tra local 100% PASS 77/77 tests).
 - **Trạng thái kiểm toán T-23 (Story S-10):** `PENDING INDEPENDENT REVIEW` (Chờ người thứ hai đối chiếu độc lập ngoài đời thực, tuân thủ nguyên tắc không khai khống).
 
 ---
@@ -100,20 +100,20 @@ TECHNICAL IMPLEMENTATION COMPLETE — FORMAL ACCEPTANCE PENDING
 #### 1. T-27: Request HTTP thật đến Backend container (Port 5001)
 *Phương pháp:* Gọi HTTP request thật qua mạng TCP đến backend container, qua middleware xác thực JWT, kiểm tra phân quyền RBAC, truy vấn cache bảng `schedule_results` trong MySQL container `quanly_thicong_db`, và thực hiện tuần tự hóa JSON 500 công việc.
 - **Số lần chạy:** 10 lần (sau 3 lần warm-up)
-- **Tối thiểu (Min):** **13.210 ms**
-- **Trung vị (Median):** **15.476 ms**
-- **Phân vị 95 (P95):** **19.568 ms**
-- **Tối đa (Max):** **19.568 ms**
+- **Tối thiểu (Min):** **11.803 ms**
+- **Trung vị (Median):** **15.061 ms**
+- **Phân vị 95 (P95):** **23.315 ms**
+- **Tối đa (Max):** **23.315 ms**
 - **Ngưỡng AC:** `< 300 ms`
 - **Kết luận:** **✅ PASS** (Vượt xa yêu cầu)
 
 #### 2. T-28: Hiển thị giao diện thật qua Playwright / Chromium (Port 8081)
 *Phương pháp:* Dùng Playwright tự động hóa trình duyệt Chromium thật (`C:\Program Files\Google\Chrome\Application\chrome.exe`), đăng nhập và mở trang `http://localhost:8081/schedule.html?projectId=9500`, đo thời gian từ khi yêu cầu API được gửi đi đến khi toàn bộ 500 dòng bảng tiến độ được render vào cây DOM (`#schedule-tbody tr:nth-child(500)`).
 - **Số lần chạy:** 10 lần (sau 3 lần warm-up)
-- **Tối thiểu (Min):** **189.020 ms**
-- **Trung vị (Median):** **354.861 ms**
-- **Phân vị 95 (P95):** **398.602 ms**
-- **Tối đa (Max):** **398.602 ms**
+- **Tối thiểu (Min):** **195.787 ms**
+- **Trung vị (Median):** **208.253 ms**
+- **Phân vị 95 (P95):** **246.131 ms**
+- **Tối đa (Max):** **246.131 ms**
 - **Ngưỡng AC:** `< 1000 ms`
 - **Kết luận:** **✅ PASS** (Vượt xa yêu cầu)
 
