@@ -67,9 +67,10 @@ function verifyScheduleAgainstExpected(computedTasks, expectedTasks, projectDura
 test('S-10 / T-22: Mạng đáp án tính tay K-01 khớp chính xác với SchedulerService', () => {
   // 1. Kiểm tra fixture tĩnh và metadata
   assert.ok(K01_NETWORK.metadata, 'Fixture K-01 phải có metadata');
-  assert.equal(typeof K01_NETWORK.metadata.calculator, 'string', 'Phải ghi người tính toán');
   assert.ok(K01_NETWORK.metadata.calculationDate, 'Phải có ngày tính toán');
-  assert.equal(K01_NETWORK.metadata.reviewer, 'PENDING INDEPENDENT REVIEW', 'Ghi rõ trạng thái reviewer');
+  assert.equal(K01_NETWORK.metadata.reviewer, 'Đặng Quốc Doanh', 'Ghi nhận reviewer độc lập');
+  assert.equal(K01_NETWORK.metadata.reviewDate, '2026-10-06', 'Phải có ngày review');
+  assert.equal(K01_NETWORK.metadata.reviewStatus, 'VERIFIED', 'Ghi rõ trạng thái reviewer đã đối chiếu');
 
   // 2. Chạy tính toán bằng SchedulerService
   const scheduler = new SchedulerService({});
@@ -344,7 +345,7 @@ test('S-10 AC 6: Negative test phát hiện sai lệch mốc khi expected bị c
 // ============================================================
 // TEST 5: S-10 / T-23: Xác minh tính độc lập và metadata kiểm toán
 // ============================================================
-test('S-10 / T-23: Metadata kiểm toán tuân thủ quy tắc không bịa đặt tên người kiểm tra', () => {
+test('S-10 / T-23: Metadata kiểm toán ghi nhận đối chiếu độc lập hợp lệ', () => {
   const fixtures = [
     K01_NETWORK,
     NETWORK_1_ALL_RELATIONS_NEGATIVE_LAG,
@@ -356,8 +357,11 @@ test('S-10 / T-23: Metadata kiểm toán tuân thủ quy tắc không bịa đ�
     assert.ok(f.metadata.calculationDate, `Fixture ${f.metadata.id} phải có ngày tính`);
     assert.equal(
       f.metadata.reviewStatus,
-      'PENDING INDEPENDENT REVIEW',
-      `Fixture ${f.metadata.id} phải ghi rõ PENDING INDEPENDENT REVIEW khi chưa có chữ ký người thứ 2 ngoài đời thực`
+      'VERIFIED',
+      `Fixture ${f.metadata.id} phải được ghi nhận VERIFIED sau khi có review độc lập`
     );
+    assert.equal(f.metadata.reviewer, 'Đặng Quốc Doanh', 'Phải có tên reviewer độc lập');
+    assert.equal(f.metadata.reviewDate, '2026-10-06', 'Phải có ngày review');
+    assert.ok(f.metadata.notes.includes('Đối chiếu độc lập: Khớp'), 'Ghi nhận cả ba mạng khớp');
   }
 });

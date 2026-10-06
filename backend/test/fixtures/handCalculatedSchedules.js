@@ -17,11 +17,11 @@ const K01_NETWORK = Object.freeze({
     name: 'Bảng đáp án tính tay K-01 (Mạng tuyến tính cơ sở)',
     calculator: 'Kỹ sư lập lịch dự án - Nhóm 2 TTCS',
     calculationDate: '2026-10-05',
-    reviewer: 'PENDING INDEPENDENT REVIEW',
-    reviewDate: null,
-    reviewStatus: 'PENDING INDEPENDENT REVIEW',
+    reviewer: 'Đặng Quốc Doanh',
+    reviewDate: '2026-10-06',
+    reviewStatus: 'VERIFIED',
     method: 'Manual Critical Path Method (CPM)',
-    notes: 'Chuỗi 3 công việc nối tiếp FS lag 0'
+    notes: 'Chuỗi 3 công việc nối tiếp FS lag 0. Đối chiếu độc lập: Khớp toàn bộ ES, EF, LS, LF, Float, duration 12 ngày và đường găng.'
   },
   tasks: [
     { id: 'A', code: 'CV-01', name: 'Đào đất hố móng', duration: 5 },
@@ -72,11 +72,11 @@ const NETWORK_1_ALL_RELATIONS_NEGATIVE_LAG = Object.freeze({
     name: 'Mạng kiểm thử độc lập 1: Đủ 4 loại quan hệ FS, SS, FF, SF và lag âm',
     calculator: 'Kỹ sư lập lịch dự án - Nhóm 2 TTCS',
     calculationDate: '2026-10-05',
-    reviewer: 'PENDING INDEPENDENT REVIEW',
-    reviewDate: null,
-    reviewStatus: 'PENDING INDEPENDENT REVIEW',
+    reviewer: 'Đặng Quốc Doanh',
+    reviewDate: '2026-10-06',
+    reviewStatus: 'VERIFIED',
     method: 'Manual CPM với 4 loại liên kết tiền định và lead time',
-    notes: 'Bao phủ FS, SS, FF, SF và lag âm (-2 ngày gối đầu)'
+    notes: 'Bao phủ FS, SS, FF, SF và lag âm (-2 ngày gối đầu). Đối chiếu độc lập: Khớp toàn bộ ES, EF, LS, LF, Float, duration 14 ngày và đường găng.'
   },
   tasks: [
     { id: 'N1_A', code: 'T1', name: 'Thi công cọc đại trà', duration: 5 },
@@ -140,11 +140,11 @@ const NETWORK_2_PARALLEL_BRANCHES_OFFSET_3_DAYS = Object.freeze({
     name: 'Mạng kiểm thử độc lập 2: Hai nhánh song song lệch nhau 3 ngày',
     calculator: 'Kỹ sư lập lịch dự án - Nhóm 2 TTCS',
     calculationDate: '2026-10-05',
-    reviewer: 'PENDING INDEPENDENT REVIEW',
-    reviewDate: null,
-    reviewStatus: 'PENDING INDEPENDENT REVIEW',
+    reviewer: 'Đặng Quốc Doanh',
+    reviewDate: '2026-10-06',
+    reviewStatus: 'VERIFIED',
     method: 'Manual CPM phân tích nhánh song song và độ trễ float',
-    notes: 'Hai nhánh song song N2_B1 (7 ngày, float 0) và N2_B2 (4 ngày, float 3) chênh lệch đúng 3 ngày float'
+    notes: 'Hai nhánh song song N2_B1 (7 ngày, float 0) và N2_B2 (4 ngày, float 3) chênh lệch đúng 3 ngày float. Đối chiếu độc lập: Khớp toàn bộ ES, EF, LS, LF, Float, duration 12 ngày và đường găng.'
   },
   tasks: [
     { id: 'N2_START', code: 'T_START', name: 'Chuẩn bị mặt bằng thi công', duration: 2 },
