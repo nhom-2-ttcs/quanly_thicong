@@ -88,6 +88,13 @@ async function initDbSchema(maxRetries = 10, delayMs = 1500) {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    // Seed hạng mục WBS mẫu (id = 1)
+    await pool.query(`
+      INSERT INTO work_items (id, project_id, name, code, unit, quantity, status)
+      VALUES (1, 1, 'Thi công phần móng', 'WBS-01', 'Gói', 1, 'in_progress')
+      ON DUPLICATE KEY UPDATE name = VALUES(name);
+    `);
+
     // 5. Tạo bảng tasks (S-05 / SCRUM-60 / T-11: Khai báo công việc có thời lượng gắn vào hạng mục WBS)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS tasks (
@@ -103,6 +110,15 @@ async function initDbSchema(maxRetries = 10, delayMs = 1500) {
         CONSTRAINT fk_tasks_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
         CONSTRAINT fk_tasks_work_item FOREIGN KEY (work_item_id) REFERENCES work_items(id) ON DELETE RESTRICT
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Seed các công việc mẫu (task 1: CV-01, task 2: CV-02)
+    await pool.query(`
+      INSERT INTO tasks (id, project_id, work_item_id, name, code, duration, status)
+      VALUES
+        (1, 1, 1, 'Đào đất hố móng trụ T1', 'CV-01', 5.00, 'pending'),
+        (2, 1, 1, 'Đổ bê tông lót móng', 'CV-02', 3.00, 'pending')
+      ON DUPLICATE KEY UPDATE name = VALUES(name);
     `);
 
     // 6. Tạo bảng project_members (Phân quyền người xem / thành viên dự án)

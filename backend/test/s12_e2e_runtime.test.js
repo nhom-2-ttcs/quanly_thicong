@@ -68,6 +68,31 @@ test('E2E Runtime: Admin đăng nhập và truy vấn bảng tiến độ lưu s
     'Content-Type': 'application/json'
   };
 
+  // Đảm bảo dự án 1 có công việc và quan hệ phụ thuộc mẫu nếu môi trường mới khởi tạo
+  const taskCheckRes = await fetch(`${BACKEND_URL}/api/tasks/1`, { headers });
+  if (taskCheckRes.status === 404) {
+    await fetch(`${BACKEND_URL}/api/work-items`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ projectId: 1, name: 'Thi công phần móng', code: 'WBS-01' })
+    }).catch(() => {});
+    await fetch(`${BACKEND_URL}/api/projects/1/tasks`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ name: 'Đào đất hố móng trụ T1', code: 'CV-01', duration: 5, work_item_id: 1 })
+    }).catch(() => {});
+    await fetch(`${BACKEND_URL}/api/projects/1/tasks`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ name: 'Đổ bê tông lót móng', code: 'CV-02', duration: 3, work_item_id: 1 })
+    }).catch(() => {});
+    await fetch(`${BACKEND_URL}/api/projects/1/dependencies`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ predecessorTaskId: 1, successorTaskId: 2, dependencyType: 'FS', lagDays: 0 })
+    }).catch(() => {});
+  }
+
   // 2. Truy vấn kết quả tiến độ dự án 1
   const resResults = await fetch(`${BACKEND_URL}/api/projects/1/scheduling/results`, { headers });
   assert.equal(resResults.status, 200);
