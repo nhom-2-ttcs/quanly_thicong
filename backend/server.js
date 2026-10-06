@@ -73,7 +73,7 @@ app.get('/register', (req, res) => {
 const wbsRoutes = require("./wbs_routes");
 app.use("/api", wbsRoutes(db));
 
-// Routes quản lý lịch làm việc và ngày nghỉ lễ (S-17 / T-40)
+// Routes quản lý lịch làm việc và ngày nghỉ lễ
 const calendarRoutes = require('./src/routes/calendarRoutes');
 app.use('/api', calendarRoutes);
 
@@ -122,7 +122,7 @@ function startServer(port) {
   const server = app.listen(port, async () => {
     console.log(`===================================================`);
     console.log(`🚀 Backend Quản lý thi công đang chạy tại port ${port}`);
-    console.log(`👉 Link giao diện Lịch Làm Việc (S-17): http://localhost:${port}/calendar.html`);
+    console.log(`👉 Link giao diện Lịch Làm Việc: http://localhost:${port}/calendar.html`);
     console.log(`👉 Link giao diện đăng nhập: http://localhost:${port}/login.html`);
     console.log(`👉 Link trang chính: http://localhost:${port}/index.html`);
     console.log(`===================================================`);
