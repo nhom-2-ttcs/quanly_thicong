@@ -270,9 +270,6 @@
               <span>Admin hệ thống</span>
             </button>
           </div>
-          <button type="button" class="btn-unlock" onclick="unlockDev()">
-            🔄 Reset bộ đếm thử nghiệm
-          </button>
         </div>
       </div>
     </div>
@@ -415,22 +412,6 @@
       }
     });
 
-    async function unlockDev() {
-      localFailedAttempts = 0;
-      const email = document.getElementById('email').value.trim() || 'admin@thicong.vn';
-      try {
-        await smartFetch('/api/auth/unlock-dev', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
-        });
-        alert('Đã reset bộ đếm và mở khóa thành công!');
-        clearAlerts();
-      } catch (e) {
-        alert('Đã reset bộ đếm thử nghiệm!');
-        clearAlerts();
-      }
-    }
   </script>
 </body>
 </html>

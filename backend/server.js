@@ -4,6 +4,7 @@ const path = require('path');
 require('dotenv').config();
 const db = require('./db');
 const authController = require('./src/controllers/authController');
+const authMiddleware = require('./middlewares/authMiddleware');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -30,13 +31,21 @@ app.get('/api/health', (req, res) => {
 // API kiem tra ket noi database (S-01)
 app.get('/api/db-check', async (req, res) => {
   try {
-    if (db.pool) {
-      const [rows] = await db.pool.query('SELECT 1 + 1 AS solution');
-      return res.json({ status: 'Connected', data: rows });
+    if (!db.pool) {
+      return res.status(503).json({
+        status: 'Unavailable',
+        message: 'MySQL chưa kết nối. Khởi động database hoặc đặt DB_HOST phù hợp.'
+      });
     }
-    res.json({ status: 'Standalone', message: 'Đang chạy in-memory store (chưa kết nối MySQL container)' });
+
+    const [rows] = await db.pool.query('SELECT 1 + 1 AS solution');
+    return res.json({ status: 'Connected', data: rows });
   } catch (error) {
-    res.status(500).json({ status: 'Error', message: error.message });
+    const message = error?.message || error?.code || error?.errno || 'Không thể kết nối MySQL.';
+    res.status(500).json({
+      status: 'Error',
+      message: String(message)
+    });
   }
 });
 
@@ -50,16 +59,13 @@ app.post('/api/auth/login', authController.login);
 app.post('/api/auth/register', authController.register);
 
 // Lấy thông tin người dùng từ phiên hiện tại
-app.get('/api/auth/me', authController.getMe);
+app.get('/api/auth/me', authMiddleware, authController.getMe);
 
 // Đăng xuất - hủy phiên làm việc
-app.post('/api/auth/logout', authController.logout);
+app.post('/api/auth/logout', authMiddleware, authController.logout);
 
 // Danh sách 6 vai trò đã seed (SCRUM-29 / T-04)
 app.get('/api/auth/roles', authController.getRoles);
-
-// Mở khóa nhanh tài khoản (dành cho test/dev)
-app.post('/api/auth/unlock-dev', authController.unlockDev);
 
 // Điều hướng trang mặc định
 app.get('/login', (req, res) => {

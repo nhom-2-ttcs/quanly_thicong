@@ -6,10 +6,10 @@ services:
     container_name: quanly_thicong_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: secret
-      MYSQL_DATABASE: quanly_thicong
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+      MYSQL_DATABASE: ${DB_NAME:-quanly_thicong}
     ports:
-      - "3306:3306"
+      - "${DB_PORT:-3306}:3306"
     volumes:
       - db_data:/var/lib/mysql
 
@@ -18,13 +18,15 @@ services:
     container_name: quanly_thicong_backend
     restart: always
     ports:
-      - "5001:5000"
+      - "5000:5000"
     environment:
-      - PORT=5000
-      - DB_HOST=db
-      - DB_USER=root
-      - DB_PASSWORD=secret
-      - DB_NAME=quanly_thicong
+      PORT: ${PORT:-5000}
+      DB_HOST: db
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-quanly_thicong}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
     depends_on:
       - db
 

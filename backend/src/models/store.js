@@ -70,8 +70,16 @@ function updateUser(id, updates) {
 
 function createSession(user) {
   const { generateSessionToken } = require('../utils/security');
-  const token = generateSessionToken();
-  const sessionData = {
+  const token = generateSessionToken({
+    userId: user.id,
+    email: user.email,
+    full_name: user.full_name,
+    role_id: user.role_id,
+    role_name: user.role_name,
+    role_display_name: user.role_display_name,
+    exp: Math.floor(Date.now() / 1000) + Math.floor(SESSION_TTL_MS / 1000)
+  });
+  sessions.set(token, {
     userId: user.id,
     email: user.email,
     full_name: user.full_name,
@@ -79,21 +87,22 @@ function createSession(user) {
     role_name: user.role_name,
     role_display_name: user.role_display_name,
     last_activity: Date.now()
-  };
-  sessions.set(token, sessionData);
+  });
   return token;
 }
 
 function getSession(token) {
   if (!token || !sessions.has(token)) return null;
+  const { verifySessionToken } = require('../utils/security');
+  const payload = verifySessionToken(token);
+  if (!payload || payload.exp <= Math.floor(Date.now() / 1000)) return null;
+
   const session = sessions.get(token);
   const now = Date.now();
-  // Kiểm tra thời hạn 12 giờ không hoạt động
   if (now - session.last_activity > SESSION_TTL_MS) {
     sessions.delete(token);
     return null;
   }
-  // Cập nhật lại thời gian hoạt động
   session.last_activity = now;
   return session;
 }

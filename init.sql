@@ -1,27 +1,62 @@
+CREATE DATABASE IF NOT EXISTS quanly_thicong
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
 USE quanly_thicong;
 
 CREATE TABLE IF NOT EXISTS roles (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL UNIQUE
-);
-
-INSERT IGNORE INTO roles (id, name) VALUES 
-(1, 'Admin'), 
-(2, 'Kỹ sư'), 
-(3, 'Thầu phụ');
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(50) NOT NULL UNIQUE,
+  display_name VARCHAR(100) NOT NULL,
+  description TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    full_name VARCHAR(100) NOT NULL,
-    role_id INT DEFAULT 2,
-    failed_attempts INT DEFAULT 0,
-    locked_until DATETIME NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (role_id) REFERENCES roles(id)
-);
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  salt VARCHAR(64) NOT NULL,
+  full_name VARCHAR(100) NOT NULL,
+  role_id INT,
+  failed_login_attempts INT NOT NULL DEFAULT 0,
+  locked_until DATETIME NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  last_login_at DATETIME NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Seed tài khoản mẫu: admin@thicong.vn / mật khẩu: 123456 (đã băm bằng bcrypt)
-INSERT IGNORE INTO users (id, email, password, full_name, role_id) 
-VALUES (1, 'admin@thicong.vn', '$2b$10$wT2Hl7J4b7h5I5x9M9L8xe6k3p5F6N3v3K9g0E7t2Z1y8x7w6v5u4', 'Nguyễn Đức Hiếu', 1);
+CREATE TABLE IF NOT EXISTS projects (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  code VARCHAR(50) NOT NULL UNIQUE,
+  description TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS work_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  parent_id INT NULL,
+  name VARCHAR(255) NOT NULL,
+  code VARCHAR(50) NULL,
+  unit VARCHAR(50) NULL,
+  quantity DECIMAL(12,2) NOT NULL DEFAULT 0,
+  status ENUM('pending', 'in_progress', 'completed') NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (parent_id) REFERENCES work_items(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS dependencies (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  predecessor_task_id INT NOT NULL,
+  successor_task_id INT NOT NULL,
+  type ENUM('FS', 'SS', 'FF', 'SF') NOT NULL DEFAULT 'FS',
+  lag DECIMAL(12,4) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (predecessor_task_id) REFERENCES work_items(id) ON DELETE CASCADE,
+  FOREIGN KEY (successor_task_id) REFERENCES work_items(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_dependencies (predecessor_task_id, successor_task_id, type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -1,3 +1,5 @@
+process.env.JWT_SECRET = 'test-only-jwt-secret-not-used-in-production';
+
 const test = require('node:test');
 const assert = require('node:assert');
 const { SEED_ROLES, findUserByEmail, updateUser, createSession, getSession, destroySession, SESSION_TTL_MS } = require('../src/models/store');

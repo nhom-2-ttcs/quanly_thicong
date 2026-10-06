@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const authMiddleware = require('./middlewares/authMiddleware');
 
 module.exports = (db) => {
   const pool = db.pool || db;
@@ -22,7 +23,14 @@ module.exports = (db) => {
   }
 
   // 1. Lấy danh sách hạng mục theo dự án
-  router.get('/projects/:projectId/work-items', async (req, res) => {
+  router.get('/projects/:projectId/work-items', authMiddleware, async (req, res) => {
+    if (!pool) {
+      return res.status(503).json({
+        success: false,
+        message: 'WBS chưa khả dụng vì MySQL chưa kết nối.'
+      });
+    }
+
     try {
       const [rows] = await pool.query(
         'SELECT * FROM work_items WHERE project_id = ? ORDER BY id ASC',
@@ -35,7 +43,14 @@ module.exports = (db) => {
   });
 
   // 2. Thêm hạng mục mới
-  router.post('/work-items', async (req, res) => {
+  router.post('/work-items', authMiddleware, async (req, res) => {
+    if (!pool) {
+      return res.status(503).json({
+        success: false,
+        message: 'WBS chưa khả dụng vì MySQL chưa kết nối.'
+      });
+    }
+
     const { project_id, parent_id, name, code, unit, quantity } = req.body;
     if (!name || !project_id) {
       return res.status(400).json({ success: false, message: 'Thiếu tên hạng mục hoặc project_id' });
@@ -52,7 +67,14 @@ module.exports = (db) => {
   });
 
   // 3. Cập nhật hạng mục (Chặn vòng lặp đệ quy T-10)
-  router.put('/work-items/:id', async (req, res) => {
+  router.put('/work-items/:id', authMiddleware, async (req, res) => {
+    if (!pool) {
+      return res.status(503).json({
+        success: false,
+        message: 'WBS chưa khả dụng vì MySQL chưa kết nối.'
+      });
+    }
+
     const { name, code, unit, quantity, status, parent_id } = req.body;
     const itemId = req.params.id;
 
@@ -93,7 +115,14 @@ module.exports = (db) => {
   });
 
   // 4. Xóa hạng mục (Chặn xóa khi có con T-10)
-  router.delete('/work-items/:id', async (req, res) => {
+  router.delete('/work-items/:id', authMiddleware, async (req, res) => {
+    if (!pool) {
+      return res.status(503).json({
+        success: false,
+        message: 'WBS chưa khả dụng vì MySQL chưa kết nối.'
+      });
+    }
+
     const itemId = req.params.id;
     try {
       const [children] = await pool.query('SELECT id FROM work_items WHERE parent_id = ?', [itemId]);
