@@ -118,19 +118,36 @@ app.post('/api/backup/restore', async (req, res) => {
   }
 });
 
-app.listen(PORT, async () => {
-  console.log(`===================================================`);
-  console.log(`🚀 Backend Quản lý thi công đang chạy tại port ${PORT}`);
-  console.log(`👉 Link giao diện đăng nhập: http://localhost:${PORT}/login.html`);
-  console.log(`👉 Link trang chính (được bảo vệ): http://localhost:${PORT}/index.html`);
-  console.log(`===================================================`);
+function startServer(port) {
+  const server = app.listen(port, async () => {
+    console.log(`===================================================`);
+    console.log(`🚀 Backend Quản lý thi công đang chạy tại port ${port}`);
+    console.log(`👉 Link giao diện Lịch Làm Việc (S-17): http://localhost:${port}/calendar.html`);
+    console.log(`👉 Link giao diện đăng nhập: http://localhost:${port}/login.html`);
+    console.log(`👉 Link trang chính: http://localhost:${port}/index.html`);
+    console.log(`===================================================`);
 
-  if (db.initDbSchema) {
-    await db.initDbSchema();
-  }
+    if (db.initDbSchema) {
+      await db.initDbSchema();
+    }
 
-  // Kích hoạt lịch sao lưu CSDL tự động hằng đêm [S-20 / T-46]
-  backupService.scheduleNightlyBackup();
-});
+    // Kích hoạt lịch sao lưu CSDL tự động hằng đêm [S-20 / T-46]
+    backupService.scheduleNightlyBackup();
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`[PORT] Cổng ${port} đang bị chiếm dụng bởi tiến trình khác. Tự động chuyển sang cổng ${port + 1}...`);
+      startServer(port + 1);
+    } else {
+      console.error('[SERVER ERROR]', err);
+    }
+  });
+
+  return server;
+}
+
+startServer(PORT);
 
 module.exports = app;
+
