@@ -120,3 +120,52 @@ Hệ thống đã nạp sẵn 2 tài khoản mẫu phục vụ kiểm thử nhan
 
 2. Kết luận lựa chọn:
 Nhóm quyết định chọn SVG tự vẽ, không dùng thư viện Gantt có sẵn, nhằm đáp ứng đầy đủ yêu cầu phi chức năng và làm nền tảng cho việc hiển thị đường găng và kế hoạch gốc sau này.
+
+---
+
+## 💾 Khôi phục khi mất dữ liệu (Nightly DB Backup & Data Restore - S-20, T-46, T-47)
+
+Hệ thống cung cấp cơ chế sao lưu tự động hằng đêm và khôi phục dữ liệu toàn diện khi xảy ra sự cố mất mát thông tin.
+
+### 1. Cơ Chế Sao Lưu Tự Động Hằng Đêm (Nightly Backup)
+* **Thời gian thực hiện:** Hệ thống tự động kích hoạt tiến trình sao lưu lúc **00:00:00 hằng đêm**.
+* **Vị trí lưu trữ ngoài container (NFR):** Các tệp `.sql` được lưu trữ tại thư mục volume bên ngoài container (`./backups`) để tránh mất mát dữ liệu khi hỏng ổ đĩa container MySQL.
+* **Định dạng tên tệp:** `backup_quanly_thicong_YYYYMMDD_HHmmss.sql` (Tuân thủ NFR: Tuyệt đối **không chứa mật khẩu** trong tên tệp hoặc nhật ký).
+* **Quản lý thời hạn (Retention Policy - NFR):** Tự động dọn dẹp các tệp cũ, **chỉ giữ lại 7 bản sao lưu mới nhất**, xóa các bản cũ hơn ngay trong cùng lệnh/tiến trình sao lưu.
+* **Ghi nhật ký (Non-silent logging):** Ghi rõ thời gian thực hiện, tên tệp, kích thước tệp (bytes/KB) và số lượng bản ghi trên từng bảng. Nếu thất bại, ghi log lỗi chi tiết và không im lặng.
+
+### 2. Hướng Dẫn Thực Hiện Lệnh Sao Lưu & Khôi Phục Thủ Công
+
+#### A. Thực hiện Sao lưu thủ công:
+```bash
+# Trong thư mục backend:
+npm run backup
+
+# Hoặc chạy trực tiếp kịch bản CLI:
+node scripts/backup.js
+
+# Hoặc gửi HTTP POST request đến API backend:
+curl -X POST http://localhost:5000/api/backup/run
+```
+
+#### B. Khôi phục dữ liệu từ bản sao lưu qua đêm vào cơ sở dữ liệu trống:
+```bash
+# Khôi phục từ bản sao lưu mới nhất:
+npm run restore
+
+# Hoặc chỉ định rõ tệp sao lưu cần khôi phục:
+node scripts/restore.js backups/backup_quanly_thicong_20261006_194838.sql
+
+# Hoặc qua HTTP API:
+curl -X POST http://localhost:5000/api/backup/restore -H "Content-Type: application/json" -d "{\"filename\": \"backup_quanly_thicong_20261006_194838.sql\"}"
+```
+
+#### C. Kiểm tra số lượng bản ghi sau khôi phục:
+Sau khi kịch bản khôi phục chạy hoàn tất, hệ thống tự động kiểm đếm và in ra danh sách số bản ghi trên từng bảng (`users`, `roles`,...) đảm bảo số lượng bản ghi khớp 100% với thời điểm sao lưu.
+
+#### D. Chạy bộ kiểm thử tự động cho tính năng Sao lưu & Khôi phục:
+```bash
+cd backend
+npm test
+```
+

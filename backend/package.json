@@ -5,7 +5,9 @@
   "scripts": {
     "start": "node server.js",
     "lint": "node -c server.js wbs_routes.js",
-    "test": "echo \"All automated tests passed\" && exit 0"
+    "backup": "node scripts/backup.js",
+    "restore": "node scripts/restore.js",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
