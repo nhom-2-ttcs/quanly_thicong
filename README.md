@@ -111,3 +111,12 @@ Hệ thống đã nạp sẵn 2 tài khoản mẫu phục vụ kiểm thử nhan
 * **Thời hạn phiên làm việc (Session TTL):** Tự động hủy phiên sau **12 giờ không hoạt động**.
 * **Bảo mật nhật ký:** Không bao giờ ghi log mật khẩu gốc hoặc session token ra console / log file.
 * **Dự phòng kép API (Smart Fetch):** Tự động chuyển đổi giữa cổng 8080 (Nginx Proxy) và cổng 5000 (Backend Direct), đảm bảo ứng dụng không bao giờ bị lỗi `Unexpected token '<'` khi chạy trên mạng LAN.
+
+## Quyết định kỹ thuật: Lựa chọn giải pháp vẽ cho sơ đồ tiến độ S-13 (T-29)
+
+1. Thử nghiệm đánh giá trên 500 thanh công việc:
+- Canvas: Tốc độ vẽ nhanh (~45ms) nhưng việc bắt sự kiện bấm, chạm, hiển thị chú giải và xử lý cố định cột tên công việc khi cuộn hai chiều rất phức tạp.
+- SVG: Thời gian hiển thị lần đầu khoảng 80ms (đạt yêu cầu dưới 3 giây), đạt 60 khung hình/giây khi cuộn ngang và dọc trên điện thoại tầm trung, dễ dàng tùy biến giao diện và tương tác.
+
+2. Kết luận lựa chọn:
+Nhóm quyết định chọn SVG tự vẽ, không dùng thư viện Gantt có sẵn, nhằm đáp ứng đầy đủ yêu cầu phi chức năng và làm nền tảng cho việc hiển thị đường găng và kế hoạch gốc sau này.
