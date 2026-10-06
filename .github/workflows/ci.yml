@@ -22,14 +22,77 @@ jobs:
       - name: 1. Build & Install Dependencies
         run: |
           cd backend
-          npm install
+          npm ci
 
       - name: 2. Run Lint Validation
         run: |
           cd backend
           npm run lint
 
-      - name: 3. Run Automated Tests
+      - name: 3. Start Docker Compose Stack
+        env:
+          FRONTEND_PORT: 8081
+        run: |
+          docker compose up -d --build
+
+      - name: 4. Wait for Services Readiness
+        run: |
+          echo "Polling services readiness..."
+          TIMEOUT=90
+          ELAPSED=0
+
+          check_endpoint() {
+            local url=$1
+            local status
+            status=$(curl -s -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+            [ "$status" = "200" ]
+          }
+
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            if check_endpoint "http://localhost:5001/api/health" && \
+               check_endpoint "http://localhost:5001/api/db-check" && \
+               check_endpoint "http://localhost:8081/login.html" && \
+               check_endpoint "http://localhost:8081/schedule.html"; then
+              echo "✅ All services are healthy and responding with HTTP 200 after ${ELAPSED}s!"
+              exit 0
+            fi
+            sleep 2
+            ELAPSED=$((ELAPSED + 2))
+            echo "Waiting for services... (${ELAPSED}s / ${TIMEOUT}s)"
+          done
+
+          echo "❌ Timed out waiting for services to be ready after ${TIMEOUT}s!"
+          echo "=== Docker Compose Status ==="
+          docker compose ps
+          echo "=== Database Logs ==="
+          docker compose logs db --tail=100
+          echo "=== Backend Logs ==="
+          docker compose logs backend --tail=100
+          echo "=== Frontend Logs ==="
+          docker compose logs frontend --tail=100
+          exit 1
+
+      - name: 5. Run Automated Tests
+        env:
+          BACKEND_BASE_URL: http://localhost:5001
+          FRONTEND_BASE_URL: http://localhost:8081
         run: |
           cd backend
           npm test
+
+      - name: Diagnostics on Failure
+        if: failure()
+        run: |
+          echo "=== Diagnostics on Failure ==="
+          docker compose ps
+          echo "=== Database Logs ==="
+          docker compose logs db --tail=100
+          echo "=== Backend Logs ==="
+          docker compose logs backend --tail=100
+          echo "=== Frontend Logs ==="
+          docker compose logs frontend --tail=100
+
+      - name: Teardown Docker Stack
+        if: always()
+        run: |
+          docker compose down

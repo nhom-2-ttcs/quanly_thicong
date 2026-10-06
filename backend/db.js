@@ -20,10 +20,11 @@ try {
 }
 
 // Hàm khởi tạo bảng và seed 6 vai trò khi kết nối MySQL thành công (SCRUM-29 / T-04)
-async function initDbSchema() {
+async function initDbSchema(maxRetries = 10, delayMs = 1500) {
   if (!pool) return;
-  try {
-    // 1. Tạo bảng roles
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // 1. Tạo bảng roles
     await pool.query(`
       CREATE TABLE IF NOT EXISTS roles (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -254,9 +255,16 @@ async function initDbSchema() {
       }
     }
     console.log(`[DB] Đã đồng bộ ${inMemoryUsers.length} tài khoản người dùng sẵn sàng.`);
+    return;
   } catch (err) {
-    console.warn('[DB] Lưu ý khi tạo schema MySQL:', err.message);
+    if (attempt < maxRetries) {
+      console.warn(`[DB] Đang đợi MySQL sẵn sàng (lần ${attempt}/${maxRetries}): ${err.message}. Thử lại sau ${delayMs}ms...`);
+      await new Promise(r => setTimeout(r, delayMs));
+    } else {
+      console.warn('[DB] Lưu ý khi tạo schema MySQL:', err.message);
+    }
   }
+}
 }
 
 module.exports = {

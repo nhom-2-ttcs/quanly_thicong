@@ -14,14 +14,21 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const BACKEND_URL = process.env.TEST_BACKEND_URL || 'http://localhost:5001';
-const FRONTEND_URL = process.env.TEST_FRONTEND_URL || 'http://localhost:8081';
+const BACKEND_URL = process.env.BACKEND_BASE_URL || process.env.TEST_BACKEND_URL || 'http://localhost:5001';
+const FRONTEND_URL = process.env.FRONTEND_BASE_URL || process.env.TEST_FRONTEND_URL || 'http://localhost:8081';
 
-test('E2E Runtime: Kiểm tra các trang HTML và kịch bản giao diện S-12', async () => {
-  // 1. Kiểm tra schedule.html được phục vụ thành công
+test('E2E Runtime: Kiểm tra các trang HTML và kịch bản giao diện S-12', { concurrency: false }, async () => {
+  // 1. Kiểm tra schedule.html được phục vụ thành công từ Backend
   const resHtml = await fetch(`${BACKEND_URL}/schedule.html`);
-  assert.equal(resHtml.status, 200, 'Trang schedule.html phải trả về HTTP 200');
+  assert.equal(resHtml.status, 200, 'Trang schedule.html trên backend phải trả về HTTP 200');
   const html = await resHtml.text();
+
+  // Kiểm tra frontend Nginx phục vụ thành công trang schedule.html và login.html
+  const resFrontendSchedule = await fetch(`${FRONTEND_URL}/schedule.html`);
+  assert.equal(resFrontendSchedule.status, 200, 'Trang schedule.html trên frontend (Nginx) phải trả về HTTP 200');
+
+  const resFrontendLogin = await fetch(`${FRONTEND_URL}/login.html`);
+  assert.equal(resFrontendLogin.status, 200, 'Trang login.html trên frontend (Nginx) phải trả về HTTP 200');
 
   // Kiểm tra đủ các cột cần thiết (T-28 AC 2)
   assert.ok(html.includes('Mã CV'), 'Phải có cột Mã CV');
@@ -44,7 +51,7 @@ test('E2E Runtime: Kiểm tra các trang HTML và kịch bản giao diện S-12'
   assert.ok(html.includes('formatDateVN'), 'Phải có hàm định dạng thời gian Việt Nam');
 });
 
-test('E2E Runtime: Admin đăng nhập và truy vấn bảng tiến độ lưu sẵn', async () => {
+test('E2E Runtime: Admin đăng nhập và truy vấn bảng tiến độ lưu sẵn', { concurrency: false }, async () => {
   // 1. Đăng nhập Admin
   const loginRes = await fetch(`${BACKEND_URL}/api/auth/login`, {
     method: 'POST',
@@ -91,7 +98,7 @@ test('E2E Runtime: Admin đăng nhập và truy vấn bảng tiến độ lưu s
   assert.ok(critData.tasks.every(t => t.isCritical === true), 'Bộ lọc critical=true chỉ trả về công việc găng');
 });
 
-test('E2E Runtime: Sửa duration làm stale cache, tự động tính lại và lưu lại', async () => {
+test('E2E Runtime: Sửa duration làm stale cache, tự động tính lại và lưu lại', { concurrency: false }, async () => {
   const loginRes = await fetch(`${BACKEND_URL}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -105,36 +112,38 @@ test('E2E Runtime: Sửa duration làm stale cache, tự động tính lại và
   const taskData = await taskRes.json();
   const origDuration = Number(taskData.data.duration);
 
-  // Sửa duration task 1
-  const updateRes = await fetch(`${BACKEND_URL}/api/tasks/1`, {
-    method: 'PUT',
-    headers,
-    body: JSON.stringify({ duration: origDuration + 1 })
-  });
-  assert.equal(updateRes.status, 200);
+  try {
+    // Sửa duration task 1
+    const updateRes = await fetch(`${BACKEND_URL}/api/tasks/1`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ duration: origDuration + 1 })
+    });
+    assert.equal(updateRes.status, 200);
 
-  // Lần đọc kế tiếp -> isCached phải là false (vì vừa stale và được tính lại)
-  const resAfterUpdate = await fetch(`${BACKEND_URL}/api/projects/1/scheduling/results`, { headers });
-  assert.equal(resAfterUpdate.status, 200);
-  const dataAfterUpdate = await resAfterUpdate.json();
-  assert.equal(dataAfterUpdate.isCached, false, 'Sau khi sửa duration, kết quả phải được tính lại (isCached = false)');
+    // Lần đọc kế tiếp -> isCached phải là false (vì vừa stale và được tính lại)
+    const resAfterUpdate = await fetch(`${BACKEND_URL}/api/projects/1/scheduling/results`, { headers });
+    assert.equal(resAfterUpdate.status, 200);
+    const dataAfterUpdate = await resAfterUpdate.json();
+    assert.equal(dataAfterUpdate.isCached, false, 'Sau khi sửa duration, kết quả phải được tính lại (isCached = false)');
 
-  // Lần đọc tiếp theo -> isCached trở lại true
-  const resCachedAgain = await fetch(`${BACKEND_URL}/api/projects/1/scheduling/results`, { headers });
-  assert.equal(resCachedAgain.status, 200);
-  const dataCachedAgain = await resCachedAgain.json();
-  assert.equal(dataCachedAgain.isCached, true, 'Sau khi tính lại, kết quả đã được lưu sẵn (isCached = true)');
-
-  // Khôi phục lại duration ban đầu
-  await fetch(`${BACKEND_URL}/api/tasks/1`, {
-    method: 'PUT',
-    headers,
-    body: JSON.stringify({ duration: origDuration })
-  });
-  await fetch(`${BACKEND_URL}/api/projects/1/scheduling/results`, { headers });
+    // Lần đọc tiếp theo -> isCached trở lại true
+    const resCachedAgain = await fetch(`${BACKEND_URL}/api/projects/1/scheduling/results`, { headers });
+    assert.equal(resCachedAgain.status, 200);
+    const dataCachedAgain = await resCachedAgain.json();
+    assert.equal(dataCachedAgain.isCached, true, 'Sau khi tính lại, kết quả đã được lưu sẵn (isCached = true)');
+  } finally {
+    // Khôi phục lại duration ban đầu trong khối finally để bảo toàn tính độc lập dữ liệu
+    await fetch(`${BACKEND_URL}/api/tasks/1`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ duration: origDuration })
+    }).catch(() => {});
+    await fetch(`${BACKEND_URL}/api/projects/1/scheduling/results`, { headers }).catch(() => {});
+  }
 });
 
-test('E2E Runtime: Phân quyền Viewer xem được dự án nhưng bị chặn sửa và xem ngoài quyền', async () => {
+test('E2E Runtime: Phân quyền Viewer xem được dự án nhưng bị chặn sửa và xem ngoài quyền', { concurrency: false }, async () => {
   // 1. Đăng nhập Viewer
   const viewerLogin = await fetch(`${BACKEND_URL}/api/auth/login`, {
     method: 'POST',
