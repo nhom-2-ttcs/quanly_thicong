@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lịch Làm Việc & Ngày Nghỉ Lễ | Quản Lý Thi Công</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
     :root {
@@ -32,6 +31,7 @@
       --danger: #b91c1c;
       --danger-soft: #fef2f2;
       --danger-border: #fecaca;
+      --brand-blue: #2563eb;
     }
 
     * {
@@ -192,9 +192,9 @@
       padding: 6px 12px;
       border-radius: 6px;
       font-size: 11.5px;
-      font-weight: 500;
+      font-weight: 600;
       color: var(--text-body);
-      font-family: 'JetBrains Mono', monospace;
+      font-family: inherit;
     }
 
     /* STATS STRIP */
@@ -524,16 +524,24 @@
       background: #f8fafc;
     }
 
+    code {
+      font-family: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+
     /* BADGES - Flat Tinted */
     .badge {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 4px;
-      padding: 2px 7px;
+      padding: 3px 8px;
       border-radius: 4px;
-      font-size: 11px;
-      font-weight: 500;
-      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      font-weight: 600;
+      font-family: inherit;
+      white-space: nowrap;
+      letter-spacing: normal;
     }
 
     .badge-critical {
@@ -1018,7 +1026,7 @@
           : '<span style="color:#94a3b8;">(Bắt đầu)</span>';
 
         const criticalBadge = t.isCritical
-          ? '<span class="badge badge-critical">GĂNG (Critical)</span>'
+          ? '<span class="badge badge-critical">Găng (Critical)</span>'
           : '<span class="badge badge-normal">Không găng</span>';
 
         return `
