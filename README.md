@@ -169,3 +169,53 @@ cd backend
 npm test
 ```
 
+---
+
+## 📅 Tính Năng Lịch Làm Việc Công Trường Trừ Chủ Nhật / Ngày Nghỉ Lễ ([S-17])
+
+> **Mã Story:** `[S-17]` - *Lịch làm việc trừ CN/lễ*  
+> **Subtasks hoàn thành:** `[T-38]`, `[T-39]`, `[T-40]`  
+> **Phụ thuộc:** `S-09` (Tính toán CPM duyệt xuôi, duyệt ngược, đường găng)  
+> **Mục tiêu:** Thời lượng công việc tính theo ngày làm việc thật của công trường để tiến độ không cam kết vào những ngày công trường nghỉ.
+
+### 1. Bảng Tiêu Chí Chấp Nhận & Kết Quả Triển Khai (Acceptance Criteria)
+
+| Tiêu chí (AC) | Mô tả yêu cầu | Triển khai trong hệ thống | Kết quả kiểm thử |
+| :---: | :--- | :--- | :---: |
+| **AC 1** | Lịch mặc định 6 ngày/tuần: Việc 6 ngày bắt đầu Thứ Năm ➔ Kết thúc Thứ Tư tuần sau vì bỏ qua Chủ Nhật. | Hàm `calculateFinishDate` tự động đếm đủ 6 ngày làm việc: T5 (1), T6 (2), T7 (3), bỏ qua CN, T2 (4), T3 (5), T4 (6). | ✅ **ĐẠT (100%)** |
+| **AC 2** | Khai ngày lễ rơi vào giữa việc ➔ Việc dài thêm đúng số ngày lễ và mọi việc sau lùi theo. | Nhận diện ngày lễ trong khoảng thời gian công việc, tự động bù thêm ngày làm việc và cập nhật các công việc phụ thuộc trong mạng CPM. | ✅ **ĐẠT (100%)** |
+| **AC 3** | Đổi lịch dự án sang 5 ngày/tuần ➔ Toàn bộ tiến độ tính lại và ngày hoàn thành đổi. | Hỗ trợ cấu hình 5 ngày (nghỉ T7 & CN). API `PUT /api/projects/:id/calendar` tự động tính lại toàn bộ mạng CPM. | ✅ **ĐẠT (100%)** |
+| **AC 4** | Khai ngày lễ trùng Chủ Nhật ➔ Không trừ hai lần. | Hàm `isWorkingDay` xác định ngày nghỉ cuối tuần đơn thuần là ngày không làm việc, không bao giờ trừ lặp 2 ngày cho cùng 1 ngày nghỉ. | ✅ **ĐẠT (100%)** |
+| **AC 5** | Độ trễ quan hệ phụ thuộc là 2 ngày ➔ 2 ngày đó cũng là ngày làm việc. | Hàm `getSuccessorStartFromFS` và `addWorkingDaysLag` tính khoảng cách chờ lag theo ngày làm việc công trường (bỏ qua CN/lễ). | ✅ **ĐẠT (100%)** |
+
+### 2. Các Tệp Mã Nguồn Triển Khai
+
+* **CSDL & Migration (T-38):**
+  * `migration_s17.sql`: Tạo bảng `calendars` (cấu hình 5/6 ngày) và `holidays` (danh sách ngày nghỉ lễ theo dự án).
+  * `init.sql`, `backend/db.js`: Tự động khởi tạo schema khi khởi động máy chủ.
+  * `backend/src/models/calendarStore.js`: Module truy xuất dữ liệu hỗ trợ cả MySQL và In-Memory store fallback.
+* **Hàm tính toán lịch làm việc (T-39):**
+  * `backend/src/services/workingCalendarService.js`: Toàn bộ logic tính ngày kết thúc, ngày bắt đầu, độ trễ và kiểm tra ngày làm việc.
+  * `backend/test/workingCalendar.test.js`: Bộ test tính tay độc lập cho toàn bộ 5 AC.
+* **Tích hợp CPM & Giao diện (T-40):**
+  * `backend/src/algorithms/cpmCalendarEngine.js`: Thuật toán CPM tích hợp lịch làm việc, tính toán ES, EF, LS, LF, Total Float và Critical Path.
+  * `backend/src/routes/calendarRoutes.js`: Các API CRUD lịch làm việc, ngày nghỉ lễ và tính toán tiến độ.
+  * `backend/test/cpmCalendar.test.js`: Bộ test tích hợp toàn diện CPM và Lịch thi công.
+  * `frontend/calendar.html`: Giao diện quản trị lịch thi công, khai báo ngày lễ và theo dõi bảng tiến độ CPM thời gian thực.
+
+### 3. Hướng Dẫn Kiểm Thử Tự Động & Trải Nghiệm Giao Diện
+
+1. **Chạy toàn bộ bài test tự động:**
+   ```bash
+   cd backend
+   npm test
+   ```
+
+2. **Khởi chạy máy chủ và mở giao diện:**
+   ```bash
+   cd backend
+   npm start
+   ```
+   * Mở trình duyệt truy cập: [http://localhost:5000/calendar.html](http://localhost:5000/calendar.html)
+
+

@@ -73,6 +73,11 @@ app.get('/register', (req, res) => {
 const wbsRoutes = require("./wbs_routes");
 app.use("/api", wbsRoutes(db));
 
+// Routes quản lý lịch làm việc và ngày nghỉ lễ (S-17 / T-40)
+const calendarRoutes = require('./src/routes/calendarRoutes');
+app.use('/api', calendarRoutes);
+
+
 // ==========================================
 // CÁC ENDPOINT CHO SAO LƯU & KHÔI PHỤC CSDL (S-20, T-46, T-47)
 // ==========================================
