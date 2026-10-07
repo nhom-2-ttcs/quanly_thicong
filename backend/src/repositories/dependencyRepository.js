@@ -21,8 +21,12 @@ class DependencyRepository {
     if (!executor?.query) {
       return { id: Number(projectId), name: 'Dự án Mẫu', code: 'DA-01' };
     }
-    const [rows] = await executor.query('SELECT id, name, code FROM projects WHERE id = ?', [projectId]);
-    return rows && rows.length > 0 ? rows[0] : null;
+    try {
+      const [rows] = await executor.query('SELECT id, name, code FROM projects WHERE id = ?', [projectId]);
+      return rows && rows.length > 0 ? rows[0] : null;
+    } catch {
+      return { id: Number(projectId), name: 'Dự án Mẫu', code: 'DA-01' };
+    }
   }
 
   async getTaskById(taskId, conn = null) {
@@ -30,8 +34,12 @@ class DependencyRepository {
     if (!executor?.query) {
       return null;
     }
-    const [rows] = await executor.query('SELECT id, project_id, work_item_id, name, code, duration, status FROM tasks WHERE id = ?', [taskId]);
-    return rows && rows.length > 0 ? rows[0] : null;
+    try {
+      const [rows] = await executor.query('SELECT id, project_id, work_item_id, name, code, duration, status FROM tasks WHERE id = ?', [taskId]);
+      return rows && rows.length > 0 ? rows[0] : null;
+    } catch {
+      return null;
+    }
   }
 
   async findAllByProjectId(projectId, conn = null) {
