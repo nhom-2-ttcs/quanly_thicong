@@ -1079,16 +1079,45 @@
     }
 
     // === QUẢN LÝ CÔNG VIỆC (TASKS - S-05 / SCRUM-60) ===
+    function getParentWorkItemIds() {
+      return new Set(
+        rawWorkItems
+          .filter(wi => wi.parent_id !== null && wi.parent_id !== undefined && wi.parent_id !== '')
+          .map(wi => Number(wi.parent_id))
+      );
+    }
+
     function populateWorkItemSelect(selectedId) {
       const select = document.getElementById('task-work-item-id');
       select.innerHTML = '';
+      const parentIds = getParentWorkItemIds();
+
+      let hasValidSelection = false;
       rawWorkItems.forEach(wi => {
+        const isParent = parentIds.has(Number(wi.id));
         const opt = document.createElement('option');
         opt.value = wi.id;
-        opt.innerText = `[${wi.code || wi.id}] ${wi.name}`;
-        if (wi.id === selectedId) opt.selected = true;
+
+        if (isParent) {
+          opt.disabled = true;
+          opt.style.color = '#94a3b8';
+          opt.style.fontWeight = '600';
+          opt.innerText = `[${wi.code || wi.id}] ${wi.name} (Hạng mục cha - không thể gắn công việc)`;
+        } else {
+          opt.innerText = `[${wi.code || wi.id}] ${wi.name} (Hạng mục lá)`;
+          if (Number(wi.id) === Number(selectedId)) {
+            opt.selected = true;
+            hasValidSelection = true;
+          }
+        }
         select.appendChild(opt);
       });
+
+      // Nếu mục chọn ban đầu là hạng mục cha hoặc chưa chọn, tự động chọn hạng mục lá hợp lệ đầu tiên
+      if (!hasValidSelection) {
+        const firstLeaf = rawWorkItems.find(wi => !parentIds.has(Number(wi.id)));
+        if (firstLeaf) select.value = firstLeaf.id;
+      }
     }
 
     function openAddTaskModal(workItemId) {
@@ -1133,9 +1162,17 @@
         return;
       }
 
+      // S-05: Kiểm tra hạng mục lá ở phía client
+      const parentIds = getParentWorkItemIds();
+      if (parentIds.has(workItemId)) {
+        alert('Công việc chỉ được gắn vào hạng mục lá! Không thể gắn vào hạng mục cha.');
+        return;
+      }
+
+      // S-05 / T-11 / T-12: Thời lượng phải là số nguyên dương
       const duration = Number(durationVal);
-      if (isNaN(duration) || duration <= 0) {
-        alert('Thời lượng phải là một số dương hợp lệ (đơn vị: Ngày)!');
+      if (isNaN(duration) || !Number.isInteger(duration) || duration <= 0) {
+        alert('Thời lượng phải là số nguyên dương (đơn vị: Ngày làm việc)!');
         return;
       }
 
@@ -1175,7 +1212,18 @@
     async function deleteTask(taskId, taskName) {
       if (!confirm(`Bạn có chắc chắn muốn xóa công việc "${taskName}"?`)) return;
 
-      const { res, data } = await apiRequest(`/api/tasks/${taskId}`, { method: 'DELETE' });
+      let { res, data } = await apiRequest(`/api/tasks/${taskId}`, { method: 'DELETE' });
+
+      // S-05 AC 4: Nếu có quan hệ phụ thuộc liên kết, yêu cầu xác nhận xóa liên đới
+      if (res.status === 409 && data && data.requires_confirmation) {
+        const acceptCascade = confirm(`${data.message}\n\nBạn có đồng ý xóa công việc này cùng toàn bộ các quan hệ phụ thuộc liên quan không?`);
+        if (!acceptCascade) return;
+
+        const confirmedDelete = await apiRequest(`/api/tasks/${taskId}?confirm=true`, { method: 'DELETE' });
+        res = confirmedDelete.res;
+        data = confirmedDelete.data;
+      }
+
       if (!res.ok || !data.success) {
         alert(`Không thể xóa: ${data.message || 'Lỗi hệ thống hoặc bạn không có quyền'}`);
         return;

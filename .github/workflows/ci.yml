@@ -2,9 +2,9 @@ name: CI Pipeline (Build, Lint, Test)
 
 on:
   push:
-    branches: [ "main", "feature/**" ]
+    branches: [ "main", "feature/**", "fix/**" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "feature/**" ]
 
 jobs:
   build-lint-test:
