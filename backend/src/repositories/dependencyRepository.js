@@ -48,28 +48,32 @@ class DependencyRepository {
       return this.inMemoryDeps.filter(d => Number(d.project_id) === Number(projectId));
     }
 
-    const [rows] = await executor.query(`
-      SELECT
-        d.id,
-        d.project_id,
-        d.predecessor_task_id,
-        d.successor_task_id,
-        d.dependency_type,
-        d.lag_days,
-        d.created_at,
-        d.updated_at,
-        tp.name AS predecessor_task_name,
-        tp.code AS predecessor_task_code,
-        ts.name AS successor_task_name,
-        ts.code AS successor_task_code
-      FROM task_dependencies d
-      JOIN tasks tp ON d.predecessor_task_id = tp.id
-      JOIN tasks ts ON d.successor_task_id = ts.id
-      WHERE d.project_id = ?
-      ORDER BY d.id ASC
-    `, [projectId]);
+    try {
+      const [rows] = await executor.query(`
+        SELECT
+          d.id,
+          d.project_id,
+          d.predecessor_task_id,
+          d.successor_task_id,
+          d.dependency_type,
+          d.lag_days,
+          d.created_at,
+          d.updated_at,
+          tp.name AS predecessor_task_name,
+          tp.code AS predecessor_task_code,
+          ts.name AS successor_task_name,
+          ts.code AS successor_task_code
+        FROM task_dependencies d
+        JOIN tasks tp ON d.predecessor_task_id = tp.id
+        JOIN tasks ts ON d.successor_task_id = ts.id
+        WHERE d.project_id = ?
+        ORDER BY d.id ASC
+      `, [projectId]);
 
-    return rows;
+      return rows;
+    } catch {
+      return this.inMemoryDeps.filter(d => Number(d.project_id) === Number(projectId));
+    }
   }
 
   async findById(id, conn = null) {

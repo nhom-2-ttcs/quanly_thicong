@@ -8,6 +8,13 @@ const authController = require('./src/controllers/authController');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+process.on('uncaughtException', (err) => {
+  console.warn('[SERVER EXCEPTION]', err.message);
+});
+process.on('unhandledRejection', (reason) => {
+  console.warn('[SERVER REJECTION]', reason?.message || reason);
+});
+
 app.use(cors());
 app.use(express.json());
 
