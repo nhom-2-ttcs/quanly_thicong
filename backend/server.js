@@ -95,6 +95,46 @@ app.use("/api", dependencyRoutes(db));
 const schedulingRoutes = require("./src/routes/schedulingRoutes");
 app.use("/api", schedulingRoutes(db));
 
+// ==========================================
+// CÁC ENDPOINT CHO SAO LƯU & KHÔI PHỤC CSDL (S-20, T-46, T-47)
+// ==========================================
+const backupService = require('./src/services/backupService');
+
+// Lấy danh sách 7 bản sao lưu gần nhất
+app.get('/api/backup/list', (req, res) => {
+  try {
+    const backups = backupService.getBackupList();
+    res.json({ success: true, backups });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Chạy sao lưu CSDL theo yêu cầu (S-20 / T-46)
+app.post('/api/backup/run', async (req, res) => {
+  try {
+    const result = await backupService.createBackup();
+    res.json({ success: true, message: 'Sao lưu CSDL thành công', backup: result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Khôi phục CSDL từ bản sao lưu (S-20 / T-47)
+app.post('/api/backup/restore', async (req, res) => {
+  try {
+    const { filename } = req.body || {};
+    let filePath = null;
+    if (filename) {
+      filePath = path.join(backupService.getBackupDir(), path.basename(filename));
+    }
+    const result = await backupService.restoreBackup(filePath);
+    res.json({ success: true, message: 'Khôi phục CSDL thành công', restore: result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 app.listen(PORT, async () => {
   console.log(`===================================================`);
   console.log(`🚀 Backend Quản lý thi công đang chạy tại port ${PORT}`);
@@ -105,6 +145,9 @@ app.listen(PORT, async () => {
   if (db.initDbSchema) {
     await db.initDbSchema();
   }
+
+  // Kích hoạt lịch sao lưu CSDL tự động hằng đêm [S-20 / T-46]
+  backupService.scheduleNightlyBackup();
 });
 
 module.exports = app;

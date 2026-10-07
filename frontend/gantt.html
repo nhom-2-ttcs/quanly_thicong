@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sơ đồ tiến độ trục thời gian (S-13)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f3f4f6; padding: 16px; }
+    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .btn-group button { padding: 6px 12px; font-size: 13px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; border-radius: 4px; }
+    .btn-group button.active { background: #2563eb; color: #fff; border-color: #2563eb; font-weight: bold; }
+    
+    .error-box { background: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; border-radius: 4px; color: #991b1b; margin-bottom: 16px; }
+    .error-chain { background: #fee2e2; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-weight: bold; margin-top: 8px; }
+
+    .gantt-wrapper { display: flex; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .task-col { width: 220px; flex-shrink: 0; border-right: 2px solid #e5e7eb; background: #fff; position: sticky; left: 0; z-index: 20; }
+    .task-header { height: 48px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-weight: bold; font-size: 13px; display: flex; align-items: center; padding: 0 12px; position: sticky; top: 0; z-index: 25; }
+    .task-row { height: 42px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; padding: 0 12px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .timeline-col { flex-1; overflow-x: auto; overflow-y: hidden; position: relative; -webkit-overflow-scrolling: touch; }
+    .timeline-header { height: 48px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 10; }
+    .tick-label { position: absolute; bottom: 4px; font-size: 11px; color: #6b7280; border-left: 1px solid #e5e7eb; padding-left: 3px; }
+    .tick-major { font-weight: bold; color: #374151; border-left-color: #9ca3af; }
+    
+    .chart-body { position: relative; }
+    .grid-line { position: absolute; top: 0; bottom: 0; border-left: 1px solid #f3f4f6; }
+    .grid-line.major { border-left-color: #e5e7eb; }
+    .gantt-bar { position: absolute; height: 26px; border-radius: 4px; display: flex; align-items: center; padding: 0 8px; font-size: 11px; color: #fff; font-weight: 500; cursor: pointer; transition: opacity 0.15s; will-change: transform; }
+    .bar-normal { background: #3b82f6; }
+    .bar-critical { background: #ef4444; border: 2px solid #991b1b; }
+  </style>
+</head>
+<body>
+
+  <div class="header-bar">
+    <h2>Sơ đồ tiến độ thi công (S-13)</h2>
+    <div class="btn-group">
+      <button id="btnDay" class="active" onclick="setView('day')">Xem theo Ngày</button>
+      <button id="btnWeek" onclick="setView('week')">Xem theo Tuần</button>
+    </div>
+  </div>
+
+  <div id="cycleAlert" style="display:none;" class="error-box">
+    <strong>⚠️️ Lỗi chu trình phụ thuộc:</strong> Không thể hiển thị sơ đồ do dữ liệu có vòng lặp giữa các công việc:
+    <div id="cycleChain" class="error-chain"></div>
+  </div>
+
+  <div id="ganttContainer" class="gantt-wrapper">
+    <div class="task-col">
+      <div class="task-header">Tên công việc</div>
+      <div id="taskList"></div>
+    </div>
+    <div class="timeline-col" id="timelineCol">
+      <div class="timeline-header" id="timelineHeader"></div>
+      <div class="chart-body" id="chartBody"></div>
+    </div>
+  </div>
+
+  <script src="js/timelineScale.js"></script>
+  <script>
+    let scheduleData = {
+      projectStartDate: "2026-10-01",
+      projectEndDate: "2026-11-15",
+      hasCycle: false,
+      cycleChain: [],
+      tasks: [
+        { id: "1", code: "CV01", name: "Đào đất móng", earlyStart: "2026-10-01", earlyFinish: "2026-10-06", isCritical: true },
+        { id: "2", code: "CV02", name: "Đổ bê tông lót", earlyStart: "2026-10-06", earlyFinish: "2026-10-10", isCritical: true },
+        { id: "3", code: "CV03", name: "Gia công cốt thép móng", earlyStart: "2026-10-08", earlyFinish: "2026-10-16", isCritical: false },
+        { id: "4", code: "CV04", name: "Đổ bê tông đài móng", earlyStart: "2026-10-16", earlyFinish: "2026-10-24", isCritical: true }
+      ]
+    };
+
+    let currentUnit = 'day';
+
+    function renderGantt() {
+      if (scheduleData.hasCycle && scheduleData.cycleChain.length > 0) {
+        document.getElementById('cycleAlert').style.display = 'block';
+        document.getElementById('cycleChain').innerText = scheduleData.cycleChain.join(' ➔ ');
+        document.getElementById('ganttContainer').style.display = 'none';
+        return;
+      }
+
+      const totalDays = getDiffDays(scheduleData.projectStartDate, scheduleData.projectEndDate) + 5;
+      const dayW = 40, weekW = 105;
+      const totalWidth = currentUnit === 'day' ? totalDays * dayW : Math.ceil(totalDays / 7) * weekW;
+
+      const taskList = document.getElementById('taskList');
+      taskList.innerHTML = scheduleData.tasks.map(t => `
+        <div class="task-row" title="${t.name}">
+          <strong style="margin-right:6px; color:#6b7280;">[${t.code}]</strong> ${t.name}
+        </div>
+      `).join('');
+
+      const header = document.getElementById('timelineHeader');
+      header.style.width = totalWidth + 'px';
+      const ticks = generateTimeTicks(scheduleData.projectStartDate, totalDays, currentUnit, dayW, weekW);
+      header.innerHTML = ticks.map(t => `
+        <div class="tick-label ${t.isMajor ? 'tick-major' : ''}" style="left:${t.x}px">${t.label}</div>
+      `).join('');
+
+      const body = document.getElementById('chartBody');
+      body.style.width = totalWidth + 'px';
+      body.style.height = (scheduleData.tasks.length * 42) + 'px';
+
+      let html = ticks.map(t => `<div class="grid-line ${t.isMajor ? 'major' : ''}" style="left:${t.x}px"></div>`).join('');
+      scheduleData.tasks.forEach((t, i) => {
+        const x = dateToCoordinateX(t.earlyStart, scheduleData.projectStartDate, currentUnit, dayW, weekW);
+        const w = calculateBarWidth(t.earlyStart, t.earlyFinish, currentUnit, dayW, weekW);
+        const top = i * 42 + 8;
+        html += `
+          <div class="gantt-bar ${t.isCritical ? 'bar-critical' : 'bar-normal'}" 
+               style="left:${x}px; top:${top}px; width:${w}px;" 
+               title="${t.name}: ${t.earlyStart} đến ${t.earlyFinish}">
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${t.name}</span>
+          </div>
+        `;
+      });
+      body.innerHTML = html;
+    }
+
+    function setView(unit) {
+      currentUnit = unit;
+      document.getElementById('btnDay').className = unit === 'day' ? 'active' : '';
+      document.getElementById('btnWeek').className = unit === 'week' ? 'active' : '';
+      renderGantt();
+    }
+
+    renderGantt();
+  </script>
+</body>
+</html>
