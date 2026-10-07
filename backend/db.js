@@ -296,7 +296,23 @@ async function initDbSchema(maxRetries = 10, delayMs = 1500) {
         }
       }
     }
-    console.log(`[DB] Đã đồng bộ ${inMemoryUsers.length} tài khoản người dùng sẵn sàng.`);
+    // 9. Tạo bảng milestones (TASK T-43)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS milestones (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        work_item_id INT NOT NULL,
+        due_date DATE NOT NULL,
+        title VARCHAR(255) NULL,
+        created_by INT NOT NULL,
+        is_active TINYINT(1) NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (work_item_id) REFERENCES work_items(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    console.log(`[DB] Đã đồng bộ ${inMemoryUsers.length} tài khoản người dùng và schema milestones (T-43) sẵn sàng.`);
     return;
   } catch (err) {
     if (attempt < maxRetries) {

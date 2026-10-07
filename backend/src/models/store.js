@@ -169,6 +169,63 @@ function createUser(userData) {
   return newUser;
 }
 
+// ==========================================
+// THÔNG TIN HẠNG MỤC VÀ MILESTONE (T-43)
+// ==========================================
+let inMemoryWorkItems = [
+  { id: 1, project_id: 1, parent_id: null, name: 'Phần ngầm & Móng', code: 'HM-01', unit: 'Gói', quantity: 1, status: 'in_progress' },
+  { id: 2, project_id: 1, parent_id: 1, name: 'Đào đất hố móng', code: 'HM-01.01', unit: 'm3', quantity: 500, status: 'in_progress' },
+  { id: 3, project_id: 1, parent_id: 2, name: 'Đào đất thủ công hố móng', code: 'HM-01.01.01', unit: 'm3', quantity: 100, status: 'completed' },
+  { id: 4, project_id: 1, parent_id: 2, name: 'Vận chuyển đất thải', code: 'HM-01.01.02', unit: 'chuyến', quantity: 40, status: 'pending' },
+  { id: 5, project_id: 1, parent_id: 1, name: 'Đổ bê tông lót móng', code: 'HM-01.02', unit: 'm3', quantity: 50, status: 'pending' },
+  { id: 6, project_id: 1, parent_id: null, name: 'Phần thân & Kết cấu', code: 'HM-02', unit: 'Gói', quantity: 1, status: 'pending' }
+];
+
+let inMemoryMilestones = [];
+
+function findWorkItemById(id) {
+  return inMemoryWorkItems.find(item => item.id === parseInt(id, 10)) || null;
+}
+
+function getMilestones(filter = {}) {
+  let list = inMemoryMilestones;
+  if (filter.work_item_id) {
+    list = list.filter(m => m.work_item_id === parseInt(filter.work_item_id, 10));
+  }
+  if (filter.is_active !== undefined) {
+    const activeVal = filter.is_active ? 1 : 0;
+    list = list.filter(m => m.is_active === activeVal);
+  }
+  return list;
+}
+
+function createMilestoneData({ work_item_id, due_date, title, created_by }) {
+  // NFR: Đảm bảo một hạng mục chỉ có 1 milestone bàn giao đang hiệu lực (is_active = 1)
+  inMemoryMilestones.forEach(m => {
+    if (m.work_item_id === parseInt(work_item_id, 10) && m.is_active === 1) {
+      m.is_active = 0;
+    }
+  });
+
+  const creator = inMemoryUsers.find(u => u.id === parseInt(created_by, 10));
+  const newId = inMemoryMilestones.length > 0 ? Math.max(...inMemoryMilestones.map(m => m.id)) + 1 : 1;
+
+  const newMilestone = {
+    id: newId,
+    work_item_id: parseInt(work_item_id, 10),
+    due_date,
+    title: title || null,
+    created_by: parseInt(created_by, 10),
+    created_by_name: creator ? creator.full_name : 'Người dùng',
+    created_by_role: creator ? (creator.role_display_name || creator.role_name) : '',
+    is_active: 1,
+    created_at: new Date().toISOString()
+  };
+
+  inMemoryMilestones.push(newMilestone);
+  return newMilestone;
+}
+
 module.exports = {
   SEED_ROLES,
   findUserByEmail,
@@ -180,5 +237,10 @@ module.exports = {
   inMemoryUsers,
   SESSION_TTL_MS,
   canUserAccessProject,
-  userProjectAssignments
+  userProjectAssignments,
+  inMemoryWorkItems,
+  inMemoryMilestones,
+  findWorkItemById,
+  getMilestones,
+  createMilestoneData
 };

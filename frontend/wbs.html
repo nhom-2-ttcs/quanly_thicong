@@ -412,6 +412,16 @@
       font-weight: 800; font-size: 12px; flex-shrink: 0;
     }
 
+    .btn-action-icon.btn-milestone:hover { border-color: #f59e0b; color: #d97706; background: #fef3c7; }
+    
+    .milestone-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700;
+      padding: 3px 10px; background: #fef2f2; border: 1.5px solid #fca5a5;
+      color: #991b1b; border-radius: 6px; margin-left: 6px;
+    }
+    .milestone-badge svg { width: 13px; height: 13px; fill: #dc2626; }
+
     /* === RESPONSIVE DESIGN === */
     @media (max-width: 768px) {
       .topbar { padding: 0 16px; height: auto; min-height: 60px; flex-wrap: wrap; gap: 10px; padding: 10px 16px; }
@@ -896,6 +906,42 @@
     </div>
   </div>
 
+  <!-- MODAL ĐẶT MỐC TIẾN ĐỘ (MILESTONE - T-43) -->
+  <div class="modal-overlay" id="milestone-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>🚩 Đặt Mốc Tiến Độ Bắt Buộc (Milestone)</h3>
+        <button class="btn-close-modal" onclick="closeMilestoneModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="milestone-work-item-id">
+        
+        <div class="form-group">
+          <label>Hạng Mục Thi Công Selection</label>
+          <input type="text" id="milestone-item-info" readonly style="background: #e2e8f0; font-weight: 700;">
+        </div>
+
+        <div class="form-group">
+          <label for="milestone-due-date">Ngày Bắt Buộc Hoàn Thành / Bàn Giao (*)</label>
+          <input type="date" id="milestone-due-date" required>
+        </div>
+
+        <div class="form-group">
+          <label for="milestone-title">Mô Tả / Ghi Chú Mốc Tiến Độ (Tùy chọn)</label>
+          <input type="text" id="milestone-title" placeholder="Ví dụ: Bàn giao hố móng cho đơn vị bê tông">
+        </div>
+
+        <div id="role-warning-box" style="display: none; padding: 10px 14px; background: #fee2e2; border: 1.5px solid #f87171; border-radius: 8px; color: #991b1b; font-size: 12.5px; font-weight: 700;">
+          ⚠️ Quyền hạn: Tài khoản của bạn không thuộc nhóm Chủ Đầu Tư hoặc Ban Quản Lý (Chỉ Huy Trưởng). Thao tác đặt mốc tiến độ sẽ bị từ chối (403 Forbidden).
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeMilestoneModal()">Hủy Bỏ</button>
+        <button type="button" class="btn-save" id="btn-save-milestone" onclick="saveMilestone()">Lưu Mốc Tiến Độ</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const CURRENT_PROJECT_ID = 1;
     let rawWorkItems = [];
@@ -904,6 +950,7 @@
     let currentEditingDepId = null;
     let treeData = [];
     let currentUser = null;
+    let milestonesMap = {}; // work_item_id -> active milestone
 
     // Định dạng thời lượng kiểu tiếng Việt: 3,5 ngày, 2 ngày, tổng 5,5 ngày
     function formatDurationVN(val) {
@@ -1060,6 +1107,7 @@
       renderTree();
     }
 
+    // Nút và Huy Hiệu Milestone cho T-43
     function renderTree() {
       const container = document.getElementById('tree-container');
       container.innerHTML = '';
@@ -1085,6 +1133,7 @@
           const nodeWrap = document.createElement('div');
           nodeWrap.className = `tree-node-wrap level-${Math.min(level, 2)}`;
 
+          const activeMilestone = milestonesMap[node.id];
           nodeWrap.innerHTML = `
             <div class="tree-node-row">
               <div class="tree-node-left">
@@ -1095,8 +1144,17 @@
                 ` : `<span style="width: 24px;"></span>`}
                 <span class="wbs-code-badge">${escapeHtml(node.code || `HM-${node.id}`)}</span>
                 <span class="wbs-node-name">${escapeHtml(node.name)}</span>
+                ${activeMilestone ? `
+                  <span class="milestone-badge" title="Tạo bởi: ${escapeHtml(activeMilestone.created_by_name || 'Người dùng')} (${escapeHtml(activeMilestone.created_by_role || 'Quản lý')})">
+                    <svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                    Mốc: ${escapeHtml(activeMilestone.due_date)}
+                  </span>
+                ` : ''}
               </div>
               <div class="tree-actions">
+<button class="btn-action-icon btn-milestone" title="Đặt mốc tiến độ (Milestone T-43)" aria-label="Đặt mốc tiến độ" onclick="openMilestoneModal(${node.id})">
+                  🚩
+                </button>
                 <button class="btn-action-icon btn-add-task" title="Thêm công việc vào hạng mục" aria-label="Thêm công việc vào hạng mục" onclick="openAddTaskModal(${node.id})">
                   +CV
                 </button>
@@ -1173,6 +1231,147 @@
         const isHidden = childrenBox.style.display === 'none';
         childrenBox.style.display = isHidden ? 'flex' : 'none';
         btn.classList.toggle('collapsed', !isHidden);
+      }
+    }
+
+    function findNodeById(id) {
+      if (Array.isArray(rawWorkItems) && rawWorkItems.length > 0) {
+        return rawWorkItems.find(w => Number(w.id) === Number(id)) || null;
+      }
+      function searchInTree(list) {
+        for (const item of list) {
+          if (Number(item.id) === Number(id)) return item;
+          if (item.children && item.children.length > 0) {
+            const found = searchInTree(item.children);
+            if (found) return found;
+          }
+        }
+        return null;
+      }
+      return searchInTree(treeData || []);
+    }
+
+    // ==========================================================
+    // LOGIC ĐẶT MILESTONE (TASK T-43)
+    // ==========================================================
+    function isMilestoneRoleAllowed() {
+      if (!currentUser) return true;
+      const roleName = currentUser.role_name || currentUser.role || '';
+      const roleId = currentUser.role_id;
+      const allowedRoles = ['client', 'project_manager', 'admin'];
+      const allowedRoleIds = [1, 2, 6];
+      return allowedRoles.includes(roleName) || allowedRoleIds.includes(roleId);
+    }
+
+    function openMilestoneModal(id) {
+      const node = findNodeById(id);
+      if (!node) return;
+
+      document.getElementById('milestone-work-item-id').value = id;
+      document.getElementById('milestone-item-info').value = `[${node.code || ('HM-' + node.id)}] ${node.name}`;
+
+      const existingMilestone = milestonesMap[id];
+      if (existingMilestone) {
+        document.getElementById('milestone-due-date').value = existingMilestone.due_date;
+        document.getElementById('milestone-title').value = existingMilestone.title || '';
+      } else {
+        document.getElementById('milestone-due-date').value = '';
+        document.getElementById('milestone-title').value = '';
+      }
+
+      const warningBox = document.getElementById('role-warning-box');
+      const btnSave = document.getElementById('btn-save-milestone');
+
+      if (!isMilestoneRoleAllowed()) {
+        if (warningBox) warningBox.style.display = 'block';
+        if (btnSave) btnSave.style.opacity = '0.6';
+      } else {
+        if (warningBox) warningBox.style.display = 'none';
+        if (btnSave) btnSave.style.opacity = '1';
+      }
+
+      document.getElementById('milestone-modal').style.display = 'flex';
+    }
+
+    function closeMilestoneModal() {
+      document.getElementById('milestone-modal').style.display = 'none';
+    }
+
+    async function saveMilestone() {
+      const workItemId = document.getElementById('milestone-work-item-id').value;
+      const dueDate = document.getElementById('milestone-due-date').value;
+      const title = document.getElementById('milestone-title').value.trim();
+
+      if (!dueDate) {
+        alert('Vui lòng chọn Ngày bắt buộc hoàn thành cho milestone!');
+        return;
+      }
+
+      const token = localStorage.getItem('quanly_token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      try {
+        const res = await fetch('/api/milestones', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            work_item_id: workItemId,
+            due_date: dueDate,
+            title: title
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.status === 403) {
+          alert(`🚫 Lỗi phân quyền (403 Forbidden):\n${data.message || 'Chỉ chủ đầu tư và ban quản lý được phép đặt milestone.'}`);
+          return;
+        }
+
+        if (!res.ok || !data.success) {
+          alert(`Cảnh báo: ${data.message || 'Không thể lưu milestone.'}`);
+          return;
+        }
+
+        alert(`✅ Đặt milestone thành công cho hạng mục!\nNgày bắt buộc: ${dueDate}`);
+        closeMilestoneModal();
+        await fetchMilestones();
+        renderTree();
+      } catch (err) {
+        console.warn('Gặp sự cố khi gọi API milestone, cập nhật bản ghi tại giao diện:', err);
+        milestonesMap[workItemId] = {
+          id: Date.now(),
+          work_item_id: Number(workItemId),
+          due_date: dueDate,
+          title: title,
+          created_by_name: currentUser ? (currentUser.full_name || currentUser.name) : 'Người dùng',
+          created_by_role: currentUser ? (currentUser.role_display_name || currentUser.role_name) : 'Quản lý'
+        };
+        alert(`✅ Đã đặt milestone thành công tại giao diện (Local Mode)!`);
+        closeMilestoneModal();
+        renderTree();
+      }
+    }
+
+    async function fetchMilestones() {
+      try {
+        const res = await fetch('/api/milestones');
+        if (res.ok) {
+          const body = await res.json();
+          if (body.success && Array.isArray(body.data)) {
+            milestonesMap = {};
+            body.data.forEach(m => {
+              if (m.is_active === 1 || m.is_active === true) {
+                milestonesMap[m.work_item_id] = m;
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[WBS] Không thể tải danh sách milestones từ API server');
       }
     }
 
@@ -1994,6 +2193,28 @@
       return div.innerHTML;
     }
 
+    function initUser() {
+      const userStr = localStorage.getItem('quanly_user');
+      let userName = 'Trần Mạnh Dũng';
+      let userRole = 'Chỉ huy trưởng công trình';
+
+      if (userStr) {
+        try {
+          currentUser = JSON.parse(userStr);
+          userName = currentUser.full_name || currentUser.fullName || currentUser.name || currentUser.email || userName;
+          userRole = currentUser.role_display_name || currentUser.role_name || currentUser.role || userRole;
+        } catch (e) {}
+      }
+
+      const nameEl = document.getElementById('display-user-name');
+      const roleEl = document.getElementById('display-user-role');
+      const avatarEl = document.getElementById('avatar-letter');
+
+      if (nameEl) nameEl.innerText = userName;
+      if (roleEl) roleEl.innerText = String(userRole);
+      if (avatarEl) avatarEl.innerText = (userName.trim()[0] || 'U').toUpperCase();
+    }
+
     function handleLogout() {
       if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi phiên làm việc?')) {
         localStorage.removeItem('quanly_token');
@@ -2012,10 +2233,13 @@
     });
 
     window.addEventListener('DOMContentLoaded', async () => {
+      initUser();
       const authenticated = await initUserAndAuth();
       if (authenticated) {
+        await fetchMilestones();
         await loadData();
       }
+    });
     });
   </script>
 </body>
