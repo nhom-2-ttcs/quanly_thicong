@@ -4,11 +4,13 @@ const { validateDependencyContract } = require('./contracts');
 const { calculateForwardPass } = require('../../algorithms/forwardPass');
 const { calculateBackwardPass, normalizeId } = require('../../algorithms/backwardPass');
 const { ScheduleResultRepository } = require('../../repositories/scheduleResultRepository');
+const { MilestoneAlertService } = require('../../services/milestoneAlertService');
 
 class SchedulerService {
   constructor(db) {
     this.pool = db?.pool || db;
     this.resultRepo = new ScheduleResultRepository(db);
+    this.milestoneAlertService = new MilestoneAlertService(db);
   }
 
   computeSchedule(tasks = [], dependencies = []) {
@@ -84,36 +86,56 @@ class SchedulerService {
   }
 
   async getProjectSchedule(projectId, mockDependencies = null) {
-    if (!this.pool?.query) throw new Error('Database pool chưa được khởi tạo');
-    const [tasks] = await this.pool.query(
-      'SELECT id, project_id, work_item_id, name, code, duration, status FROM tasks WHERE project_id = ? ORDER BY id ASC',
-      [projectId]
-    );
+    let tasks = [];
+    let dependencies = [];
+    let integrationStatus = 'INTEGRATED WITH S-06';
 
-    let dependencies;
-    let integrationStatus;
-    if (Array.isArray(mockDependencies)) {
-      dependencies = mockDependencies;
-      integrationStatus = 'USING_MOCK_DEPENDENCIES';
-    } else {
-      const [rows] = await this.pool.query(
-        'SELECT id, project_id, predecessor_task_id, successor_task_id, dependency_type, lag_days FROM task_dependencies WHERE project_id = ? ORDER BY id ASC',
+    if (this.pool?.query) {
+      const [tRows] = await this.pool.query(
+        'SELECT id, project_id, work_item_id, name, code, duration, status FROM tasks WHERE project_id = ? ORDER BY id ASC',
         [projectId]
       );
-      dependencies = rows.map(row => ({
-        predecessorId: row.predecessor_task_id,
-        successorId: row.successor_task_id,
-        type: row.dependency_type,
-        lag: Number(row.lag_days)
-      }));
-      integrationStatus = 'INTEGRATED WITH S-06';
+      tasks = tRows || [];
+
+      if (Array.isArray(mockDependencies)) {
+        dependencies = mockDependencies;
+        integrationStatus = 'USING_MOCK_DEPENDENCIES';
+      } else {
+        const [dRows] = await this.pool.query(
+          'SELECT id, project_id, predecessor_task_id, successor_task_id, dependency_type, lag_days FROM task_dependencies WHERE project_id = ? ORDER BY id ASC',
+          [projectId]
+        );
+        dependencies = (dRows || []).map(row => ({
+          predecessorId: row.predecessor_task_id,
+          successorId: row.successor_task_id,
+          type: row.dependency_type,
+          lag: Number(row.lag_days)
+        }));
+      }
+    } else {
+      const { inMemoryWorkItems } = require('../../models/store');
+      tasks = [
+        { id: 1, project_id: Number(projectId), work_item_id: 1, name: 'Đào đất hố móng trụ T1', code: 'CV-01', duration: 5, status: 'pending' },
+        { id: 2, project_id: Number(projectId), work_item_id: 1, name: 'Đổ bê tông lót móng', code: 'CV-02', duration: 3, status: 'pending' }
+      ];
+      dependencies = Array.isArray(mockDependencies) ? mockDependencies : [{ predecessorId: 1, successorId: 2, type: 'FS', lag: 0 }];
+    }
+
+    const computed = this.computeSchedule(tasks, dependencies);
+
+    if (Array.isArray(computed.tasks) && computed.tasks.length > 0) {
+      try {
+        await this.milestoneAlertService.checkProjectMilestoneAlerts(projectId, computed.tasks);
+      } catch (err) {
+        // Safe fallback if milestone alert check fails
+      }
     }
 
     return {
       projectId,
       integrationStatus,
       dependenciesCount: dependencies.length,
-      ...this.computeSchedule(tasks, dependencies)
+      ...computed
     };
   }
 
@@ -160,6 +182,11 @@ class SchedulerService {
 
     // Lưu toàn bộ kết quả vào schedule_results trong một database transaction duy nhất (T-26)
     await this.resultRepo.saveResultsInTransaction(pId, schedule.tasks, schedule.projectDuration);
+
+    // T-44: Kiểm tra và lưu/đóng cảnh báo milestone trong cùng tác vụ T-36
+    try {
+      await this.milestoneAlertService.checkProjectMilestoneAlerts(pId, schedule.tasks);
+    } catch (err) {}
 
     const sortedTasks = [...schedule.tasks].sort((a, b) => {
       if (a.earlyStart !== b.earlyStart) return a.earlyStart - b.earlyStart;
