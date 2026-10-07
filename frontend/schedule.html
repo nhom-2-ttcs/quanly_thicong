@@ -244,13 +244,13 @@
       font-size: 14px; font-weight: 600;
     }
 
-    /* Tiến độ thực tế (S-15 / SCRUM-88 / SCRUM-100 / T-35) */
+    /* Tiến độ thực tế ( / SCRUM-88 / SCRUM-100 / T-35) */
     .task-progress-badge {
       display: inline-flex; align-items: center; gap: 4px;
       font-size: 11.5px; font-weight: 800; padding: 2px 7px; border-radius: 4px;
       background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
     }
-    .task-progress-badge.progress-100 {
+    .task-progress-badge.progres {
       background: #ecfdf5; color: #065f46; border-color: #a7f3d0;
     }
     .task-actual-dates {
@@ -396,6 +396,7 @@
 
       <div class="toolbar-right">
         <button class="btn-action" id="btn-refresh" onclick="loadSchedule(false)" title="Tải lại từ bộ nhớ đệm đã lưu">
+<a href="/gantt.html" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:13px;margin-right:8px;box-shadow:0 1px 2px rgba(0,0,0,0.1);">📊 Sơ đồ Gantt</a>
           🔄 Làm mới
         </button>
         <button class="btn-action btn-primary" id="btn-recalculate" onclick="loadSchedule(true)" title="Buộc giải thuật CPM tính toán lại và cập nhật bộ nhớ đệm">
@@ -420,7 +421,7 @@
               <th class="cell-center" style="width: 90px;" title="Kết muộn (Late Finish)">Kết muộn (LF)</th>
               <th class="cell-center" style="width: 90px;" title="Độ trễ toàn phần (Total Float)">Độ trễ (Float)</th>
               <th class="cell-center" style="width: 125px;">Trạng thái</th>
-              <th class="cell-center" style="width: 140px;" title="Tiến độ thực tế tách kế hoạch (S-15 / SCRUM-88)">Tiến độ TT</th>
+              <th class="cell-center" style="width: 140px;" title="Tiến độ thực tế tách kế hoạch ( / SCRUM-88)">Tiến độ TT</th>
               <th class="cell-center" style="width: 95px;">Thao tác</th>
             </tr>
           </thead>
@@ -433,11 +434,11 @@
       </div>
     </div>
 
-    <!-- MODAL CẬP NHẬT TIẾN ĐỘ THỰC TẾ TÁCH KẾ HOẠCH (S-15 / SCRUM-88 / SCRUM-100 / T-35) -->
+    <!-- MODAL CẬP NHẬT TIẾN ĐỘ THỰC TẾ TÁCH KẾ HOẠCH ( / SCRUM-88 / SCRUM-100 / T-35) -->
     <div class="modal-overlay" id="progress-modal">
       <div class="modal-box">
         <div class="modal-header">
-          <h3 id="progress-modal-title">📊 Cập nhật tiến độ thực tế (S-15)</h3>
+          <h3 id="progress-modal-title">📊 Cập nhật tiến độ thực tế</h3>
           <button class="btn-close-modal" title="Đóng" aria-label="Đóng" onclick="closeProgressModal()">&times;</button>
         </div>
         <div class="modal-body">
@@ -696,7 +697,7 @@
       }
     }
 
-    // === Render Table with High Performance & XSS Escaping (T-28 & S-15) ===
+    // === Render Table with High Performance & XSS Escaping (T-28 & ) ===
     function renderTable(tasks) {
       const tbody = document.getElementById('schedule-tbody');
 
@@ -723,13 +724,13 @@
 
         const progressHtml = `
           <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
-            <span class="task-progress-badge ${percent >= 100 ? 'progress-100' : ''}">📊 ${Math.round(percent)}%</span>
+            <span class="task-progress-badge ${percent >= 100 ? 'progres' : ''}">📊 ${Math.round(percent)}%</span>
             ${hasDates ? `<span class="task-actual-dates">📅 ${startStr} → ${endStr}</span>` : ''}
           </div>
         `;
 
         const actionHtml = `
-          <button class="btn-progress-action" onclick="openProgressModal(${t.taskId})" title="Cập nhật tiến độ thực tế (S-15)">
+          <button class="btn-progress-action" onclick="openProgressModal(${t.taskId})" title="Cập nhật tiến độ thực tế">
             📊 Tiến độ
           </button>
         `;
@@ -755,7 +756,7 @@
       tbody.innerHTML = rows.join('');
     }
 
-    // === CẬP NHẬT TIẾN ĐỘ THỰC TẾ TÁCH KẾ HOẠCH (S-15 / SCRUM-88 / SCRUM-100 / T-35) ===
+    // === CẬP NHẬT TIẾN ĐỘ THỰC TẾ TÁCH KẾ HOẠCH ( / SCRUM-88 / SCRUM-100 / T-35) ===
     let currentProgressTask = null;
 
     function openProgressModal(taskId) {
