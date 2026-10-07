@@ -7,6 +7,7 @@ USE quanly_thicong;
 
 ALTER TABLE tasks
   DROP CHECK chk_task_percent_complete,
+  DROP CHECK chk_task_actual_dates,
   DROP INDEX idx_tasks_actual_dates,
   DROP INDEX idx_tasks_percent,
   DROP COLUMN percent_complete,

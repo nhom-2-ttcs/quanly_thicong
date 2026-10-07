@@ -28,14 +28,18 @@ function calcAddDays(dateStr, days) {
 function recalculateProjectSchedule(projectData, todayStr = "2026-10-25") {
   const tasks = JSON.parse(JSON.stringify(projectData.tasks));
   const initialProjectEnd = projectData.projectEndDate;
+  let latestFinish = initialProjectEnd;
 
   tasks.forEach(task => {
+    const totalFloat = Number(task.totalFloat) || 0;
     // 1. Việc có mốc kết thúc thực tế
     if (task.actualFinish) {
       task.currentFinish = task.actualFinish;
       const delayDaysOfTask = calcDiffDays(task.earlyFinish, task.actualFinish);
+      const projectDelay = Math.max(0, delayDaysOfTask - (task.isCritical ? 0 : totalFloat));
+      task.projectedProjectEnd = calcAddDays(initialProjectEnd, projectDelay);
       // AC 3: Việc không găng ban đầu nhưng trễ > độ trễ cho phép (totalFloat) -> Trở thành găng mới
-      if (!task.isCritical && delayDaysOfTask > task.totalFloat) {
+      if (!task.isCritical && delayDaysOfTask > totalFloat) {
         task.isNewCritical = true;
         task.isCriticalNow = true;
       }
@@ -47,6 +51,9 @@ function recalculateProjectSchedule(projectData, todayStr = "2026-10-25") {
       const remainingDays = Math.ceil(originalDuration * remainingRatio);
       const projectedFinish = calcAddDays(todayStr, remainingDays);
       task.currentFinish = projectedFinish > task.earlyFinish ? projectedFinish : task.earlyFinish;
+      const delayDaysOfTask = calcDiffDays(task.earlyFinish, task.currentFinish);
+      const projectDelay = Math.max(0, delayDaysOfTask - (task.isCritical ? 0 : totalFloat));
+      task.projectedProjectEnd = calcAddDays(initialProjectEnd, projectDelay);
       if (!task.isCritical && task.currentFinish > task.lateFinish) {
         task.isNewCritical = true;
         task.isCriticalNow = true;
@@ -55,15 +62,10 @@ function recalculateProjectSchedule(projectData, todayStr = "2026-10-25") {
     // 3. Chưa thực hiện
     else {
       task.currentFinish = task.earlyFinish;
+      task.projectedProjectEnd = initialProjectEnd;
     }
-  });
 
-  // Tìm ngày kết thúc toàn dự án
-  let latestFinish = initialProjectEnd;
-  tasks.forEach(task => {
-    if (task.currentFinish > latestFinish) {
-      latestFinish = task.currentFinish;
-    }
+    if (task.projectedProjectEnd > latestFinish) latestFinish = task.projectedProjectEnd;
   });
 
   const delayDays = Math.max(0, calcDiffDays(initialProjectEnd, latestFinish));
@@ -81,4 +83,8 @@ function recalculateProjectSchedule(projectData, todayStr = "2026-10-25") {
     statusText: delayDays > 0 ? `Chậm ${delayDays} ngày` : 'Đúng tiến độ',
     tasks: tasks
   };
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { recalculateProjectSchedule };
 }

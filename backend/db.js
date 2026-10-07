@@ -113,7 +113,8 @@ async function initDbSchema(maxRetries = 10, delayMs = 1500) {
         CONSTRAINT fk_tasks_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
         CONSTRAINT fk_tasks_work_item FOREIGN KEY (work_item_id) REFERENCES work_items(id) ON DELETE RESTRICT,
         CONSTRAINT chk_task_duration_positive CHECK (duration > 0),
-        CONSTRAINT chk_task_percent_complete CHECK (percent_complete >= 0.00 AND percent_complete <= 100.00)
+        CONSTRAINT chk_task_percent_complete CHECK (percent_complete >= 0.00 AND percent_complete <= 100.00),
+        CONSTRAINT chk_task_actual_dates CHECK (actual_end IS NULL OR actual_start IS NULL OR actual_end >= actual_start)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 

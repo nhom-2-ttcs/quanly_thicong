@@ -11,9 +11,10 @@ ALTER TABLE tasks
   ADD COLUMN actual_end DATE NULL AFTER actual_start,
   ADD COLUMN percent_complete DECIMAL(5, 2) NOT NULL DEFAULT 0.00 AFTER actual_end;
 
--- Ràng buộc kiểm tra phần trăm hoàn thành trong khoảng 0 đến 100% (AC 3)
+-- Ràng buộc kiểm tra phần trăm hoàn thành trong khoảng 0 đến 100% (AC 3) và ngày thực tế (T-34 AC)
 ALTER TABLE tasks
-  ADD CONSTRAINT chk_task_percent_complete CHECK (percent_complete >= 0.00 AND percent_complete <= 100.00);
+  ADD CONSTRAINT chk_task_percent_complete CHECK (percent_complete >= 0.00 AND percent_complete <= 100.00),
+  ADD CONSTRAINT chk_task_actual_dates CHECK (actual_end IS NULL OR actual_start IS NULL OR actual_end >= actual_start);
 
 -- Chỉ mục hỗ trợ truy vấn lọc tiến độ thực tế
 ALTER TABLE tasks

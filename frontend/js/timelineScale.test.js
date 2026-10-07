@@ -2,7 +2,8 @@ const assert = require('assert');
 const {
   dateToCoordinateX,
   calculateBarWidth,
-  generateTimeTicks
+  generateTimeTicks,
+  addDaysToDate
 } = require('./timelineScale');
 
 const BASE_DATE = '2026-10-01';
@@ -31,5 +32,11 @@ const weekTicks = generateTimeTicks(BASE_DATE, 14, 'week');
 assert.strictEqual(dayTicks.length, 15);
 assert.strictEqual(weekTicks.length, 3);
 console.log('✓ Vạch chia Ngày / Tuần: Pass');
+
+// S-13 AC 2: Dự án 18 tháng (khoảng 540 ngày) co dãn tỷ lệ tuần chuẩn xác
+const x18m = dateToCoordinateX('2028-03-24', BASE_DATE, 'week', 40, 105);
+assert.ok(x18m > 0);
+assert.strictEqual(addDaysToDate('2026-10-01', 5), '2026-10-06');
+console.log('✓ AC 2 & addDaysToDate: Pass');
 
 console.log('===> TẤT CẢ UNIT TEST T-30 ĐÃ PASS 100%!');

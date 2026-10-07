@@ -254,7 +254,7 @@
     }
 
     #ganttTooltip {
-      position: absolute;
+      position: fixed;
       display: none;
       z-index: 9999;
       background: rgba(15, 23, 42, 0.95);
@@ -269,6 +269,7 @@
       pointer-events: none;
       min-width: 270px;
     }
+    #ganttTooltip button { pointer-events: auto; }
 
     @media print {
       body { background: #fff; padding: 0; }
@@ -276,6 +277,9 @@
       .bar-normal { background: #e2e8f0 !important; border: 1px solid #64748b !important; color: #000 !important; }
       .bar-critical { background: repeating-linear-gradient(45deg, #000, #000 4px, #fff 4px, #fff 8px) !important; border: 2px solid #000 !important; color: #000 !important; }
       .bar-new-critical { background: repeating-linear-gradient(-45deg, #444, #444 4px, #fff 4px, #fff 8px) !important; border: 2px dashed #000 !important; color: #000 !important; }
+    }
+    @media (max-width: 640px) {
+      :root { --task-col-w: 130px; }
     }
   </style>
 </head>
@@ -285,6 +289,10 @@
     <div class="top-left">
       <a href="/schedule.html" class="back-btn">⬅ Bảng tiến độ</a>
       <h1 class="top-title">Sơ đồ tiến độ thi công & Đường găng</h1>
+      <select id="projectSelect" onchange="switchProject(this.value)" style="margin-left:12px; padding:4px 8px; border-radius:6px; border:1px solid var(--border); font-size:12px;">
+        <option value="1">Dự án 1</option>
+        <option value="2">Dự án 2</option>
+      </select>
     </div>
     <div class="top-actions">
       <button class="filter-chip" id="btnFilterCrit" onclick="toggleCriticalFilter()">
@@ -296,6 +304,8 @@
       </div>
     </div>
   </div>
+
+  <div id="cycleAlert" style="display:none; margin-bottom:16px; padding:12px 18px; background:#fef2f2; border:1px solid #f87171; border-radius:10px; color:#991b1b; font-weight:600;"></div>
 
   <!-- Summary Dashboard Bar với thông số tính lại  -->
   <div class="summary-card">
@@ -341,28 +351,121 @@
 
   <div id="ganttTooltip"></div>
 
+  <div id="progModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:12px; padding:20px; width:90%; max-width:400px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+      <h3 id="progTitle" style="margin-top:0; font-size:16px;">Cập nhật tiến độ thực tế</h3>
+      <input type="hidden" id="progTaskId">
+      <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Ngày bắt đầu thực tế</label><input type="date" id="progActStart" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px; box-sizing:border-box; margin-bottom:10px;">
+      <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Ngày kết thúc thực tế</label><input type="date" id="progActEnd" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px; box-sizing:border-box; margin-bottom:10px;">
+      <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px;">% Hoàn thành (0 - 100)</label><input type="number" id="progPercent" min="0" max="100" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px; box-sizing:border-box; margin-bottom:10px;">
+      <div id="progError" style="color:#dc2626; font-size:12px; display:none; margin-bottom:10px;"></div>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" onclick="closeProgModal()" style="padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; cursor:pointer;">Hủy</button>
+        <button type="button" onclick="saveProgress()" style="padding:6px 16px; border:none; border-radius:6px; background:#2563eb; color:#fff; font-weight:600; cursor:pointer;">Lưu</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/timelineScale.js"></script>
   <script src="js/recalculateSchedule.js"></script>
   <script>
-    // Dữ liệu mẫu kiểm thử các tiêu chí AC của S-16:
-    // CV-03 vốn không găng (độ trễ 2 ngày), nhưng bị trễ 5 ngày (> 2) -> Trở thành việc găng mới (AC 3, T-37)
-    // Toàn dự án lùi tương ứng 3 ngày (AC 1 & T-37)
-    const baseProjectData = {
-      projectStartDate: "2026-10-01",
-      projectEndDate: "2026-11-15",
-      tasks: [
-        { id: "1", code: "CV-01", name: "Đào đất móng", earlyStart: "2026-10-01", earlyFinish: "2026-10-06", actualFinish: "2026-10-06", progress: 100, totalFloat: 0, isCritical: true },
-        { id: "2", code: "CV-02", name: "Đổ bê tông lót", earlyStart: "2026-10-06", earlyFinish: "2026-10-10", actualFinish: "2026-10-10", progress: 100, totalFloat: 0, isCritical: true },
-        { id: "3", code: "CV-03", name: "Gia công cốt thép móng (Trễ)", earlyStart: "2026-10-08", earlyFinish: "2026-10-16", actualFinish: "2026-10-21", progress: 100, totalFloat: 2, isCritical: false },
-        { id: "4", code: "CV-04", name: "Đổ bê tông đài móng", earlyStart: "2026-10-21", earlyFinish: "2026-11-18", actualFinish: null, progress: 20, totalFloat: 0, isCritical: true }
-      ]
-    };
-
-    const scheduleCalc = recalculateProjectSchedule(baseProjectData, "2026-10-25");
+    let baseProjectData = null;
+    let scheduleCalc = null;
     let currentUnit = 'day';
     let filterCriticalOnly = false;
+    let activeReq = 0;
+
+    function getProjectId() {
+      const p = new URLSearchParams(window.location.search).get('projectId');
+      return p || (document.getElementById('projectSelect')?.value || '1');
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[char]);
+    }
+
+    async function loadScheduleData() {
+      const pId = getProjectId();
+      const projectSelect = document.getElementById('projectSelect');
+      if (projectSelect && Array.from(projectSelect.options).some(option => option.value === pId)) {
+        projectSelect.value = pId;
+      }
+      const reqId = ++activeReq;
+      const cycleEl = document.getElementById('cycleAlert');
+      const containerEl = document.getElementById('ganttContainer');
+      const summaryEl = document.querySelector('.summary-card');
+      if (cycleEl) cycleEl.style.display = 'none';
+
+      try {
+        const [projRes, schedRes] = await Promise.all([
+          fetch(`/api/projects/${pId}`).then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch(`/api/projects/${pId}/scheduling/results`)
+        ]);
+        if (reqId !== activeReq) return;
+
+        const schedData = await schedRes.json();
+        if (schedRes.status === 422 || schedData.hasCycle) {
+          if (containerEl) containerEl.style.display = 'none';
+          if (summaryEl) summaryEl.style.display = 'none';
+          if (cycleEl) {
+            cycleEl.style.display = 'block';
+            const path = Array.isArray(schedData.cyclePath) ? schedData.cyclePath.join(' → ') : (schedData.cyclePath || '');
+            cycleEl.innerText = `Phát hiện chu trình phụ thuộc trong mạng công việc: ${path || schedData.message}`;
+          }
+          return;
+        }
+
+        if (!schedRes.ok || !schedData.tasks) {
+          throw new Error(schedData.message || 'Không thể tải dữ liệu tiến độ');
+        }
+
+        const startDate = projRes?.data?.start_date ? String(projRes.data.start_date).split('T')[0] : '2026-10-01';
+        baseProjectData = {
+          projectStartDate: startDate,
+          projectEndDate: addDaysToDate(startDate, schedData.projectDuration || 0),
+          tasks: schedData.tasks.map(t => ({
+            id: String(t.taskId || t.id),
+            code: t.code || `CV-${t.taskId || t.id}`,
+            name: t.name || '',
+            earlyStart: addDaysToDate(startDate, t.earlyStart || 0),
+            earlyFinish: addDaysToDate(startDate, t.earlyFinish || 0),
+            lateStart: t.lateStart !== null && t.lateStart !== undefined ? addDaysToDate(startDate, t.lateStart) : null,
+            lateFinish: t.lateFinish !== null && t.lateFinish !== undefined ? addDaysToDate(startDate, t.lateFinish) : null,
+            currentFinish: addDaysToDate(startDate, t.earlyFinish || 0),
+            actualStart: t.actualStart || null,
+            actualFinish: t.actualEnd || null,
+            progress: t.percentComplete !== null && t.percentComplete !== undefined ? Number(t.percentComplete) : 0,
+            totalFloat: t.totalFloat !== null && t.totalFloat !== undefined ? Number(t.totalFloat) : null,
+            isCritical: Boolean(t.isCritical)
+          }))
+        };
+
+        scheduleCalc = typeof recalculateProjectSchedule === 'function'
+          ? recalculateProjectSchedule(baseProjectData, new Date().toISOString().split('T')[0])
+          : { ...baseProjectData, delayDays: 0, originalEndDate: baseProjectData.projectEndDate, currentEndDate: baseProjectData.projectEndDate };
+
+        if (containerEl) containerEl.style.display = 'flex';
+        if (summaryEl) summaryEl.style.display = 'flex';
+        renderGantt();
+      } catch (err) {
+        if (cycleEl) {
+          cycleEl.style.display = 'block';
+          cycleEl.innerText = `Lỗi: ${err.message}`;
+        }
+      }
+    }
+
+    function switchProject(id) {
+      const url = new URL(window.location);
+      url.searchParams.set('projectId', id);
+      window.history.replaceState({}, '', url);
+      loadScheduleData();
+    }
 
     function renderGantt() {
+      if (!baseProjectData || !scheduleCalc) return;
       document.getElementById('valPlanEnd').innerText = scheduleCalc.originalEndDate;
       document.getElementById('valCurrentEnd').innerText = scheduleCalc.currentEndDate;
       const statusBadge = document.getElementById('badgeDelayStatus');
@@ -383,12 +486,17 @@
       const totalWidth = currentUnit === 'day' ? totalDays * dayW : Math.ceil(totalDays / 7) * weekW;
 
       const taskList = document.getElementById('taskList');
-      taskList.innerHTML = tasksToRender.map(t => `
-        <div class="task-row" title="${t.name}">
-          <span class="code-badge">${t.code}</span>
-          <span class="task-title">${t.name}</span>
-        </div>
-      `).join('');
+      taskList.innerHTML = tasksToRender.map(t => {
+        const isCrit = t.isCriticalNow || t.isCritical;
+        const name = escapeHtml(t.name);
+        const code = escapeHtml(t.code);
+        return `
+          <div class="task-row" title="${name}">
+            <span class="code-badge">${code}</span>
+            <span class="task-title">${isCrit ? '<b style="color:#ef4444; font-size:11px; margin-right:3px;">[★ GĂNG]</b>' : ''}${name}</span>
+          </div>
+        `;
+      }).join('');
 
       const header = document.getElementById('timelineHeader');
       header.style.width = totalWidth + 'px';
@@ -405,7 +513,7 @@
 
       tasksToRender.forEach((t, i) => {
         const x = dateToCoordinateX(t.earlyStart, baseProjectData.projectStartDate, currentUnit, dayW, weekW);
-        const w = calculateBarWidth(t.earlyStart, t.currentFinish, currentUnit, dayW, weekW);
+        const w = calculateBarWidth(t.earlyStart, t.currentFinish || t.earlyFinish, currentUnit, dayW, weekW);
         const top = i * 44 + 9;
         
         let barClass = 'bar-normal';
@@ -415,13 +523,13 @@
           badgeHtml = '<span class="badge-new-crit-tag">MỚI GĂNG</span>';
         } else if (t.isCriticalNow || t.isCritical) {
           barClass = 'bar-critical';
-          badgeHtml = '<span style="margin-right:4px;">◆</span>';
+          badgeHtml = '<span style="margin-right:4px; font-weight:700;">[★ GĂNG]</span>';
         }
 
         html += `
-          <div class="gantt-bar ${barClass}" data-id="${t.id}" style="left:${x}px; top:${top}px; width:${w}px;">
+          <div class="gantt-bar ${barClass}" data-id="${escapeHtml(t.id)}" style="left:${x}px; top:${top}px; width:${w}px;">
             <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-              ${badgeHtml}${t.name}
+              ${badgeHtml}${escapeHtml(t.name)}
             </span>
           </div>
         `;
@@ -431,30 +539,109 @@
       setupTooltip();
     }
 
+    function showTooltip(e, t) {
+      const tooltip = document.getElementById('ganttTooltip');
+      const floatText = t.totalFloat !== null && t.totalFloat !== undefined ? `${t.totalFloat} ngày` : '—';
+      const critCol = t.isNewCritical ? '#f59e0b' : (t.isCriticalNow || t.isCritical ? '#ef4444' : '#38bdf8');
+      const critTxt = t.isNewCritical ? '⚠️ Mới trở thành việc găng' : (t.isCriticalNow || t.isCritical ? '◆ Việc găng' : 'Bình thường');
+      tooltip.innerHTML = `<div style="font-weight:700; margin-bottom:6px; border-bottom:1px solid #334155; padding-bottom:4px;">[${escapeHtml(t.code)}] ${escapeHtml(t.name)}</div><div>Khởi sớm (ES): <b>${escapeHtml(t.earlyStart)}</b> | Kết sớm (EF): <b>${escapeHtml(t.earlyFinish)}</b></div><div>Khởi muộn (LS): <b>${escapeHtml(t.lateStart || '—')}</b> | Kết muộn (LF): <b>${escapeHtml(t.lateFinish || '—')}</b></div><div>Độ trễ cho phép (Float): <b style="color:#38bdf8">${escapeHtml(floatText)}</b></div><div>Trạng thái: <b style="color:${critCol}">${critTxt}</b></div><button type="button" onclick="openProgModal('${escapeHtml(t.id)}')" style="margin-top:6px; background:#2563eb; color:#fff; border:none; border-radius:4px; padding:3px 8px; font-size:11px; cursor:pointer;">✏️ Cập nhật tiến độ</button>`;
+      tooltip.style.display = 'block';
+      let x = e.clientX + 16, y = e.clientY - 95;
+      if (x + 290 > window.innerWidth) x = Math.max(10, window.innerWidth - 300);
+      if (y < 10) y = e.clientY + 20;
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
+    }
+
     function setupTooltip() {
       const tooltip = document.getElementById('ganttTooltip');
       document.querySelectorAll('.gantt-bar').forEach(bar => {
         const t = scheduleCalc.tasks.find(x => x.id === bar.getAttribute('data-id'));
         if (!t) return;
-        bar.addEventListener('mouseenter', (e) => {
-          tooltip.innerHTML = `
-            <div style="font-weight:700; margin-bottom:6px; border-bottom:1px solid #334155; padding-bottom:4px;">[${t.code}] ${t.name}</div>
-            <div>Khởi sớm: <b style="color:#fff">${t.earlyStart}</b></div>
-            <div>Kết thúc thực tế/dự kiến: <b style="color:#f59e0b">${t.currentFinish}</b></div>
-            <div>Trạng thái: <b style="color:${t.isNewCritical ? '#f59e0b' : (t.isCriticalNow ? '#ef4444' : '#38bdf8')}">
-              ${t.isNewCritical ? '⚠️ Mới trở thành việc găng' : (t.isCriticalNow ? 'Việc găng' : 'Bình thường')}
-            </b></div>
-          `;
-          tooltip.style.display = 'block';
-          tooltip.style.left = (e.clientX + 16) + 'px';
-          tooltip.style.top = (e.clientY - 75) + 'px';
-        });
+        bar.addEventListener('mouseenter', (e) => showTooltip(e, t));
         bar.addEventListener('mousemove', (e) => {
-          tooltip.style.left = (e.clientX + 16) + 'px';
-          tooltip.style.top = (e.clientY - 75) + 'px';
+          let x = e.clientX + 16, y = e.clientY - 95;
+          if (x + 290 > window.innerWidth) x = Math.max(10, window.innerWidth - 300);
+          if (y < 10) y = e.clientY + 20;
+          tooltip.style.left = x + 'px';
+          tooltip.style.top = y + 'px';
         });
-        bar.addEventListener('mouseleave', () => tooltip.style.display = 'none');
+        bar.addEventListener('mouseleave', (e) => {
+          if (!e.relatedTarget || !e.relatedTarget.closest('#ganttTooltip')) {
+            tooltip.style.display = 'none';
+          }
+        });
+        bar.addEventListener('click', (e) => {
+          e.stopPropagation();
+          showTooltip(e, t);
+        });
       });
+    }
+
+    document.addEventListener('click', (e) => {
+      const tooltip = document.getElementById('ganttTooltip');
+      if (tooltip && !e.target.closest('.gantt-bar') && !e.target.closest('#ganttTooltip')) {
+        tooltip.style.display = 'none';
+      }
+    });
+
+    function openProgModal(taskId) {
+      const t = (baseProjectData?.tasks || []).find(x => x.id === String(taskId));
+      if (!t) return;
+      document.getElementById('progTaskId').value = t.id;
+      document.getElementById('progTitle').innerText = `[${t.code}] ${t.name}`;
+      document.getElementById('progActStart').value = t.actualStart || '';
+      document.getElementById('progActEnd').value = t.actualFinish || '';
+      document.getElementById('progPercent').value = t.progress || 0;
+      document.getElementById('progError').style.display = 'none';
+      document.getElementById('progModal').style.display = 'flex';
+    }
+
+    function closeProgModal() {
+      document.getElementById('progModal').style.display = 'none';
+    }
+
+    async function saveProgress() {
+      const id = document.getElementById('progTaskId').value;
+      const start = document.getElementById('progActStart').value || null;
+      const end = document.getElementById('progActEnd').value || null;
+      const pct = Number(document.getElementById('progPercent').value);
+      const errEl = document.getElementById('progError');
+      errEl.style.display = 'none';
+      if (pct < 0 || pct > 100 || isNaN(pct)) {
+        errEl.innerText = 'Phần trăm phải nằm trong khoảng từ 0 đến 100';
+        errEl.style.display = 'block';
+        return;
+      }
+      if (start && end && end < start) {
+        errEl.innerText = 'Ngày kết thúc thực tế không được sớm hơn ngày bắt đầu thực tế';
+        errEl.style.display = 'block';
+        return;
+      }
+      const task = (baseProjectData?.tasks || []).find(x => x.id === id);
+      let confirmReopen = false;
+      if (task && (task.progress === 100 || task.actualFinish) && pct < 100) {
+        if (!confirm('Công việc đã kết thúc. Bạn có chắc muốn mở lại?')) return;
+        confirmReopen = true;
+      }
+      try {
+        const res = await fetch(`/api/tasks/${id}/progress`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ actual_start: start, actual_end: end, percent_complete: pct, confirm_reopen: confirmReopen })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          errEl.innerText = data.message || 'Lỗi khi lưu tiến độ';
+          errEl.style.display = 'block';
+          return;
+        }
+        closeProgModal();
+        loadScheduleData();
+      } catch (e) {
+        errEl.innerText = e.message;
+        errEl.style.display = 'block';
+      }
     }
 
     function setView(unit) {
@@ -470,7 +657,7 @@
       renderGantt();
     }
 
-    renderGantt();
+    loadScheduleData();
   </script>
 </body>
 </html>
