@@ -238,7 +238,7 @@ module.exports = (db) => {
     if (checkViewerForbidden(req, res)) return;
 
     const taskId = Number(req.params.id);
-    const { name, code, duration, work_item_id, status } = req.body;
+    const { name, code, duration, work_item_id, status, actual_start, actual_end, percent_complete } = req.body;
 
     try {
       const [existing] = await pool.query('SELECT * FROM tasks WHERE id = ?', [taskId]);

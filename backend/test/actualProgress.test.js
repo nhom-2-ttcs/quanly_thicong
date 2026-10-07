@@ -336,3 +336,20 @@ test('S-15 RBAC: Quyền Viewer (Người xem) bị từ chối 403 Forbidden kh
   assert.strictEqual(res.statusCode, 403, 'Viewer phải bị chặn 403 Forbidden');
   assert.strictEqual(res.data.success, false);
 });
+
+test('S-15 & S-05: PUT /tasks/:id cập nhật duration thành công khi không có trường thực tế', async () => {
+  const mockDb = createMockPool();
+  const taskRoutes = require('../src/routes/taskRoutes')({ pool: mockDb });
+  const putRoute = taskRoutes.stack.find(s => s.route && s.route.path === '/tasks/:id' && s.route.methods.put);
+
+  const res = mockRes();
+  await putRoute.route.stack[0].handle({
+    params: { id: 1 },
+    body: { duration: 8 }
+  }, res);
+
+  assert.strictEqual(res.statusCode, 200);
+  assert.strictEqual(res.data.success, true);
+  assert.strictEqual(mockDb.tasks[0].duration, 8);
+});
+
