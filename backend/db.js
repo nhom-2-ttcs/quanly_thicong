@@ -95,7 +95,7 @@ async function initDbSchema(maxRetries = 10, delayMs = 1500) {
       ON DUPLICATE KEY UPDATE name = VALUES(name);
     `);
 
-    // 5. Tạo bảng tasks (S-05 / SCRUM-60 / T-11: Khai báo công việc có thời lượng gắn vào hạng mục WBS)
+    // 5. Tạo bảng tasks (S-05 / SCRUM-60 / T-11 & S-15 / SCRUM-88 / T-34: Tiến độ thực tế tách kế hoạch)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS tasks (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -104,21 +104,46 @@ async function initDbSchema(maxRetries = 10, delayMs = 1500) {
         name VARCHAR(255) NOT NULL,
         code VARCHAR(50) NULL,
         duration INT NOT NULL,
+        actual_start DATE NULL,
+        actual_end DATE NULL,
+        percent_complete DECIMAL(5, 2) NOT NULL DEFAULT 0.00,
         status ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         CONSTRAINT fk_tasks_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
         CONSTRAINT fk_tasks_work_item FOREIGN KEY (work_item_id) REFERENCES work_items(id) ON DELETE RESTRICT,
-        CONSTRAINT chk_task_duration_positive CHECK (duration > 0)
+        CONSTRAINT chk_task_duration_positive CHECK (duration > 0),
+        CONSTRAINT chk_task_percent_complete CHECK (percent_complete >= 0.00 AND percent_complete <= 100.00)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    // S-15 / SCRUM-99 (T-34): Đảm bảo các cột tiến độ thực tế tồn tại nếu bảng đã tạo từ trước
+    try {
+      const [taskCols] = await pool.query(`
+        SELECT COLUMN_NAME 
+        FROM information_schema.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tasks' AND COLUMN_NAME IN ('actual_start', 'actual_end', 'percent_complete')
+      `);
+      const existingColNames = (taskCols || []).map(c => c.COLUMN_NAME.toLowerCase());
+      if (!existingColNames.includes('actual_start')) {
+        await pool.query('ALTER TABLE tasks ADD COLUMN actual_start DATE NULL AFTER duration');
+      }
+      if (!existingColNames.includes('actual_end')) {
+        await pool.query('ALTER TABLE tasks ADD COLUMN actual_end DATE NULL AFTER actual_start');
+      }
+      if (!existingColNames.includes('percent_complete')) {
+        await pool.query('ALTER TABLE tasks ADD COLUMN percent_complete DECIMAL(5, 2) NOT NULL DEFAULT 0.00 AFTER actual_end');
+      }
+    } catch (migErr) {
+      console.warn('[DB] Lưu ý khi kiểm tra cột tiến độ thực tế bảng tasks:', migErr.message);
+    }
+
     // Seed các công việc mẫu (task 1: CV-01, task 2: CV-02)
     await pool.query(`
-      INSERT INTO tasks (id, project_id, work_item_id, name, code, duration, status)
+      INSERT INTO tasks (id, project_id, work_item_id, name, code, duration, actual_start, actual_end, percent_complete, status)
       VALUES
-        (1, 1, 1, 'Đào đất hố móng trụ T1', 'CV-01', 5.00, 'pending'),
-        (2, 1, 1, 'Đổ bê tông lót móng', 'CV-02', 3.00, 'pending')
+        (1, 1, 1, 'Đào đất hố móng trụ T1', 'CV-01', 5, NULL, NULL, 0.00, 'pending'),
+        (2, 1, 1, 'Đổ bê tông lót móng', 'CV-02', 3, NULL, NULL, 0.00, 'pending')
       ON DUPLICATE KEY UPDATE name = VALUES(name);
     `);
 

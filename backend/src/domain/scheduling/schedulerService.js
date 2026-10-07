@@ -169,6 +169,18 @@ class SchedulerService {
     const filteredTasks = criticalOnly ? sortedTasks.filter(t => t.isCritical) : sortedTasks;
     const criticalCount = sortedTasks.filter(t => t.isCritical).length;
 
+    let actualMap = new Map();
+    try {
+      if (this.pool?.query) {
+        const [taskRows] = await this.pool.query('SELECT id, actual_start, actual_end, percent_complete, status FROM tasks WHERE project_id = ?', [pId]);
+        if (Array.isArray(taskRows)) {
+          for (const row of taskRows) {
+            actualMap.set(row.id, row);
+          }
+        }
+      }
+    } catch {}
+
     return {
       success: true,
       projectId: pId,
@@ -177,18 +189,25 @@ class SchedulerService {
       totalTasks: sortedTasks.length,
       criticalTasksCount: criticalCount,
       calculatedAt: new Date().toISOString(),
-      tasks: filteredTasks.map(t => ({
-        taskId: t.taskId ?? t.id,
-        name: t.name,
-        code: t.code,
-        duration: t.duration,
-        earlyStart: t.earlyStart,
-        earlyFinish: t.earlyFinish,
-        lateStart: t.lateStart,
-        lateFinish: t.lateFinish,
-        totalFloat: t.totalFloat,
-        isCritical: Boolean(t.isCritical)
-      }))
+      tasks: filteredTasks.map(t => {
+        const act = actualMap.get(t.taskId ?? t.id);
+        return {
+          taskId: t.taskId ?? t.id,
+          name: t.name,
+          code: t.code,
+          duration: t.duration,
+          actualStart: act?.actual_start ? String(act.actual_start).split('T')[0] : (t.actualStart ?? null),
+          actualEnd: act?.actual_end ? String(act.actual_end).split('T')[0] : (t.actualEnd ?? null),
+          percentComplete: act?.percent_complete !== undefined && act?.percent_complete !== null ? Number(act.percent_complete) : Number(t.percentComplete ?? 0),
+          status: act?.status || t.status,
+          earlyStart: t.earlyStart,
+          earlyFinish: t.earlyFinish,
+          lateStart: t.lateStart,
+          lateFinish: t.lateFinish,
+          totalFloat: t.totalFloat,
+          isCritical: Boolean(t.isCritical)
+        };
+      })
     };
   }
 }

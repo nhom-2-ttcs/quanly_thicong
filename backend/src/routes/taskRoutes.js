@@ -2,6 +2,18 @@ const express = require('express');
 const { checkViewerForbidden, checkProjectReadAccess } = require('../utils/rbac');
 const { ScheduleResultRepository } = require('../repositories/scheduleResultRepository');
 
+function formatDateISO(val) {
+  if (!val) return null;
+  if (typeof val === 'string') return val.split('T')[0];
+  if (val instanceof Date) {
+    const y = val.getFullYear();
+    const m = String(val.getMonth() + 1).padStart(2, '0');
+    const d = String(val.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  return String(val);
+}
+
 module.exports = (db) => {
   const router = express.Router();
   const pool = db?.pool || db;
@@ -41,12 +53,12 @@ module.exports = (db) => {
     }
   });
 
-  // 2. Thêm công việc mới (S-05 / SCRUM-60 / T-11)
+  // 2. Thêm công việc mới (S-05 / SCRUM-60 / T-11 & S-15: Hỗ trợ tiến độ thực tế)
   const createTaskHandler = async (req, res) => {
     if (checkViewerForbidden(req, res)) return;
 
     const projectId = Number(req.params.projectId || req.body.project_id);
-    const { name, code, duration, work_item_id, status } = req.body;
+    const { name, code, duration, work_item_id, status, actual_start, actual_end, percent_complete } = req.body;
 
     // Validation: Tên công việc không được để trống
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -87,6 +99,30 @@ module.exports = (db) => {
         success: false,
         message: 'Thời lượng phải là số nguyên dương (đơn vị: Ngày)'
       });
+    }
+
+    // S-15 / AC 3: Validation phần trăm hoàn thành [0, 100]
+    let pctNum = 0;
+    if (percent_complete !== undefined && percent_complete !== null && percent_complete !== '') {
+      pctNum = Number(percent_complete);
+      if (isNaN(pctNum) || !Number.isFinite(pctNum) || pctNum < 0 || pctNum > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Phần trăm hoàn thành phải nằm trong khoảng từ 0 đến 100'
+        });
+      }
+    }
+
+    // S-15 / AC 2: Validation ngày kết thúc thực tế không được sớm hơn ngày bắt đầu thực tế
+    const actStart = actual_start ? String(actual_start).trim() : null;
+    const actEnd = actual_end ? String(actual_end).trim() : null;
+    if (actStart && actEnd) {
+      if (new Date(actEnd) < new Date(actStart)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Ngày kết thúc thực tế không được sớm hơn ngày bắt đầu thực tế'
+        });
+      }
     }
 
     try {
@@ -130,11 +166,19 @@ module.exports = (db) => {
       }
 
       const taskCode = code ? String(code).trim() : null;
-      const taskStatus = status || 'pending';
+      // S-15 / AC 1: Nếu chưa bắt đầu mà có actual_start thì chuyển sang in_progress
+      let taskStatus = status || 'pending';
+      if (taskStatus === 'pending' && actStart) {
+        taskStatus = 'in_progress';
+      }
+      if (pctNum === 100 && actEnd) {
+        taskStatus = 'completed';
+      }
 
       const [result] = await pool.query(
-        'INSERT INTO tasks (project_id, work_item_id, name, code, duration, status) VALUES (?, ?, ?, ?, ?, ?)',
-        [projectId, workItemId, name.trim(), taskCode, durationNum, taskStatus]
+        `INSERT INTO tasks (project_id, work_item_id, name, code, duration, actual_start, actual_end, percent_complete, status) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [projectId, workItemId, name.trim(), taskCode, durationNum, actStart, actEnd, pctNum, taskStatus]
       );
 
       try {
@@ -151,6 +195,9 @@ module.exports = (db) => {
           name: name.trim(),
           code: taskCode,
           duration: durationNum,
+          actual_start: actStart,
+          actual_end: actEnd,
+          percent_complete: pctNum,
           status: taskStatus
         },
         message: 'Thêm công việc thành công'
@@ -252,13 +299,75 @@ module.exports = (db) => {
       }
 
       const updatedCode = code !== undefined ? (code ? String(code).trim() : null) : task.code;
-      const updatedStatus = status !== undefined ? status : task.status;
+      
+      // S-15: Xử lý các trường tiến độ thực tế (actual_start, actual_end, percent_complete)
+      let updatedActualStart = task.actual_start ? formatDateISO(task.actual_start) : null;
+      if (actual_start !== undefined) {
+        updatedActualStart = actual_start ? String(actual_start).trim() : null;
+      }
+
+      let updatedActualEnd = task.actual_end ? formatDateISO(task.actual_end) : null;
+      if (actual_end !== undefined) {
+        updatedActualEnd = actual_end ? String(actual_end).trim() : null;
+      }
+
+      // AC 2: Ngày kết thúc thực tế không được sớm hơn ngày bắt đầu thực tế
+      if (updatedActualStart && updatedActualEnd) {
+        if (new Date(updatedActualEnd) < new Date(updatedActualStart)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Ngày kết thúc thực tế không được sớm hơn ngày bắt đầu thực tế'
+          });
+        }
+      }
+
+      // AC 3: Phần trăm hoàn thành phải trong khoảng 0-100
+      let updatedPercent = task.percent_complete !== null && task.percent_complete !== undefined ? Number(task.percent_complete) : 0;
+      if (percent_complete !== undefined && percent_complete !== null && percent_complete !== '') {
+        const pNum = Number(percent_complete);
+        if (isNaN(pNum) || !Number.isFinite(pNum) || pNum < 0 || pNum > 100) {
+          return res.status(400).json({
+            success: false,
+            message: 'Phần trăm hoàn thành phải nằm trong khoảng từ 0 đến 100'
+          });
+        }
+        updatedPercent = pNum;
+      }
+
+      // AC 4: Mở lại việc đã kết thúc thực tế
+      const isTaskAlreadyFinished = task.status === 'completed' || Number(task.percent_complete) === 100 || (task.actual_end !== null && task.actual_end !== undefined);
+      const isReopeningWithLessThan100 = percent_complete !== undefined && Number(percent_complete) < 100;
+      if (isTaskAlreadyFinished && isReopeningWithLessThan100) {
+        const isConfirmed = req.body?.confirm_reopen === true || req.body?.confirm === true || req.query?.confirm === 'true';
+        if (!isConfirmed) {
+          return res.status(409).json({
+            success: false,
+            requires_confirmation: true,
+            message: 'Công việc đã kết thúc thực tế. Bạn có chắc chắn muốn mở lại một việc đã xong với tiến độ nhỏ hơn 100% không?'
+          });
+        }
+      }
+
+      let updatedStatus = status !== undefined ? status : task.status;
+      // AC 1: Việc chưa bắt đầu mà có actual_start thì chuyển sang in_progress
+      if (updatedStatus === 'pending' && updatedActualStart) {
+        updatedStatus = 'in_progress';
+      }
+      if (isTaskAlreadyFinished && isReopeningWithLessThan100) {
+        updatedStatus = 'in_progress';
+        if (actual_end === undefined) {
+          updatedActualEnd = null;
+        }
+      }
+      if (updatedPercent === 100 && updatedActualEnd) {
+        updatedStatus = 'completed';
+      }
 
       await pool.query(
         `UPDATE tasks 
-         SET name = ?, code = ?, duration = ?, work_item_id = ?, status = ? 
+         SET name = ?, code = ?, duration = ?, work_item_id = ?, actual_start = ?, actual_end = ?, percent_complete = ?, status = ? 
          WHERE id = ?`,
-        [updatedName, updatedCode, updatedDuration, updatedWorkItemId, updatedStatus, taskId]
+        [updatedName, updatedCode, updatedDuration, updatedWorkItemId, updatedActualStart, updatedActualEnd, updatedPercent, updatedStatus, taskId]
       );
 
       try {
@@ -270,6 +379,121 @@ module.exports = (db) => {
       res.status(500).json({ success: false, message: err.message });
     }
   });
+
+  // 4b. Cập nhật tiến độ thực tế tách kế hoạch (S-15 / SCRUM-88 / SCRUM-100 / T-35)
+  const updateTaskProgressHandler = async (req, res) => {
+    if (checkViewerForbidden(req, res)) return;
+
+    const taskId = Number(req.params.id);
+    if (!Number.isInteger(taskId) || taskId <= 0) {
+      return res.status(400).json({ success: false, message: 'ID công việc không hợp lệ' });
+    }
+
+    const { actual_start, actual_end, percent_complete, confirm_reopen } = req.body;
+
+    try {
+      const [existing] = await pool.query('SELECT * FROM tasks WHERE id = ?', [taskId]);
+      if (existing.length === 0) {
+        return res.status(404).json({ success: false, message: 'Công việc không tồn tại' });
+      }
+      const task = existing[0];
+
+      if (checkProjectReadAccess(req, res, task.project_id)) return;
+
+      // AC 3: Validation phần trăm hoàn thành [0, 100]
+      let newPercent = task.percent_complete !== null && task.percent_complete !== undefined ? Number(task.percent_complete) : 0;
+      if (percent_complete !== undefined && percent_complete !== null && percent_complete !== '') {
+        const pctNum = Number(percent_complete);
+        if (isNaN(pctNum) || !Number.isFinite(pctNum) || pctNum < 0 || pctNum > 100) {
+          return res.status(400).json({
+            success: false,
+            message: 'Phần trăm hoàn thành phải nằm trong khoảng từ 0 đến 100'
+          });
+        }
+        newPercent = pctNum;
+      }
+
+      // AC 2: Validation ngày kết thúc thực tế không được sớm hơn ngày bắt đầu thực tế
+      let newActualStart = actual_start !== undefined 
+        ? (actual_start ? String(actual_start).trim() : null) 
+        : (task.actual_start ? formatDateISO(task.actual_start) : null);
+        
+      let newActualEnd = actual_end !== undefined 
+        ? (actual_end ? String(actual_end).trim() : null) 
+        : (task.actual_end ? formatDateISO(task.actual_end) : null);
+
+      if (newActualStart && newActualEnd) {
+        if (new Date(newActualEnd) < new Date(newActualStart)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Ngày kết thúc thực tế không được sớm hơn ngày bắt đầu thực tế'
+          });
+        }
+      }
+
+      // AC 4: Công việc đã kết thúc thực tế, nhập lại phần trăm < 100 -> hỏi xác nhận vì đang mở lại một việc đã xong
+      const isTaskAlreadyFinished = task.status === 'completed' || Number(task.percent_complete) === 100 || (task.actual_end !== null && task.actual_end !== undefined);
+      const isReopeningWithLessThan100 = percent_complete !== undefined && Number(percent_complete) < 100;
+
+      if (isTaskAlreadyFinished && isReopeningWithLessThan100) {
+        const isConfirmed = confirm_reopen === true || req.body?.confirm === true || req.query?.confirm === 'true';
+        if (!isConfirmed) {
+          return res.status(409).json({
+            success: false,
+            requires_confirmation: true,
+            message: 'Công việc đã kết thúc thực tế. Bạn có chắc chắn muốn mở lại một việc đã xong với tiến độ nhỏ hơn 100% không?'
+          });
+        }
+      }
+
+      // AC 1: Giả sử một việc chưa bắt đầu, Khi nhập ngày bắt đầu thực tế -> chuyển sang đang làm, số liệu kế hoạch gốc (duration) không đổi
+      let newStatus = task.status;
+      if (task.status === 'pending' && newActualStart) {
+        newStatus = 'in_progress';
+      }
+
+      // Nếu mở lại một việc đã xong
+      if (isTaskAlreadyFinished && isReopeningWithLessThan100) {
+        newStatus = 'in_progress';
+        if (actual_end === undefined) {
+          newActualEnd = null;
+        }
+      }
+
+      // Nếu phần trăm đạt 100 và có ngày kết thúc thực tế -> completed
+      if (newPercent === 100 && newActualEnd) {
+        newStatus = 'completed';
+      }
+
+      // NFR: Cập nhật CSDL tách cột số liệu thực tế, KHÔNG GHI ĐÈ số liệu kế hoạch (duration giữ nguyên)
+      await pool.query(
+        `UPDATE tasks 
+         SET actual_start = ?, actual_end = ?, percent_complete = ?, status = ? 
+         WHERE id = ?`,
+        [newActualStart, newActualEnd, newPercent, newStatus, taskId]
+      );
+
+      const [updatedRows] = await pool.query(
+        `SELECT t.*, w.name AS work_item_name, w.code AS work_item_code 
+         FROM tasks t 
+         JOIN work_items w ON t.work_item_id = w.id 
+         WHERE t.id = ?`,
+        [taskId]
+      );
+
+      res.json({
+        success: true,
+        message: 'Cập nhật tiến độ thực tế thành công',
+        data: updatedRows[0]
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  };
+
+  router.patch('/tasks/:id/progress', updateTaskProgressHandler);
+  router.put('/tasks/:id/progress', updateTaskProgressHandler);
+  router.patch('/projects/:projectId/tasks/:id/progress', updateTaskProgressHandler);
 
   // 5. Xóa công việc (S-05 AC 4: hỏi xác nhận, xóa quan hệ liên quan trong transaction, ghi nhật ký)
   router.delete('/tasks/:id', async (req, res) => {

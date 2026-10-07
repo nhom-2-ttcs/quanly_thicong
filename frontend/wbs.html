@@ -257,6 +257,40 @@
     .status-in_progress { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
     .status-completed { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
 
+    /* === TIẾN ĐỘ THỰC TẾ (S-15 / SCRUM-88 / SCRUM-100 / T-35) === */
+    .task-progress-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11.5px; font-weight: 800; padding: 2px 7px; border-radius: 4px;
+      background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
+    }
+    .task-progress-badge.progress-100 {
+      background: #ecfdf5; color: #065f46; border-color: #a7f3d0;
+    }
+    .task-actual-dates {
+      font-size: 11px; color: var(--text-muted); font-weight: 600;
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;
+    }
+    .btn-progress-action {
+      background: #eff6ff; color: #1d4ed8; border: 1.5px solid #bfdbfe;
+      padding: 4px 9px; border-radius: 6px; font-size: 11.5px; font-weight: 800;
+      cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .btn-progress-action:hover { background: #dbeafe; border-color: #1d4ed8; transform: translateY(-1px); }
+    .plan-info-card {
+      background: #f8fafc; border: 1.5px solid var(--border-card); border-radius: 10px; padding: 12px 14px;
+      font-size: 12.5px; margin-bottom: 12px;
+    }
+    .plan-info-title { font-weight: 800; color: #1e3a8a; margin-bottom: 8px; font-size: 12px; text-transform: uppercase; }
+    .plan-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .status-preview-box {
+      margin-top: 14px; padding: 10px 12px; border-radius: 8px; background: #f1f5f9;
+      border: 1px solid var(--border-card); font-size: 12px; color: var(--text-body);
+    }
+    .input-error-msg {
+      color: var(--danger); font-size: 12px; font-weight: 700; margin-top: 4px;
+    }
+
     /* === CHẾ ĐỘ NGƯỜI XEM DỰ ÁN (VIEWER MODE) === */
     body.viewer-mode .btn-add-project,
     body.viewer-mode .btn-add-root,
@@ -555,6 +589,76 @@
       <div class="modal-footer">
         <button type="button" class="btn-secondary" onclick="closeTaskModal()">Hủy bỏ</button>
         <button type="button" class="btn-save" onclick="saveTask()">Lưu công việc</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CẬP NHẬT TIẾN ĐỘ THỰC TẾ TÁCH KẾ HOẠCH (S-15 / SCRUM-88 / SCRUM-100 / T-35) -->
+  <div class="modal-overlay" id="progress-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="progress-modal-title">📊 Cập nhật tiến độ thực tế (S-15)</h3>
+        <button class="btn-close-modal" title="Đóng" aria-label="Đóng" onclick="closeProgressModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="prog-task-id">
+        
+        <!-- Thông tin kế hoạch gốc (NFR: Giữ nguyên số liệu kế hoạch) -->
+        <div class="plan-info-card">
+          <div class="plan-info-title">📋 Kế hoạch gốc (Giữ nguyên không ghi đè)</div>
+          <div class="plan-info-grid">
+            <div><strong>Công việc:</strong> <span id="prog-plan-name">—</span></div>
+            <div><strong>Mã CV:</strong> <span id="prog-plan-code">—</span></div>
+            <div><strong>Thời lượng KH:</strong> <span id="prog-plan-duration">—</span> ngày</div>
+            <div><strong>Trạng thái ban đầu:</strong> <span id="prog-plan-initial-status">—</span></div>
+          </div>
+        </div>
+
+        <!-- Khung nhập ngày thực tế -->
+        <div class="form-group">
+          <label for="prog-actual-start">Ngày bắt đầu thực tế (Actual Start)</label>
+          <input type="date" id="prog-actual-start" onchange="handleProgressInputsChange()">
+          <small style="color: var(--text-muted); font-size: 11.5px;">* AC 1: Khi việc chưa làm, nhập ngày bắt đầu thực tế sẽ tự chuyển sang "Đang làm".</small>
+        </div>
+
+        <div class="form-group">
+          <label for="prog-actual-end">Ngày kết thúc thực tế (Actual End)</label>
+          <input type="date" id="prog-actual-end" onchange="handleProgressInputsChange()">
+          <small style="color: var(--text-muted); font-size: 11.5px;">* AC 2: Không được sớm hơn ngày bắt đầu thực tế.</small>
+        </div>
+
+        <!-- Khung nhập % Hoàn thành -->
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label for="prog-percent" style="margin-bottom: 0;">% Hoàn thành thực tế (* 0 – 100)</label>
+            <strong id="prog-percent-display" style="color: var(--brand-blue); font-size: 15px;">0%</strong>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="range" id="prog-percent-range" min="0" max="100" step="1" value="0" style="flex: 1;" oninput="syncPercentFromRange(this.value)">
+            <input type="number" id="prog-percent" min="0" max="100" step="0.5" value="0" style="width: 85px; text-align: center;" oninput="syncPercentFromNumber(this.value)">
+          </div>
+          <div style="display: flex; gap: 6px; margin-top: 8px;">
+            <button type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="setQuickPercent(0)">0%</button>
+            <button type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="setQuickPercent(25)">25%</button>
+            <button type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="setQuickPercent(50)">50%</button>
+            <button type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="setQuickPercent(75)">75%</button>
+            <button type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="setQuickPercent(100)">100%</button>
+          </div>
+        </div>
+
+        <!-- Trạng thái sau cập nhật (Preview) -->
+        <div class="status-preview-box" id="prog-status-preview">
+          Trạng thái dự kiến: <strong id="prog-next-status-text">Chờ thực hiện</strong>
+        </div>
+
+        <!-- Vùng báo lỗi nếu vi phạm AC 2 hoặc AC 3 -->
+        <div id="prog-error-alert" class="alert-banner alert-danger" style="display: none; margin-top: 12px; padding: 10px;">
+          <span id="prog-error-text"></span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeProgressModal()">Hủy bỏ</button>
+        <button type="button" class="btn-save" id="btn-save-progress" onclick="saveTaskProgress()">Lưu tiến độ thực tế</button>
       </div>
     </div>
   </div>
@@ -949,14 +1053,30 @@
             node.tasks.forEach(task => {
               const taskEl = document.createElement('div');
               taskEl.className = 'task-row';
+              const percentNum = Number(task.percent_complete || 0);
+              const hasActualDates = Boolean(task.actual_start || task.actual_end);
+              const startStr = task.actual_start ? formatDateVNShort(task.actual_start) : '—';
+              const endStr = task.actual_end ? formatDateVNShort(task.actual_end) : '—';
+
               taskEl.innerHTML = `
                 <div class="task-left">
                   <span class="task-code-badge">${escapeHtml(task.code || `CV-${task.id}`)}</span>
                   <span class="task-name">${escapeHtml(task.name)}</span>
-                  <span class="task-duration-badge">⏱️ ${formatDurationVN(task.duration)}</span>
+                  <span class="task-duration-badge" title="Thời lượng kế hoạch gốc (NFR: Tách rời không đổi)">⏱️ KH: ${formatDurationVN(task.duration)}</span>
                   <span class="task-status-badge status-${task.status}">${getStatusLabel(task.status)}</span>
+                  <span class="task-progress-badge ${percentNum >= 100 ? 'progress-100' : ''}" title="Tiến độ thực tế (% hoàn thành)">
+                    📊 ${Math.round(percentNum)}%
+                  </span>
+                  ${hasActualDates ? `
+                    <span class="task-actual-dates" title="Ngày bắt đầu - kết thúc thực tế">
+                      📅 TT: ${startStr} → ${endStr}
+                    </span>
+                  ` : ''}
                 </div>
                 <div class="tree-actions">
+                  <button class="btn-progress-action" title="Cập nhật tiến độ thực tế (S-15 / SCRUM-88)" onclick="openProgressModal(${task.id})">
+                    📊 Tiến độ
+                  </button>
                   <button class="btn-action-icon" title="Chỉnh sửa công việc" aria-label="Chỉnh sửa công việc" onclick="openEditTaskModal(${task.id})">
                     <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                   </button>
@@ -1230,6 +1350,207 @@
       }
 
       alert('Đã xóa công việc thành công!');
+      await loadData();
+    }
+
+    // === CẬP NHẬT TIẾN ĐỘ THỰC TẾ TÁCH KẾ HOẠCH (S-15 / SCRUM-88 / SCRUM-100 / T-35) ===
+    let currentProgressTask = null;
+
+    function formatDateVNShort(dateStr) {
+      if (!dateStr) return '';
+      try {
+        const s = String(dateStr).split('T')[0];
+        const parts = s.split('-');
+        if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        return s;
+      } catch {
+        return String(dateStr);
+      }
+    }
+
+    function openProgressModal(taskId) {
+      const task = rawTasks.find(t => t.id === taskId);
+      if (!task) {
+        alert('Không tìm thấy thông tin công việc!');
+        return;
+      }
+
+      currentProgressTask = task;
+
+      // Hiển thị thông tin kế hoạch gốc (không ghi đè - NFR)
+      document.getElementById('prog-task-id').value = task.id;
+      document.getElementById('prog-plan-name').textContent = task.name || '';
+      document.getElementById('prog-plan-code').textContent = task.code || `CV-${task.id}`;
+      document.getElementById('prog-plan-duration').textContent = formatDurationVN(task.duration);
+      document.getElementById('prog-plan-initial-status').textContent = getStatusLabel(task.status);
+
+      // Điền giá trị thực tế hiện tại
+      const actStart = task.actual_start ? String(task.actual_start).split('T')[0] : '';
+      const actEnd = task.actual_end ? String(task.actual_end).split('T')[0] : '';
+      const percent = Number(task.percent_complete !== undefined && task.percent_complete !== null ? task.percent_complete : 0);
+
+      document.getElementById('prog-actual-start').value = actStart;
+      document.getElementById('prog-actual-end').value = actEnd;
+      document.getElementById('prog-percent').value = percent;
+      document.getElementById('prog-percent-range').value = percent;
+      document.getElementById('prog-percent-display').textContent = `${percent}%`;
+
+      // Reset vùng lỗi
+      hideProgError();
+      handleProgressInputsChange();
+
+      // Mở modal
+      document.getElementById('progress-modal').style.display = 'flex';
+    }
+
+    function closeProgressModal() {
+      document.getElementById('progress-modal').style.display = 'none';
+      currentProgressTask = null;
+      hideProgError();
+    }
+
+    function syncPercentFromRange(val) {
+      const num = Number(val);
+      document.getElementById('prog-percent').value = num;
+      document.getElementById('prog-percent-display').textContent = `${num}%`;
+      handleProgressInputsChange();
+    }
+
+    function syncPercentFromNumber(val) {
+      const num = Number(val);
+      if (!isNaN(num)) {
+        const clamped = Math.max(0, Math.min(100, num));
+        document.getElementById('prog-percent-range').value = clamped;
+        document.getElementById('prog-percent-display').textContent = `${num}%`;
+      }
+      handleProgressInputsChange();
+    }
+
+    function setQuickPercent(val) {
+      document.getElementById('prog-percent').value = val;
+      document.getElementById('prog-percent-range').value = val;
+      document.getElementById('prog-percent-display').textContent = `${val}%`;
+      handleProgressInputsChange();
+    }
+
+    function showProgError(msg) {
+      const alertBox = document.getElementById('prog-error-alert');
+      const textSpan = document.getElementById('prog-error-text');
+      textSpan.textContent = msg;
+      alertBox.style.display = 'block';
+    }
+
+    function hideProgError() {
+      const alertBox = document.getElementById('prog-error-alert');
+      if (alertBox) alertBox.style.display = 'none';
+    }
+
+    function handleProgressInputsChange() {
+      const startVal = document.getElementById('prog-actual-start').value;
+      const endVal = document.getElementById('prog-actual-end').value;
+      const percentVal = Number(document.getElementById('prog-percent').value);
+
+      // AC 2: Ngày kết thúc thực tế sớm hơn ngày bắt đầu thực tế -> cảnh báo
+      if (startVal && endVal && endVal < startVal) {
+        showProgError('Ngày kết thúc thực tế không được sớm hơn ngày bắt đầu thực tế');
+      } else if (!isNaN(percentVal) && (percentVal < 0 || percentVal > 100)) {
+        // AC 3: % hoàn thành ngoài 0-100
+        showProgError('Phần trăm hoàn thành phải nằm trong khoảng từ 0 đến 100');
+      } else {
+        hideProgError();
+      }
+
+      // Preview trạng thái dự kiến
+      const previewText = document.getElementById('prog-next-status-text');
+      if (percentVal >= 100 && endVal) {
+        previewText.textContent = 'Đã hoàn thành (100% & đã có ngày KT)';
+        previewText.style.color = '#166534';
+      } else if (startVal) {
+        previewText.textContent = 'Đang thực hiện (AC 1: Tự động chuyển khi có ngày bắt đầu)';
+        previewText.style.color = '#1d4ed8';
+      } else if (percentVal > 0) {
+        previewText.textContent = 'Đang thực hiện (> 0%)';
+        previewText.style.color = '#1d4ed8';
+      } else {
+        previewText.textContent = currentProgressTask ? getStatusLabel(currentProgressTask.status) : 'Chờ thực hiện';
+        previewText.style.color = 'var(--text-body)';
+      }
+    }
+
+    async function saveTaskProgress() {
+      if (!currentProgressTask) return;
+      const taskId = currentProgressTask.id;
+      const actual_start = document.getElementById('prog-actual-start').value;
+      const actual_end = document.getElementById('prog-actual-end').value;
+      const percentRaw = document.getElementById('prog-percent').value;
+
+      // AC 3: Kiểm tra biên [0, 100] tại ô nhập
+      const percent = Number(percentRaw);
+      if (percentRaw === '' || isNaN(percent) || percent < 0 || percent > 100) {
+        showProgError('Phần trăm hoàn thành phải nằm trong khoảng từ 0 đến 100');
+        document.getElementById('prog-percent').focus();
+        return;
+      }
+
+      // AC 2: Kiểm tra ngày kết thúc >= ngày bắt đầu thực tế
+      if (actual_start && actual_end && actual_end < actual_start) {
+        showProgError('Ngày kết thúc thực tế không được sớm hơn ngày bắt đầu thực tế');
+        document.getElementById('prog-actual-end').focus();
+        return;
+      }
+
+      // AC 4: Nếu một việc đã kết thúc thực tế, khi nhập lại phần trăm < 100 thì hỏi xác nhận
+      const isAlreadyFinished = (
+        currentProgressTask.status === 'completed' ||
+        Number(currentProgressTask.percent_complete) === 100 ||
+        Boolean(currentProgressTask.actual_end)
+      );
+
+      let confirmReopen = false;
+      if (isAlreadyFinished && percent < 100) {
+        const acceptReopen = confirm('Công việc này đã kết thúc thực tế. Bạn có chắc chắn muốn mở lại một việc đã xong với tiến độ ' + percent + '% không?');
+        if (!acceptReopen) return;
+        confirmReopen = true;
+      }
+
+      // Gửi yêu cầu cập nhật API tách cột kế hoạch (NFR)
+      let { res, data } = await apiRequest(`/api/tasks/${taskId}/progress`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          actual_start: actual_start || null,
+          actual_end: actual_end || null,
+          percent_complete: percent,
+          confirm_reopen: confirmReopen
+        })
+      });
+
+      // Nếu backend trả về 409 yêu cầu xác nhận mở lại
+      if (res.status === 409 && data && data.requires_confirmation) {
+        const accept = confirm(`${data.message}\n\nBạn có đồng ý mở lại công việc này không?`);
+        if (!accept) return;
+
+        const confirmedRes = await apiRequest(`/api/tasks/${taskId}/progress`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            actual_start: actual_start || null,
+            actual_end: actual_end || null,
+            percent_complete: percent,
+            confirm_reopen: true
+          })
+        });
+        res = confirmedRes.res;
+        data = confirmedRes.data;
+      }
+
+      if (!res.ok || !data.success) {
+        showProgError(data.message || 'Lỗi khi lưu tiến độ thực tế');
+        return;
+      }
+
+      alert('Cập nhật tiến độ thực tế thành công!');
+      closeProgressModal();
       await loadData();
     }
 
