@@ -82,10 +82,10 @@ module.exports = (db) => {
     }
 
     const durationNum = Number(duration);
-    if (isNaN(durationNum) || !Number.isFinite(durationNum) || durationNum <= 0) {
+    if (isNaN(durationNum) || !Number.isFinite(durationNum) || !Number.isInteger(durationNum) || durationNum <= 0) {
       return res.status(400).json({
         success: false,
-        message: 'Thời lượng phải là một số dương hợp lệ (đơn vị: Ngày)'
+        message: 'Thời lượng phải là số nguyên dương (đơn vị: Ngày)'
       });
     }
 
@@ -114,6 +114,18 @@ module.exports = (db) => {
         return res.status(400).json({
           success: false,
           message: 'Hạng mục WBS không thuộc cùng dự án đã chọn'
+        });
+      }
+
+      // S-05: Công việc chỉ được gắn vào hạng mục lá, từ chối hạng mục cha
+      const [childItems] = await pool.query(
+        'SELECT id FROM work_items WHERE parent_id = ? LIMIT 1',
+        [workItemId]
+      );
+      if (childItems.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Công việc chỉ được gắn vào hạng mục lá, không được gắn vào hạng mục cha'
         });
       }
 
@@ -188,6 +200,8 @@ module.exports = (db) => {
       }
       const task = existing[0];
 
+      if (checkProjectReadAccess(req, res, task.project_id)) return;
+
       let updatedName = task.name;
       if (name !== undefined) {
         if (typeof name !== 'string' || name.trim().length === 0) {
@@ -199,10 +213,10 @@ module.exports = (db) => {
       let updatedDuration = task.duration;
       if (duration !== undefined) {
         const dNum = Number(duration);
-        if (isNaN(dNum) || !Number.isFinite(dNum) || dNum <= 0) {
+        if (isNaN(dNum) || !Number.isFinite(dNum) || !Number.isInteger(dNum) || dNum <= 0) {
           return res.status(400).json({
             success: false,
-            message: 'Thời lượng phải là một số dương hợp lệ (đơn vị: Ngày)'
+            message: 'Thời lượng phải là số nguyên dương (đơn vị: Ngày)'
           });
         }
         updatedDuration = dNum;
@@ -221,6 +235,19 @@ module.exports = (db) => {
         if (wi[0].project_id !== task.project_id) {
           return res.status(400).json({ success: false, message: 'Hạng mục WBS mới không thuộc cùng dự án' });
         }
+
+        // S-05: Kiểm tra chỉ cho phép gắn vào hạng mục lá
+        const [childItems] = await pool.query(
+          'SELECT id FROM work_items WHERE parent_id = ? LIMIT 1',
+          [wId]
+        );
+        if (childItems.length > 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'Công việc chỉ được gắn vào hạng mục lá, không được gắn vào hạng mục cha'
+          });
+        }
+
         updatedWorkItemId = wId;
       }
 
@@ -244,7 +271,7 @@ module.exports = (db) => {
     }
   });
 
-  // 5. Xóa công việc
+  // 5. Xóa công việc (S-05 AC 4: hỏi xác nhận, xóa quan hệ liên quan trong transaction, ghi nhật ký)
   router.delete('/tasks/:id', async (req, res) => {
     if (checkViewerForbidden(req, res)) return;
 
@@ -256,33 +283,85 @@ module.exports = (db) => {
       }
       const taskProjectId = existing[0].project_id;
 
-      // S-06: Chặn xóa công việc khi đang có quan hệ phụ thuộc (predecessor hoặc successor) -> HTTP 409 Conflict
+      if (checkProjectReadAccess(req, res, taskProjectId)) return;
+
+      // Kiểm tra công việc có quan hệ phụ thuộc liên quan hay không
+      let depRows = [];
       try {
-        const [depRows] = await pool.query(
-          'SELECT id FROM task_dependencies WHERE predecessor_task_id = ? OR successor_task_id = ? LIMIT 1',
+        const [rows] = await pool.query(
+          'SELECT id FROM task_dependencies WHERE predecessor_task_id = ? OR successor_task_id = ?',
           [taskId, taskId]
         );
-        if (depRows && depRows.length > 0) {
-          return res.status(409).json({
-            success: false,
-            message: 'Không thể xóa công việc vì đang có quan hệ phụ thuộc liên kết với công việc khác. Vui lòng xóa quan hệ phụ thuộc trước.'
-          });
-        }
+        depRows = rows || [];
       } catch {
-        // Bỏ qua nếu bảng task_dependencies chưa sẵn sàng trong mock pool
+        depRows = [];
       }
 
-      await pool.query('DELETE FROM tasks WHERE id = ?', [taskId]);
+      if (depRows.length > 0) {
+        const isConfirmed = req.query?.confirm === 'true' || req.body?.confirm === true;
+        if (!isConfirmed) {
+          return res.status(409).json({
+            success: false,
+            requires_confirmation: true,
+            dependency_count: depRows.length,
+            message: `Công việc đang có ${depRows.length} quan hệ phụ thuộc liên kết. Vui lòng xác nhận để xóa công việc và các quan hệ phụ thuộc liên quan.`
+          });
+        }
+      }
+
+      // Thực thi xóa an toàn trong một transaction
+      let conn = null;
+      if (typeof pool.getConnection === 'function') {
+        try {
+          conn = await pool.getConnection();
+          await conn.beginTransaction();
+        } catch {
+          conn = null;
+        }
+      }
+      const executor = conn || pool;
 
       try {
-        await scheduleResultRepo.markStale(taskProjectId);
-      } catch {}
-      res.json({ success: true, message: 'Xóa công việc thành công' });
+        if (depRows.length > 0) {
+          await executor.query(
+            'DELETE FROM task_dependencies WHERE predecessor_task_id = ? OR successor_task_id = ?',
+            [taskId, taskId]
+          );
+        }
+
+        await executor.query('DELETE FROM tasks WHERE id = ?', [taskId]);
+
+        if (conn) {
+          await conn.commit();
+        }
+
+        // Ghi nhật ký thao tác (Audit log)
+        console.log(`[AUDIT] Người dùng ID ${req.user?.userId || req.user?.id || 'anonymous'} đã xóa công việc ID ${taskId} ("${existing[0].name}") thuộc dự án ${taskProjectId}${depRows.length > 0 ? ` cùng ${depRows.length} quan hệ phụ thuộc liên kết` : ''}`);
+
+        try {
+          await scheduleResultRepo.markStale(taskProjectId);
+        } catch {}
+
+        res.json({
+          success: true,
+          deleted_dependencies_count: depRows.length,
+          message: 'Xóa công việc thành công'
+        });
+      } catch (transErr) {
+        if (conn) {
+          try { await conn.rollback(); } catch {}
+        }
+        throw transErr;
+      } finally {
+        if (conn && typeof conn.release === 'function') {
+          conn.release();
+        }
+      }
     } catch (err) {
       if (err.errno === 1451 || err.code === 'ER_ROW_IS_REFERENCED_2') {
         return res.status(409).json({
           success: false,
-          message: 'Không thể xóa công việc vì đang có quan hệ phụ thuộc liên kết với công việc khác. Vui lòng xóa quan hệ phụ thuộc trước.'
+          message: 'Không thể xóa công việc do ràng buộc khóa ngoại chưa được giải phóng.'
         });
       }
       res.status(500).json({ success: false, message: err.message });

@@ -59,7 +59,7 @@ function checkViewerForbidden(req, res) {
     req.user = session;
   }
 
-  if (user && (user.role_name === 'viewer' || user.role_id === 7)) {
+  if (user && (user.role_name === 'viewer' || user.role_id === 7 || user.role === 'viewer')) {
     res.status(403).json({
       success: false,
       message: 'Quyền truy cập bị từ chối: Tài khoản Người xem dự án không được phép tạo, sửa hoặc xóa dữ liệu.'
