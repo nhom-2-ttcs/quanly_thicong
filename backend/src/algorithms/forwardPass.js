@@ -1,141 +1,51 @@
-/**
- * T19: Duyệt xuôi theo thứ tự tô-pô
- *
- * Sử dụng:
- * - Thứ tự task từ T16 (Kahn)
- * - Công thức quan hệ từ T18
- *
- * Với mỗi task:
- * - Task không có predecessor bắt đầu từ projectStart.
- * - Task có predecessor lấy giá trị ràng buộc lớn nhất.
- * - Early Finish = Early Start + duration.
- */
+const { normalizeId, calculateRelationWeight } = require('./backwardPass');
 
-const {
-  calculateFS,
-  calculateSS,
-  calculateFF,
-  calculateSF
-} = require('./dependencyConstraints');
-
-/**
- * Tính hai mốc sớm cho danh sách task.
- *
- * @param {Array} tasks
- * @param {Array<string>} topologicalOrder
- * @param {number} projectStart
- * @returns {Array}
- */
 function calculateForwardPass(tasks, topologicalOrder, projectStart = 0) {
-  const taskMap = new Map();
+  if (!Array.isArray(tasks)) throw new Error('tasks phải là một mảng');
+  if (!Array.isArray(topologicalOrder)) throw new Error('topologicalOrder phải là một mảng');
+  const start = Number(projectStart);
+  if (!Number.isFinite(start)) throw new Error('projectStart phải là số hữu hạn');
 
+  const taskMap = new Map();
   for (const task of tasks) {
-    taskMap.set(task.id, {
-      ...task,
-      earlyStart: null,
-      earlyFinish: null
-    });
+    const id = normalizeId(task?.id ?? task?.taskId ?? task?.task_id, 'task.id');
+    const duration = Number(task?.duration);
+    if (!Number.isFinite(duration) || duration < 0) throw new Error(`duration của task ${id} phải là số không âm hữu hạn`);
+    if (taskMap.has(id)) throw new Error(`ID task bị trùng: ${id}`);
+    taskMap.set(id, { ...task, normalizedId: id, duration, earlyStart: null, earlyFinish: null });
+  }
+
+  const order = topologicalOrder.map((item, index) =>
+    normalizeId(typeof item === 'object' ? item.id ?? item.taskId ?? item.task_id : item, `topologicalOrder[${index}]`)
+  );
+  if (order.length !== taskMap.size || new Set(order).size !== taskMap.size || order.some(id => !taskMap.has(id))) {
+    throw new Error('topologicalOrder thiếu, thừa hoặc trùng task');
   }
 
   const result = [];
-
-  for (const taskId of topologicalOrder) {
-    const task = taskMap.get(taskId);
-
-    if (!task) {
-      throw new Error(`Task "${taskId}" không tồn tại`);
+  for (const id of order) {
+    const task = taskMap.get(id);
+    let earliestStart = start;
+    for (const dependency of task.predecessors || []) {
+      const predecessorId = normalizeId(
+        typeof dependency === 'object' ? dependency.id ?? dependency.predecessorId : dependency,
+        `predecessor của task ${id}`
+      );
+      const predecessor = taskMap.get(predecessorId);
+      if (!predecessor) throw new Error(`Predecessor "${predecessorId}" không tồn tại`);
+      if (predecessor.earlyStart === null) throw new Error('topologicalOrder không hợp lệ hoặc đồ thị có chu trình');
+      const type = typeof dependency === 'object' ? dependency.type ?? 'FS' : 'FS';
+      const lag = typeof dependency === 'object' ? dependency.lag ?? 0 : 0;
+      earliestStart = Math.max(
+        earliestStart,
+        predecessor.earlyStart + calculateRelationWeight(predecessor, task, type, lag)
+      );
     }
-
-    const predecessors = task.predecessors || [];
-
-    // Task đầu tiên / không có predecessor
-    if (predecessors.length === 0) {
-      task.earlyStart = projectStart;
-      task.earlyFinish = projectStart + task.duration;
-    } else {
-      let earliestStart = projectStart;
-
-      for (const dependency of predecessors) {
-        const predecessor = taskMap.get(dependency.id);
-
-        if (!predecessor) {
-          throw new Error(
-            `Predecessor "${dependency.id}" không tồn tại`
-          );
-        }
-
-        const lag = dependency.lag || 0;
-        let constraint;
-
-        switch (dependency.type) {
-          case 'FS':
-            constraint = calculateFS(
-              predecessor.earlyFinish,
-              lag
-            );
-            earliestStart = Math.max(
-              earliestStart,
-              constraint
-            );
-            break;
-
-          case 'SS':
-            constraint = calculateSS(
-              predecessor.earlyStart,
-              lag
-            );
-            earliestStart = Math.max(
-              earliestStart,
-              constraint
-            );
-            break;
-
-          case 'FF':
-            constraint = calculateFF(
-              predecessor.earlyFinish,
-              lag
-            );
-
-            earliestStart = Math.max(
-              earliestStart,
-              constraint - task.duration
-            );
-            break;
-
-          case 'SF':
-            constraint = calculateSF(
-              predecessor.earlyStart,
-              lag
-            );
-
-            earliestStart = Math.max(
-              earliestStart,
-              constraint - task.duration
-            );
-            break;
-
-          default:
-            throw new Error(
-              `Loại quan hệ "${dependency.type}" không hợp lệ`
-            );
-        }
-      }
-
-      task.earlyStart = earliestStart;
-      task.earlyFinish = earliestStart + task.duration;
-    }
-
-    result.push({
-      id: task.id,
-      duration: task.duration,
-      earlyStart: task.earlyStart,
-      earlyFinish: task.earlyFinish
-    });
+    task.earlyStart = earliestStart;
+    task.earlyFinish = earliestStart + task.duration;
+    result.push({ id: task.id ?? id, taskId: task.id ?? id, duration: task.duration, earlyStart: task.earlyStart, earlyFinish: task.earlyFinish });
   }
-
   return result;
 }
 
-module.exports = {
-  calculateForwardPass
-};
+module.exports = { calculateForwardPass };

@@ -1,53 +1,117 @@
-const assert = require('assert');
-const { calculateForwardPass } = require('../src/algorithms/forwardPass');
-const { calculateBackwardPass } = require('../src/algorithms/backwardPass');
+const assert = require('node:assert');
 
-function testBackwardPass() {
-  console.log('--- Đang chạy test cho S-09 (T-20 & T-21) ---');
+const {
+  calculateBackwardPass,
+  calculateProjectDuration,
+  calculateRelationWeight
+} = require('../src/algorithms/backwardPass');
 
-  // Mạng mẫu thử nghiệm:
-  // T1 (3 ngày) -> FS -> T2 (4 ngày) -> FS -> T4 (2 ngày) (Nhánh găng: 3 + 4 + 2 = 9 ngày)
-  // T1 (3 ngày) -> FS -> T3 (2 ngày) -> FS -> T4 (Nhánh phụ: 3 + 2 + 2 = 7 ngày)
-  const tasks = [
-    { id: 'T1', duration: 3, predecessors: [] },
-    { id: 'T2', duration: 4, predecessors: [{ id: 'T1', type: 'FS', lag: 0 }] },
-    { id: 'T3', duration: 2, predecessors: [{ id: 'T1', type: 'FS', lag: 0 }] },
-    { id: 'T4', duration: 2, predecessors: [
-      { id: 'T2', type: 'FS', lag: 0 },
-      { id: 'T3', type: 'FS', lag: 0 }
-    ]}
-  ];
+console.log('--- T20/T21: Backward Pass Tests ---');
 
-  const topoOrder = ['T1', 'T2', 'T3', 'T4'];
-  const forwardResults = calculateForwardPass(tasks, topoOrder, 0);
-  const backwardResults = calculateBackwardPass(forwardResults, tasks, topoOrder);
+const tasks = [
+  { id: 'A', duration: 3, predecessors: [] },
+  { id: 'B', duration: 2, predecessors: [{ id: 'A', type: 'FS', lag: 0 }] },
+  { id: 'C', duration: 1, predecessors: [{ id: 'A', type: 'FS', lag: 0 }] },
+  { id: 'D', duration: 1, predecessors: [{ id: 'B', type: 'FS', lag: 0 }, { id: 'C', type: 'FS', lag: 0 }] }
+];
 
-  const resultMap = new Map(backwardResults.map(t => [t.id, t]));
+const earlySchedule = [
+  { id: 'A', earlyStart: 0, earlyFinish: 3 },
+  { id: 'B', earlyStart: 3, earlyFinish: 5 },
+  { id: 'C', earlyStart: 3, earlyFinish: 4 },
+  { id: 'D', earlyStart: 5, earlyFinish: 6 }
+];
 
-  // 1. Kiểm tra ngày hoàn thành dự án = 9
-  assert.strictEqual(resultMap.get('T4').earlyFinish, 9, 'T4 earlyFinish phải bằng 9');
-  assert.strictEqual(resultMap.get('T4').lateFinish, 9, 'T4 lateFinish phải bằng 9');
+const result = calculateBackwardPass(tasks, ['A', 'B', 'C', 'D'], earlySchedule);
 
-  // 2. Kiểm tra đường găng T1 -> T2 -> T4
-  assert.strictEqual(resultMap.get('T1').totalFloat, 0, 'T1 float phải bằng 0');
-  assert.strictEqual(resultMap.get('T1').isCritical, true, 'T1 phải là việc găng');
+console.log('Manual network result:', result);
 
-  assert.strictEqual(resultMap.get('T2').totalFloat, 0, 'T2 float phải bằng 0');
-  assert.strictEqual(resultMap.get('T2').isCritical, true, 'T2 phải là việc găng');
+assert.strictEqual(
+  calculateProjectDuration(tasks, new Map(earlySchedule.map(item => [String(item.id), item]))),
+  6,
+  'Project duration phải bằng max EF'
+);
 
-  assert.strictEqual(resultMap.get('T4').totalFloat, 0, 'T4 float phải bằng 0');
-  assert.strictEqual(resultMap.get('T4').isCritical, true, 'T4 phải là việc găng');
+assert.strictEqual(result[0].lateFinish, 3, 'A: LF phải bằng 3');
+assert.strictEqual(result[0].lateStart, 0, 'A: LS phải bằng 0');
+assert.strictEqual(result[1].lateFinish, 5, 'B: LF phải bằng 5');
+assert.strictEqual(result[1].lateStart, 3, 'B: LS phải bằng 3');
+assert.strictEqual(result[2].lateFinish, 5, 'C: LF phải bằng 5');
+assert.strictEqual(result[2].lateStart, 4, 'C: LS phải bằng 4');
+assert.strictEqual(result[3].lateFinish, 6, 'D: LF phải bằng 6');
+assert.strictEqual(result[3].lateStart, 5, 'D: LS phải bằng 5');
 
-  // 3. Kiểm tra nhánh phụ T3: có độ trễ = 9 - 7 = 2 ngày
-  assert.strictEqual(resultMap.get('T3').totalFloat, 2, 'T3 totalFloat phải bằng chênh lệch 2 ngày');
-  assert.strictEqual(resultMap.get('T3').isCritical, false, 'T3 không phải là việc găng');
+assert.strictEqual(result[0].totalFloat, 0, 'A phải là công việc găng');
+assert.strictEqual(result[1].totalFloat, 0, 'B phải là công việc găng');
+assert.strictEqual(result[2].totalFloat, 1, 'C phải có độ trễ 1');
+assert.strictEqual(result[3].totalFloat, 0, 'D phải là công việc găng');
 
-  console.log('✅ Toàn bộ bài test S-09 (T-20 & T-21) đã pass!');
+assert.strictEqual(result[0].isCritical, true, 'A phải là critical');
+assert.strictEqual(result[1].isCritical, true, 'B phải là critical');
+assert.strictEqual(result[2].isCritical, false, 'C không phải critical');
+assert.strictEqual(result[3].isCritical, true, 'D phải là critical');
+
+console.log('✓ Manual network backward pass matched expected values');
+
+const relationChecksum = [
+  { type: 'FS', lag: 0, predecessor: { duration: 3 }, successor: { duration: 2 }, expected: 3 },
+  { type: 'SS', lag: 2, predecessor: { duration: 3 }, successor: { duration: 2 }, expected: 2 },
+  { type: 'FF', lag: 2, predecessor: { duration: 3 }, successor: { duration: 2 }, expected: 3 + 2 - 2 },
+  { type: 'SF', lag: 2, predecessor: { duration: 3 }, successor: { duration: 2 }, expected: 2 - 2 }
+];
+
+for (const item of relationChecksum) {
+  assert.strictEqual(
+    calculateRelationWeight(item.predecessor, item.successor, item.type, item.lag),
+    item.expected,
+    `${item.type} weight must match formula`
+  );
 }
 
-try {
-  testBackwardPass();
-} catch (error) {
-  console.error('❌ Test thất bại:', error.message);
-  process.exit(1);
-}
+console.log('✓ Relation weight formulas validated');
+
+const branchingTasks = [
+  { id: 'A', duration: 3, predecessors: [] },
+  { id: 'B', duration: 2, predecessors: [{ id: 'A', type: 'FS', lag: 0 }] },
+  { id: 'C', duration: 1, predecessors: [{ id: 'A', type: 'FS', lag: 0 }] },
+  { id: 'D', duration: 1, predecessors: [{ id: 'B', type: 'FS', lag: 0 }, { id: 'C', type: 'FS', lag: 0 }] }
+];
+
+const branchingEarly = [
+  { id: 'A', earlyStart: 0, earlyFinish: 3 },
+  { id: 'B', earlyStart: 3, earlyFinish: 5 },
+  { id: 'C', earlyStart: 3, earlyFinish: 4 },
+  { id: 'D', earlyStart: 5, earlyFinish: 6 }
+];
+
+const branchingResult = calculateBackwardPass(branchingTasks, ['A', 'B', 'C', 'D'], branchingEarly);
+
+assert.strictEqual(branchingResult[0].lateStart, 0, 'A: late start should be zero');
+assert.strictEqual(branchingResult[2].totalFloat, 1, 'C must have one-day float when the branch is shorter than the critical path');
+assert.strictEqual(branchingResult[3].lateFinish, 6, 'Final task must finish at project duration');
+assert.strictEqual(branchingResult[3].totalFloat, 0, 'Final task remains critical');
+
+console.log('✓ Short branch / long branch float check passed');
+
+const floatingTasks = [
+  { id: 'X', duration: 1.5, predecessors: [] },
+  { id: 'Y', duration: 2.5, predecessors: [{ id: 'X', type: 'FS', lag: 0.5 }] },
+  { id: 'Z', duration: 0.5, predecessors: [{ id: 'Y', type: 'FS', lag: 0.25 }] }
+];
+
+const floatingEarly = [
+  { id: 'X', earlyStart: 0, earlyFinish: 1.5 },
+  { id: 'Y', earlyStart: 2, earlyFinish: 4.5 },
+  { id: 'Z', earlyStart: 4.75, earlyFinish: 5.25 }
+];
+
+const floatingResult = calculateBackwardPass(floatingTasks, ['X', 'Y', 'Z'], floatingEarly);
+
+assert.ok(Math.abs(floatingResult[1].lateStart - 2) < 1e-9, 'Late start should honor fractional duration on the critical path');
+assert.ok(Math.abs(floatingResult[1].totalFloat) < 1e-9, 'Critical fractional path should keep zero float');
+assert.ok(floatingResult[0].isCritical, 'Critical path should remain valid for fractional tasks');
+assert.ok(!Object.is(floatingResult[1].totalFloat, -0), 'No negative zero should appear');
+
+console.log('✓ Fractional and epsilon checks passed');
+
+console.log('--- T20/T21: ALL TESTS PASSED ---');

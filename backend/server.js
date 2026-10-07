@@ -70,8 +70,30 @@ app.get('/register', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/register.html'));
 });
 
+app.get('/schedule', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/schedule.html'));
+});
+
+// Middleware xác thực token phiên
+const { authenticate } = require('./src/utils/rbac');
+app.use(authenticate);
+
+// Quản lý dự án thi công
+const projectRoutes = require('./src/routes/projectRoutes');
+app.use('/api', projectRoutes(db));
+
 const wbsRoutes = require("./wbs_routes");
 app.use("/api", wbsRoutes(db));
+
+// Sprint 2: S-05 (Tasks có thời lượng) & S-06 (Quan hệ phụ thuộc) & S-07 (Thứ tự phụ thuộc & phát hiện vòng)
+const taskRoutes = require("./src/routes/taskRoutes");
+app.use("/api", taskRoutes(db));
+
+const dependencyRoutes = require("./src/routes/dependencyRoutes");
+app.use("/api", dependencyRoutes(db));
+
+const schedulingRoutes = require("./src/routes/schedulingRoutes");
+app.use("/api", schedulingRoutes(db));
 
 // ==========================================
 // CÁC ENDPOINT CHO SAO LƯU & KHÔI PHỤC CSDL (S-20, T-46, T-47)

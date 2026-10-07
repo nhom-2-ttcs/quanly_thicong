@@ -21,7 +21,7 @@ git pull origin main
 
 ### Cách 1: Khởi chạy bằng Docker Compose (Khuyến nghị cho Staging / Mạng LAN)
 
-Phương pháp này sẽ khởi chạy 3 container: CSDL MySQL, Backend Node.js (cổng 5000) và Frontend Nginx (cổng 8080 có Reverse Proxy):
+Phương pháp này sẽ khởi chạy 3 container: CSDL MySQL (cổng 3306), Backend Node.js (host cổng 5001) và Frontend Nginx (host cổng 8081 trong cấu hình môi trường hiện tại; mặc định 8080 nếu không đặt `FRONTEND_PORT`).
 
 1. **Khởi động hệ thống:**
    ```bash
@@ -34,16 +34,16 @@ Phương pháp này sẽ khởi chạy 3 container: CSDL MySQL, Backend Node.js 
 
 2. **Truy cập ứng dụng:**
    * **Truy cập trên máy chạy:**
-     * Màn hình Đăng nhập: [http://localhost:8080/login.html](http://localhost:8080/login.html) hoặc [http://localhost:5000/login.html](http://localhost:5000/login.html)
-     * Màn hình Đăng ký tài khoản: [http://localhost:8080/register.html](http://localhost:8080/register.html)
-     * Kiểm tra trạng thái Backend: [http://localhost:5000/api/health](http://localhost:5000/api/health)
+     * Màn hình Đăng nhập: [http://localhost:8081/login.html](http://localhost:8081/login.html)
+     * Màn hình Đăng ký tài khoản: [http://localhost:8081/register.html](http://localhost:8081/register.html)
+     * Kiểm tra trạng thái Backend: [http://localhost:5001/api/health](http://localhost:5001/api/health)
    * **Truy cập từ máy khác trong cùng mạng LAN / Wi-Fi:**
      * Lấy địa chỉ IP của máy chủ bằng lệnh `ipconfig` (Windows) hoặc `ifconfig` (Linux/Mac) (ví dụ: `192.168.153.133`).
      * Mở trình duyệt trên máy khác và truy cập:
-       * Đăng ký: `http://<IP_MÁY_CHỦ>:8080/register.html`
-       * Đăng nhập: `http://<IP_MÁY_CHỦ>:8080/login.html`
+       * Đăng ký: `http://<IP_MÁY_CHỦ>:8081/register.html`
+       * Đăng nhập: `http://<IP_MÁY_CHỦ>:8081/login.html`
 
-> 💡 **Lưu ý tường lửa (Firewall):** Nếu máy khác không mở được web, hãy đảm bảo Windows Firewall đã cho phép cổng `8080` và `5000`.
+> 💡 **Lưu ý tường lửa (Firewall):** Nếu máy khác không mở được web, hãy đảm bảo Windows Firewall đã cho phép cổng frontend đang cấu hình (hiện là `8081`) và backend `5001`.
 
 ---
 
@@ -95,7 +95,7 @@ Hệ thống đã nạp sẵn 2 tài khoản mẫu phục vụ kiểm thử nhan
 
 ---
 
-## 📋 Danh Sách 6 Vai Trò Thi Công Đã Seed (SCRUM-29 / T-04)
+## 📋 Danh Sách 7 Cấp Bậc Vai Trò Trong Hệ Thống (SCRUM-29 / RBAC)
 
 1. **`admin`**: Quản trị viên hệ thống - Toàn quyền cấu hình hệ thống, phân quyền người dùng và duyệt dữ liệu.
 2. **`project_manager`**: Chỉ huy trưởng công trình - Quản lý tiến độ dự án, phân công nhân lực, ký duyệt nhật ký thi công.
@@ -110,9 +110,182 @@ Hệ thống đã nạp sẵn 2 tài khoản mẫu phục vụ kiểm thử nhan
 * **Băm mật khẩu:** PBKDF2 với SHA-512 và Salt ngẫu nhiên 16 bytes (10.000 vòng lặp) - đạt tiêu chuẩn an toàn bảo mật tương đương Argon2id.
 * **Thời hạn phiên làm việc (Session TTL):** Tự động hủy phiên sau **12 giờ không hoạt động**.
 * **Bảo mật nhật ký:** Không bao giờ ghi log mật khẩu gốc hoặc session token ra console / log file.
-* **Dự phòng kép API (Smart Fetch):** Tự động chuyển đổi giữa cổng 8080 (Nginx Proxy) và cổng 5000 (Backend Direct), đảm bảo ứng dụng không bao giờ bị lỗi `Unexpected token '<'` khi chạy trên mạng LAN.
+* **Dự phòng kép API (Smart Fetch):** Tự động chuyển đổi giữa cổng Nginx Proxy (8081/8080) và cổng Backend Direct (5001/5000), đảm bảo ứng dụng không bao giờ bị lỗi `Unexpected token '<'` khi chạy trên mạng LAN.
 
-## Quyết định kỹ thuật: Lựa chọn giải pháp vẽ cho sơ đồ tiến độ S-13 (T-29)
+---
+
+## 🏗️ Sprint 2: Quản Lý Công Việc & Tiến Độ Thi Công (S-05, S-06, S-07)
+
+### 1. S-05 / SCRUM-60: Khai báo công việc có thời lượng gắn vào hạng mục WBS (T-11, T-12)
+* **Mô hình CSDL:** Bảng `tasks` có khóa ngoại `work_item_id` tham chiếu tới `work_items(id)` với ràng buộc `ON DELETE RESTRICT`. Chặn xóa hạng mục WBS khi đang chứa công việc thi công (trả mã `HTTP 409 Conflict`).
+* **Đơn vị thời lượng:** **Ngày (days)** — chuẩn quản lý tiến độ thi công công trình xây dựng và sơ đồ mạng CPM.
+* **Quy tắc kiểm thực (Validation):**
+  - Tên công việc không được để trống (`HTTP 400`).
+  - Thời lượng phải là số nguyên dương hợp lệ `> 0`, từ chối `NaN`, `Infinity`, số thực, số âm hoặc bằng 0 (`HTTP 400`).
+  - Hạng mục WBS gắn vào phải là hạng mục lá (chặn hạng mục cha ở cả frontend lẫn backend).
+  - Hạng mục WBS phải tồn tại và thuộc cùng dự án (`HTTP 404` / `HTTP 400`).
+* **API Endpoints:**
+  - `GET /api/projects/:projectId/tasks`: Lấy danh sách công việc theo dự án (hỗ trợ lọc `?work_item_id=X`).
+  - `POST /api/projects/:projectId/tasks` hoặc `POST /api/tasks`: Khởi tạo công việc mới (`HTTP 201`).
+  - `GET /api/tasks/:id`: Chi tiết công việc.
+  - `PUT /api/tasks/:id`: Cập nhật thông tin công việc.
+  - `DELETE /api/tasks/:id`: Xóa công việc (khi có quan hệ phụ thuộc, yêu cầu xác nhận và xóa liên đới trong transaction an toàn, ghi audit log).
+
+### 2. S-06 / SCRUM-61: Quản lý quan hệ phụ thuộc giữa các công việc (T-13, T-14)
+* **Trạng thái:** **IMPLEMENTED / IN REVIEW**
+* **Nhiệm vụ bàn giao:** Đã chính thức tiếp nhận và triển khai đầy đủ T-13 (Khai báo quan hệ phụ thuộc) và T-14 (Quản lý bốn loại quan hệ FS/SS/FF/SF và lag).
+* **Mô hình CSDL (`task_dependencies`):**
+  - Bảng được tạo thông qua migration idempotent `migration_s06_task_dependencies.sql`:
+    ```sql
+    CREATE TABLE IF NOT EXISTS `task_dependencies` (
+      `id` INT AUTO_INCREMENT PRIMARY KEY,
+      `project_id` INT NOT NULL,
+      `predecessor_task_id` INT NOT NULL,
+      `successor_task_id` INT NOT NULL,
+      `dependency_type` ENUM('FS', 'SS', 'FF', 'SF') NOT NULL DEFAULT 'FS',
+      `lag_days` DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+      `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT `fk_dep_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_dep_predecessor` FOREIGN KEY (`predecessor_task_id`) REFERENCES `tasks` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_dep_successor` FOREIGN KEY (`successor_task_id`) REFERENCES `tasks` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `uk_dep_pair` UNIQUE KEY (`predecessor_task_id`, `successor_task_id`),
+      CONSTRAINT `chk_dep_no_self_loop` CHECK (`predecessor_task_id` <> `successor_task_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ```
+  - **Khóa ngoại bảo vệ:** `ON DELETE RESTRICT` cho hai task liên kết. Khi xóa task đang có quan hệ phụ thuộc, hệ thống yêu cầu xác nhận `confirm=true` trước khi xóa liên đới trong transaction.
+  - **Toàn vẹn dự án:** Service kiểm tra bắt buộc cả hai task phải thuộc đúng `project_id` trên URL; từ chối liên kết chéo dự án (`HTTP 400`).
+
+* **Bảng 4 loại quan hệ phụ thuộc (Dependency Types):**
+  | Mã | Tên tiếng Việt | Ý nghĩa quản lý thi công | Tên quốc tế |
+  | :---: | :--- | :--- | :--- |
+  | **FS** | **Kết thúc – Bắt đầu** | Công việc sau bắt đầu khi công việc trước kết thúc | Finish-to-Start |
+  | **SS** | **Bắt đầu – Bắt đầu** | Công việc sau bắt đầu theo thời điểm bắt đầu của công việc trước | Start-to-Start |
+  | **FF** | **Kết thúc – Kết thúc** | Công việc sau kết thúc theo thời điểm kết thúc của công việc trước | Finish-to-Finish |
+  | **SF** | **Bắt đầu – Kết thúc** | Công việc sau kết thúc theo thời điểm bắt đầu của công việc trước | Start-to-Finish |
+
+* **Quy ước độ trễ (Lag / Lead Time):**
+  - **Lag dương (`> 0`):** Thời gian chờ cần thiết giữa hai công việc (ví dụ: Chờ bảo dưỡng bê tông 2 ngày trước khi tháo cốp pha).
+  - **Lag bằng 0 (`= 0`):** Nối tiếp trực tiếp ngay khi điều kiện kích hoạt thỏa mãn.
+  - **Lag âm (`< 0`):** Thời gian gối đầu / lead time cho phép làm song song trước (ví dụ: Bắt đầu gia công thép trước khi đào đất xong 1.5 ngày).
+
+* **Phát hiện chu trình khi ghi (Cycle Guard):**
+  - Khi thêm hoặc sửa quan hệ phụ thuộc, hệ thống giả lập đồ thị với cạnh mới và chạy thuật toán kiểm tra chu trình trong transaction trước khi commit.
+  - Nếu xuất hiện chu trình: Lập tức Rollback transaction, trả về `HTTP 422 Unprocessable Entity` kèm `cyclePath` và `cycleNodes`, đảm bảo không bao giờ lưu cạnh lỗi vào CSDL.
+
+* **API Endpoints Quản Lý Quan Hệ Phụ Thuộc:**
+  - `GET /api/projects/:projectId/dependencies`: Lấy danh sách quan hệ phụ thuộc của dự án (kèm tên và mã công việc).
+  - `POST /api/projects/:projectId/dependencies`: Khai báo quan hệ phụ thuộc mới (Payload: `{ predecessorId, successorId, type, lag }`).
+  - `GET /api/dependencies/:id`: Xem chi tiết quan hệ phụ thuộc.
+  - `PUT /api/dependencies/:id`: Chỉnh sửa loại quan hệ và độ trễ.
+  - `DELETE /api/dependencies/:id`: Xóa quan hệ phụ thuộc.
+
+* **Ma trận phân quyền (RBAC S-06):**
+  - **Admin:** Toàn quyền xem, tạo, sửa, xóa quan hệ phụ thuộc trên mọi dự án.
+  - **Project Manager:** Quản lý quan hệ phụ thuộc trong phạm vi dự án được phân công.
+  - **Viewer (Người xem dự án):** Chỉ được xem danh sách (`GET` trả `200`); mọi thao tác ghi (`POST`/`PUT`/`DELETE`) bị backend chặn với `HTTP 403 Forbidden`, đồng thời ẩn toàn bộ nút thao tác trên giao diện.
+
+---
+
+### 3. S-07 / SCRUM-62: Sắp thứ tự phụ thuộc và phát hiện vòng lặp (T-15, T-16, T-17)
+* **Trạng thái:** **IMPLEMENTED / IN REVIEW** (Đã tích hợp hoàn chỉnh với CSDL S-06).
+* **Trạng thái tích hợp:** `INTEGRATED WITH S-06`.
+* **Cơ chế tích hợp thực tế:**
+  - `SchedulerService.getProjectSchedule(projectId)` tự động truy vấn bảng `task_dependencies` của MySQL.
+  - Chuyển đổi dữ liệu bảng thành hợp đồng chuẩn `{ predecessorId, successorId, type, lag }`.
+  - Thực thi thuật toán sắp xếp Topo Kahn $O(V + E)$ xác định thứ tự thi công logic.
+* **API Endpoints:**
+  - `GET /api/projects/:projectId/scheduling/order`: Trả về trình tự thi công xác định từ dữ liệu MySQL thật. Nếu có chu trình, trả về `HTTP 422 Unprocessable Entity` kèm cấu trúc chu trình chi tiết.
+  - `POST /api/projects/:projectId/scheduling/verify-order`: Kiểm tra xác thực đồ thị với payload tùy chỉnh phục vụ kiểm thử.
+
+---
+
+## 📊 Bảng Theo Dõi Trạng Thái Sprint 2
+
+| Mã Story / Task | Hạng mục công việc | Trạng thái kỹ thuật | Ghi chú nghiệm thu |
+| :--- | :--- | :---: | :--- |
+| **S-05** / T-11, T-12 | Khai báo công việc có thời lượng (ngày) gắn vào WBS lá | **DONE / IN REVIEW** | Hoàn thành, 100% test pass |
+| **S-06** / T-13, T-14 | Quản lý quan hệ phụ thuộc (FS/SS/FF/SF & lag) | **IMPLEMENTED / IN REVIEW** | Migration idempotent, CRUD, Cycle guard 422 |
+| **S-07 (Core)** / T-15..17 | Thuật toán Topo Kahn & phát hiện vòng lặp $O(V+E)$ | **IMPLEMENTED** | Độc lập, deterministic, không treo |
+| **S-07 (Tích hợp)** | Tích hợp thuật toán với dữ liệu phụ thuộc thật từ S-06 | **IMPLEMENTED** | Trạng thái: `INTEGRATED WITH S-06` |
+| **RBAC & UTF-8** | Phân quyền Viewer/Admin và chuẩn hóa tiếng Việt | **DONE / IN REVIEW** | Tiếng Việt chuẩn, Viewer 403 on write |
+| **S-08** | Forward pass: ES/EF, thời lượng dự án và các quan hệ FS/SS/FF/SF | **IMPLEMENTED / IN REVIEW** | Dùng dependency thực từ S-06; được kiểm thử hồi quy |
+| **S-09** | Backward pass: LS/LF, total float và công việc găng | **IMPLEMENTED / IN REVIEW** | API schedule và giao diện WBS hiển thị lịch tính thực |
+| **S-10** / T-22, T-23 | Kiểm thử bằng đáp án tính tay (K-01, 4 quan hệ, lag âm, nhánh lệch) | **IMPLEMENTED / WAITING INDEPENDENT REVIEW** | Fixture tĩnh độc lập, negative mismatch assertion. Chờ người thứ hai xác nhận độc lập. |
+| **S-11** | Xử lý cycle | **INTEGRATED / IN REVIEW** | Đã có trong `main`; chỉ chạy regression khi tích hợp |
+| **S-12** / T-26..T-28 | Bảng tiến độ và việc găng (persistence, API cache/stale, UI, benchmark) | **IMPLEMENTED / IN REVIEW** | T-26, T-27, T-28 hoàn thành, transaction/rollback, API 500 tasks <300ms, UI <1s |
+
+---
+
+## 🛠️ Hướng Dẫn Chạy Migration & Kiểm Thử Tự Động
+
+### 1. Chạy migration CSDL S-06 & S-12
+Migration được thiết kế idempotent, an toàn khi chạy lại nhiều lần và không làm mất dữ liệu hiện có:
+```bash
+# Áp dụng migration vào container MySQL đang chạy:
+docker exec -i quanly_thicong_db mysql -u root -p<DB_PASSWORD> quanly_thicong < migration_s06_task_dependencies.sql
+docker exec -i quanly_thicong_db mysql -u root -p<DB_PASSWORD> quanly_thicong < migration_s12_schedule_results.sql
+```
+
+### 2. Chạy kiểm thử tự động (Unit & Integration Tests)
+```bash
+cd backend
+npm ci
+npm run lint
+npm test
+```
+
+---
+
+## 📈 S-09: Duyệt ngược, tính LS/LF, độ trễ và công việc găng
+
+Sprint 2 Story `SCRUM-64`/`SCRUM-77`/`SCRUM-78` bổ sung lịch muộn cho các task đã được sắp xếp topo và tính ES/EF theo duyệt xuôi.
+
+### Công thức cơ bản
+- `projectDuration = max(EF)`
+- `LS = LF - duration`
+- `LF = LS + duration`
+- `totalFloat = LS - ES`
+- `isCritical = abs(totalFloat) <= 1e-9`
+
+### Các mối quan hệ được hỗ trợ
+- `FS`: `startS >= startP + durationP + lag`
+- `SS`: `startS >= startP + lag`
+- `FF`: `startS >= startP + durationP + lag - durationS`
+- `SF`: `startS >= startP + lag - durationS`
+
+---
+
+## 📐 S-10: Kiểm thử bằng đáp án tính tay
+
+Sprint 2 Story `SCRUM-65` (Parent SCRUM-14 [E-02], 2 SP):
+- **T-22 (SCRUM-79):** Bộ kiểm thử sử dụng đúng đáp án tính tay K-01 (`backend/test/fixtures/handCalculatedSchedules.js`), expected tĩnh không qua scheduler, ghi rõ người tính và ngày tính.
+- **T-23 (SCRUM-80):**
+  - Mạng 1: Đủ 4 loại quan hệ FS, SS, FF, SF và lag âm (7 tasks).
+  - Mạng 2: Hai nhánh song song lệch nhau 3 ngày float (6 tasks).
+  - Trạng thái kiểm tra độc lập: `PENDING_INDEPENDENT_REVIEW`.
+  - Negative mismatch assertion & Formula fault detection: Test bắt lỗi chính xác khi cố ý làm sai công thức FS, SS, FF, SF.
+
+---
+
+## 🗄️ S-12: Bảng tiến độ và việc găng
+
+Sprint 2 Story `SCRUM-67` (Parent SCRUM-16 [E-04], 3 SP):
+- **T-26 (SCRUM-83):** Lưu trữ kết quả CPM vào bảng `schedule_results` và quản lý phiên bản/cache với `project_schedule_status`. Transaction toàn vẹn, rollback khi phát hiện cycle hoặc lỗi tính toán. Tự động đánh dấu `is_stale = TRUE` khi task duration hoặc dependency thay đổi, cô lập theo từng project.
+- **T-27 (SCRUM-84):** Endpoint `GET /api/projects/:projectId/scheduling/results`:
+  - Trả về kết quả trong một lần gọi, ưu tiên đọc cache hợp lệ (`isCached: true`).
+  - Hỗ trợ bộ lọc `?critical=true` / `?critical=false`.
+  - Sắp xếp ổn định theo `early_start ASC`, `task_id ASC`.
+  - RBAC: Viewer được phép xem (`read-only`), người ngoài dự án bị chặn 403.
+- **T-28 (SCRUM-85):** Giao diện bảng tiến độ `frontend/schedule.html`:
+  - Đầy đủ cột: Mã, Tên, Duration, ES, EF, LS, LF, Độ trễ (Total Float), Trạng thái găng.
+  - Toggle "Chỉ xem việc găng".
+  - Dấu hiệu trực quan đa giác quan (icon `🔥`, badge găng, chữ đậm).
+  - Định dạng số ngày và ngày giờ tiếng Việt, escape chống XSS.
+
+---
+
+## 🎨 Quyết định kỹ thuật: Lựa chọn giải pháp vẽ cho sơ đồ tiến độ S-13 (T-29)
 
 1. Thử nghiệm đánh giá trên 500 thanh công việc:
 - Canvas: Tốc độ vẽ nhanh (~45ms) nhưng việc bắt sự kiện bấm, chạm, hiển thị chú giải và xử lý cố định cột tên công việc khi cuộn hai chiều rất phức tạp.
@@ -168,4 +341,3 @@ Sau khi kịch bản khôi phục chạy hoàn tất, hệ thống tự động 
 cd backend
 npm test
 ```
-
