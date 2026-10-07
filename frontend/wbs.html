@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cơ Cấu Công Việc (WBS) | Hệ Thống Quản Trị Thi Công</title>
+  <title>Cơ cấu công việc (WBS) | Hệ thống quản lý thi công</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
@@ -22,6 +22,9 @@
       --amber-bg: #fef3c7;
       --amber-border: #f59e0b;
       --amber-text: #92400e;
+      --emerald-bg: #ecfdf5;
+      --emerald-border: #a7f3d0;
+      --emerald-text: #065f46;
       --text-title: #0f172a;
       --text-body: #1e293b;
       --text-muted: #475569;
@@ -47,12 +50,34 @@
       width: 40px; height: 40px; background: linear-gradient(135deg, #059669 0%, #10b981 100%);
       border-radius: 9px; display: flex; align-items: center; justify-content: center;
       box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); border: 1px solid rgba(255,255,255,0.3);
+      flex-shrink: 0;
     }
     .brand-icon svg { width: 22px; height: 22px; fill: none; stroke: #ffffff; stroke-width: 2.2; }
-    .brand-info h1 { font-size: 16.5px; font-weight: 800; color: var(--text-title); }
-    .brand-info span { font-size: 10.5px; font-weight: 800; color: #059669; letter-spacing: 0.8px; text-transform: uppercase; }
+    .brand-info h1 { font-size: 16.5px; font-weight: 800; color: var(--text-title); line-height: 1.2; }
+    .brand-info span { font-size: 10.5px; font-weight: 800; color: #059669; letter-spacing: 0.6px; text-transform: uppercase; }
 
     .topbar-actions { display: flex; align-items: center; gap: 12px; }
+
+    .user-pill {
+      display: flex; align-items: center; gap: 10px;
+      padding: 5px 12px 5px 6px; background: #f8fafc;
+      border: 1.5px solid var(--border-card); border-radius: 9999px;
+    }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+      color: #ffffff; font-weight: 800; font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .user-meta { display: flex; flex-direction: column; text-align: left; }
+    .user-name { font-size: 12.5px; font-weight: 800; color: var(--text-title); line-height: 1.2; }
+    .user-role-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      color: #1e40af; background: #dbeafe; padding: 1px 6px;
+      border-radius: 4px; line-height: 1.3; align-self: flex-start;
+    }
+    .user-role-badge.role-viewer { color: #065f46; background: #d1fae5; }
+
     .btn-nav {
       display: inline-flex; align-items: center; gap: 8px;
       background: #ffffff; border: 1.5px solid var(--border-outer);
@@ -66,14 +91,14 @@
     .btn-logout {
       padding: 8px 16px; border-radius: 8px; background: var(--danger-bg);
       border: 1.5px solid var(--danger-border); color: var(--danger);
-      font-size: 12.5px; font-weight: 800; cursor: pointer;
+      font-size: 12.5px; font-weight: 800; cursor: pointer; transition: all 0.2s;
     }
     .btn-logout:hover { background: #fecaca; }
 
     /* === KHU VỰC THÂN TRANG === */
     .main-content { max-width: 1240px; width: 100%; margin: 0 auto; padding: 28px 24px 48px; display: flex; flex-direction: column; gap: 20px; }
 
-    /* === BANNER CÔNG TRÌNH XÂY DỰNG ĐỒNG BỘ 100% === */
+    /* === BANNER CÔNG TRÌNH XÂY DỰNG ĐỒNG BỘ === */
     .wbs-hero-banner {
       position: relative;
       background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 58, 138, 0.8) 100%),
@@ -106,7 +131,7 @@
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 
-    .header-btns { display: flex; gap: 10px; }
+    .header-btns { display: flex; gap: 10px; flex-wrap: wrap; }
     .btn-add-project {
       display: inline-flex; align-items: center; gap: 8px;
       background: rgba(255, 255, 255, 0.15); color: #ffffff;
@@ -116,6 +141,14 @@
       transition: all 0.2s;
     }
     .btn-add-project:hover { background: rgba(255, 255, 255, 0.25); border-color: #ffffff; }
+
+    .btn-check-schedule {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #059669; color: #ffffff; border: 1.5px solid #6ee7b7;
+      padding: 10px 18px; border-radius: 9px; font-size: 13.5px; font-weight: 800; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35); transition: all 0.2s;
+    }
+    .btn-check-schedule:hover { background: #047857; transform: translateY(-1px); }
 
     .btn-add-root {
       display: inline-flex; align-items: center; gap: 8px;
@@ -135,24 +168,28 @@
     .info-pill strong { color: var(--text-title); font-weight: 800; }
     .info-pill.badge-count { border-color: #93c5fd; background: #f0f7ff; }
     .info-pill.badge-count strong { color: var(--brand-blue); }
+    .info-pill.badge-tasks { border-color: #a7f3d0; background: #ecfdf5; }
+    .info-pill.badge-tasks strong { color: #059669; }
+    .info-pill.badge-viewer { border-color: #fde68a; background: #fef3c7; color: #92400e; }
 
-    /* Khung Cây WBS Viền Đanh Thép */
+    /* Khung Cây WBS */
     .wbs-card {
       background: var(--card-bg); border: 2px solid var(--border-outer);
       border-radius: 16px; padding: 26px 30px; box-shadow: var(--shadow-container); min-height: 420px;
     }
-    .tree-root { display: flex; flex-direction: column; gap: 12px; }
+    .tree-root { display: flex; flex-direction: column; gap: 14px; }
     .tree-node-wrap { display: flex; flex-direction: column; position: relative; }
 
     .tree-node-row {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 11px 18px; background: #ffffff; border: 1.5px solid var(--border-card);
+      padding: 12px 18px; background: #ffffff; border: 1.5px solid var(--border-card);
       border-radius: 10px; transition: all 0.2s; position: relative; box-shadow: var(--shadow-node);
     }
     .tree-node-row:hover { border-color: var(--brand-blue); background: var(--card-hover); transform: translateY(-1px); }
 
-    .level-0 > .tree-node-row { border-left: 4px solid var(--brand-blue); background: #fafcff; }
-    .level-1 > .tree-node-row { border-left: 3px solid #38bdf8; }
+    .level-0 > .tree-node-row { border-left: 5px solid var(--brand-blue); background: #fafcff; }
+    .level-1 > .tree-node-row { border-left: 4px solid #38bdf8; }
+    .level-2 > .tree-node-row { border-left: 3px solid #94a3b8; }
 
     .tree-node-left { display: flex; align-items: center; gap: 14px; flex: 1; }
     .btn-toggle-caret {
@@ -171,49 +208,300 @@
     .wbs-node-name { font-size: 14px; font-weight: 700; color: var(--text-title); }
     .level-0 .wbs-node-name { font-size: 14.5px; font-weight: 800; }
 
-    .tree-actions { display: flex; align-items: center; gap: 8px; }
+    .tree-actions { display: flex; align-items: center; gap: 6px; }
     .btn-action-icon {
       width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid var(--border-card);
       background: #ffffff; color: var(--text-body); display: inline-flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: all 0.2s;
+      cursor: pointer; transition: all 0.2s; font-size: 14px;
     }
     .btn-action-icon:hover { border-color: var(--brand-blue); color: var(--brand-blue); background: var(--brand-blue-soft); }
-    .btn-action-icon.btn-delete:hover { border-color: var(--danger-border); color: var(--danger); background: var(--danger-bg); }
-    .btn-action-icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+    .btn-action-icon.btn-delete:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
+    .btn-action-icon.btn-add-task { border-color: #6ee7b7; background: #ecfdf5; color: #059669; font-size: 11.5px; font-weight: 800; }
+    .btn-action-icon.btn-add-task:hover { background: #059669; color: #ffffff; border-color: #047857; }
 
-    /* Đường nối nhánh cây rõ ràng */
-    .tree-children { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; padding-left: 32px; position: relative; }
-    .tree-children::before { content: ''; position: absolute; left: 14px; top: 0; bottom: 16px; width: 2px; background: var(--tree-line); }
-    .tree-node-wrap::before { content: ''; position: absolute; left: -18px; top: 24px; width: 18px; height: 2px; background: var(--tree-line); }
-    .tree-root > .tree-node-wrap::before { display: none; }
+    .tree-children {
+      display: flex; flex-direction: column; gap: 10px;
+      margin-left: 28px; margin-top: 10px; padding-left: 18px;
+      border-left: 2px dashed var(--tree-line);
+    }
 
-    /* Modal Form Doanh Nghiệp */
+    /* === KHU VỰC CÔNG VIỆC THI CÔNG (TASKS - ) === */
+    .task-container {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-left: 28px; margin-top: 8px; margin-bottom: 6px; padding-left: 18px;
+      border-left: 2px solid #10b981;
+    }
+    .task-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; background: #ffffff; border: 1.5px solid #d1fae5;
+      border-radius: 8px; transition: all 0.2s; box-shadow: 0 1px 2px rgba(16, 185, 129, 0.05);
+    }
+    .task-row:hover { border-color: #10b981; background: #f0fdf4; transform: translateX(2px); }
+    .task-left { display: flex; align-items: center; gap: 10px; flex: 1; flex-wrap: wrap; }
+    .task-code-badge {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+      padding: 3px 8px; background: #dbeafe; border: 1px solid #93c5fd;
+      color: #1e40af; border-radius: 5px;
+    }
+    .task-name { font-size: 13.5px; font-weight: 600; color: #0f172a; }
+    .task-duration-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 700; color: #065f46;
+      background: #ecfdf5; border: 1px solid #a7f3d0;
+      padding: 3px 10px; border-radius: 9999px;
+    }
+    .task-status-badge {
+      font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+    }
+    .status-pending { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .status-in_progress { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+    .status-completed { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+
+    /* === TIẾN ĐỘ THỰC TẾ ( / SCRUM-88 / SCRUM-100 / T-35) === */
+    .task-progress-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11.5px; font-weight: 800; padding: 2px 7px; border-radius: 4px;
+      background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
+    }
+    .task-progress-badge.progres {
+      background: #ecfdf5; color: #065f46; border-color: #a7f3d0;
+    }
+    .task-actual-dates {
+      font-size: 11px; color: var(--text-muted); font-weight: 600;
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;
+    }
+    .btn-progress-action {
+      background: #eff6ff; color: #1d4ed8; border: 1.5px solid #bfdbfe;
+      padding: 4px 9px; border-radius: 6px; font-size: 11.5px; font-weight: 800;
+      cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .btn-progress-action:hover { background: #dbeafe; border-color: #1d4ed8; transform: translateY(-1px); }
+    .plan-info-card {
+      background: #f8fafc; border: 1.5px solid var(--border-card); border-radius: 10px; padding: 12px 14px;
+      font-size: 12.5px; margin-bottom: 12px;
+    }
+    .plan-info-title { font-weight: 800; color: #1e3a8a; margin-bottom: 8px; font-size: 12px; text-transform: uppercase; }
+    .plan-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .status-preview-box {
+      margin-top: 14px; padding: 10px 12px; border-radius: 8px; background: #f1f5f9;
+      border: 1px solid var(--border-card); font-size: 12px; color: var(--text-body);
+    }
+    .input-error-msg {
+      color: var(--danger); font-size: 12px; font-weight: 700; margin-top: 4px;
+    }
+
+    /* === CHẾ ĐỘ NGƯỜI XEM DỰ ÁN (VIEWER MODE) === */
+    body.viewer-mode .btn-add-project,
+    body.viewer-mode .btn-add-root,
+    body.viewer-mode .tree-actions,
+    body.viewer-mode .dep-form-container,
+    body.viewer-mode .dep-actions {
+      display: none !important;
+    }
+
+    /* === CÁC CỬA SỔ MODAL === */
     .modal-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55);
-      backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; padding: 20px;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6); display: none; align-items: center; justify-content: center;
+      z-index: 100; backdrop-filter: blur(4px);
     }
     .modal-box {
-      width: 100%; max-width: 460px; background: #ffffff;
-      border-radius: 16px; border: 2px solid var(--border-outer);
-      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.3); overflow: hidden;
+      background: #ffffff; border: 2px solid var(--border-outer);
+      border-radius: 16px; width: 100%; max-width: 500px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden;
+      display: flex; flex-direction: column;
     }
+    .modal-box.modal-large { max-width: 680px; }
+    .modal-box.modal-xlarge { max-width: 880px; width: 95%; }
+
+    /* Nút mở quản lý phụ thuộc */
+    .btn-dependencies {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #4f46e5; color: #ffffff; border: 1.5px solid #a5b4fc;
+      padding: 10px 18px; border-radius: 9px; font-size: 13.5px; font-weight: 800; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35); transition: all 0.2s;
+    }
+    .btn-dependencies:hover { background: #4338ca; transform: translateY(-1px); }
+
+    /* Bảng tra cứu & form quan hệ phụ thuộc */
+    .dep-legend-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;
+      background: #f8fafc; border: 1.5px solid var(--border-card); border-radius: 10px; padding: 12px 14px;
+      font-size: 12px;
+    }
+    .dep-legend-item { display: flex; flex-direction: column; gap: 2px; }
+    .dep-legend-item strong { color: var(--text-title); font-size: 12px; display: flex; align-items: center; gap: 6px; }
+    .dep-legend-item span { color: var(--text-muted); font-size: 11px; line-height: 1.35; }
+
+    .dep-type-badge {
+      display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800;
+      padding: 2px 7px; border-radius: 4px;
+    }
+    .dep-type-FS { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+    .dep-type-SS { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .dep-type-FF { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .dep-type-SF { background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
+
+    .dep-lag-badge {
+      display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+      padding: 2px 7px; border-radius: 4px; background: #f1f5f9; color: var(--text-body); border: 1px solid var(--border-card);
+    }
+    .dep-lag-badge.lag-lead { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
+    .dep-lag-badge.lag-wait { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+
+    .dep-form-container {
+      background: #f8fafc; border: 1.5px solid var(--border-card); border-radius: 12px; padding: 16px 18px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .dep-form-grid {
+      display: grid; grid-template-columns: 2fr 1.3fr 1.1fr 2fr; gap: 12px; align-items: flex-end;
+    }
+    @media (max-width: 820px) {
+      .dep-form-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 520px) {
+      .dep-form-grid { grid-template-columns: 1fr; }
+    }
+
+    .dep-table-wrapper {
+      max-height: 280px; overflow-y: auto; overflow-x: auto; border: 1.5px solid var(--border-card); border-radius: 10px;
+    }
+    .dep-table {
+      width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left;
+    }
+    .dep-table th {
+      position: sticky; top: 0; background: #f1f5f9; padding: 10px 12px; font-weight: 800; color: var(--text-title);
+      border-bottom: 2px solid var(--border-card); white-space: nowrap; z-index: 2;
+    }
+    .dep-table td {
+      padding: 9px 12px; border-bottom: 1px solid var(--border-card); vertical-align: middle;
+    }
+    .dep-table tr:hover td { background: #f8fafc; }
+    .dep-table .cell-task { font-weight: 600; color: var(--text-title); }
+    .dep-table .cell-center { text-align: center; }
     .modal-header { padding: 18px 24px; border-bottom: 2px solid var(--border-card); background: #f8fafc; display: flex; align-items: center; justify-content: space-between; }
     .modal-header h3 { font-size: 16.5px; font-weight: 800; color: var(--text-title); }
-    .btn-close-modal { background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; }
-    .modal-body { padding: 22px 24px; display: flex; flex-direction: column; gap: 15px; }
+    .btn-close-modal { background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; padding: 4px; }
+    .modal-body { padding: 22px 24px; display: flex; flex-direction: column; gap: 15px; max-height: 70vh; overflow-y: auto; }
     .form-group label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-title); margin-bottom: 6px; }
-    .form-group input {
+    .form-group input, .form-group select {
       width: 100%; padding: 10px 14px; background: #f8fafc;
       border: 1.5px solid var(--border-card); border-radius: 8px;
       font-size: 13.5px; color: var(--text-title); outline: none;
     }
-    .form-group input:focus { border-color: var(--brand-blue); background: #ffffff; }
+    .form-group input:focus, .form-group select:focus { border-color: var(--brand-blue); background: #ffffff; }
     .modal-footer { padding: 16px 24px; border-top: 2px solid var(--border-card); background: #f8fafc; display: flex; justify-content: flex-end; gap: 10px; }
     .btn-secondary { padding: 9px 18px; background: #ffffff; border: 1.5px solid var(--border-card); border-radius: 8px; font-weight: 700; cursor: pointer; }
     .btn-save { padding: 9px 20px; background: var(--brand-blue); border: none; border-radius: 8px; color: #fff; font-weight: 700; cursor: pointer; }
     .btn-save:hover { background: var(--brand-blue-hover); }
+
+    /* Alert trong Modal */
+    .alert-banner { padding: 12px 16px; border-radius: 8px; font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
+    .alert-banner.alert-warning { background: var(--amber-bg); border: 1.5px solid var(--amber-border); color: var(--amber-text); }
+    .alert-banner.alert-danger { background: var(--danger-bg); border: 1.5px solid var(--danger-border); color: var(--danger); font-weight: 700; }
+    .alert-banner.alert-info { background: #eff6ff; border: 1.5px solid #93c5fd; color: #1e40af; }
+    .schedule-step-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; background: #f8fafc; border: 1.5px solid var(--border-card);
+      border-radius: 8px; margin-bottom: 8px;
+    }
+    .schedule-step-num {
+      width: 28px; height: 28px; border-radius: 50%; background: var(--brand-blue);
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 12px; flex-shrink: 0;
+    }
+
+    .btn-action-icon.btn-milestone:hover { border-color: #f59e0b; color: #d97706; background: #fef3c7; }
+    
+    .milestone-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700;
+      padding: 3px 10px; background: #fef2f2; border: 1.5px solid #fca5a5;
+      color: #991b1b; border-radius: 6px; margin-left: 6px;
+    }
+    .milestone-badge svg { width: 13px; height: 13px; fill: #dc2626; }
+
+    /* === RESPONSIVE DESIGN === */
+    @media (max-width: 768px) {
+      .topbar { padding: 0 16px; height: auto; min-height: 60px; flex-wrap: wrap; gap: 10px; padding: 10px 16px; }
+      .brand-info span { display: none; }
+      .wbs-hero-banner { padding: 18px 20px; }
+      .wbs-title-box h2 { font-size: 20px; }
+      .header-btns { width: 100%; justify-content: flex-start; }
+      .tree-node-row { flex-wrap: wrap; gap: 8px; }
+      .tree-node-left { min-width: 200px; }
+      .user-meta { display: none; }
+    }
   </style>
 </head>
+<style>
+/* Modern Enterprise Action Bar */
+.action-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn-action-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+}
+.btn-action-tool:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+  transform: translateY(-1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.btn-action-tool.btn-action-edit:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+.btn-action-tool.btn-action-del:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+.btn-action-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-action-pill:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+.btn-action-pill.primary {
+  background: #eff6ff;
+  border-color: #dbeafe;
+  color: #1d4ed8;
+}
+.btn-action-pill.primary:hover {
+  background: #dbeafe;
+  border-color: #bfdbfe;
+}
+</style>
 <body>
 
   <!-- TOPBAR -->
@@ -223,19 +511,37 @@
         <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
       </div>
       <div class="brand-info">
-        <h1>Hệ Thống Điều Hành Thi Công</h1>
-        <span>PHÂN HỆ CẤU TRÚC CÔNG VIỆC (WBS)</span>
+        <h1>Hệ thống quản lý thi công</h1>
+        <span>Phân hệ cơ cấu công việc (WBS) & tiến độ</span>
       </div>
     </div>
 
     <div class="topbar-actions">
-      <a href="/index.html" class="btn-nav">
+      <!-- Thông tin tài khoản đăng nhập -->
+      <div class="user-pill" id="user-pill" style="display: none;">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <div class="user-meta">
+          <span class="user-name" id="user-name">Đang tải...</span>
+          <span class="user-role-badge" id="user-role">Người dùng</span>
+        </div>
+      </div>
+
+      <a href="/index.html" class="btn-nav" title="Quay lại bảng điều khiển">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        Bảng Điều Khiển
+        Bảng điều khiển
       </a>
       <a href="/wbs.html" class="btn-nav active">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
         Cơ Cấu WBS
+      </a>
+      <a href="/schedule.html" class="btn-nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        Bảng Tiến Độ
       </a>
       <a href="/gantt.html" class="btn-nav">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h5M7 12h8M7 16h3"/></svg>
@@ -245,7 +551,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         Lịch Làm Việc & Nghỉ Lễ
       </a>
-      <button class="btn-logout" onclick="handleLogout()">Đăng Xuất</button>
+      <button class="btn-logout" title="Đăng xuất khỏi hệ thống" onclick="handleLogout()">Đăng xuất</button>
     </div>
   </header>
 
@@ -255,15 +561,24 @@
     <!-- Hero Banner Nền Ảnh Xây Dựng Đồng Bộ -->
     <div class="wbs-hero-banner">
       <div class="wbs-title-box">
-        <h2>Cây Cơ Cấu Công Việc (WBS)</h2>
-        <p id="project-display-title">Dự án: Tòa nhà phức hợp Staging Center — Khởi công: 01/10/2026</p>
+        <h2>Cây cơ cấu công việc (WBS) và công việc</h2>
+        <p id="project-display-title">Dự án: Dự án thi công mẫu (DA-01) — Khởi công: 01/10/2026</p>
       </div>
       <div class="header-btns">
-        <button class="btn-add-project" onclick="openProjectModal()">
-          📁 Tạo Dự Án Mới
+        <button class="btn-add-project" title="Tạo dự án mới" onclick="openProjectModal()">
+          📁 Tạo dự án mới
         </button>
-        <button class="btn-add-root" onclick="openAddModal(null)">
-          Thêm Hạng Mục Gốc
+        <button class="btn-dependencies" id="btn-open-dep-modal" title="Quản lý quan hệ phụ thuộc giữa các công việc" aria-label="Quản lý quan hệ phụ thuộc" onclick="openDependencyModal()">
+          🔗 Quan hệ phụ thuộc
+        </button>
+        <button class="btn-check-schedule" title="Xem trình tự thi công và kiểm tra chu trình" onclick="openScheduleModal()">
+          ⚡ Trình tự thi công
+        </button>
+        <a class="btn-check-schedule" id="btn-open-schedule-page" style="text-decoration:none;display:inline-flex;align-items:center;background:#1d4ed8;" href="schedule.html" title="Xem bảng tiến độ và việc găng">
+          📊 Bảng tiến độ
+        </a>
+        <button class="btn-add-root" title="Thêm hạng mục cấp cao nhất" onclick="openAddModal(null)">
+          + Thêm hạng mục gốc
         </button>
       </div>
     </div>
@@ -271,22 +586,32 @@
     <!-- Thanh thông số vận hành -->
     <div class="info-bar">
       <div class="info-pill badge-count">
-        Tổng số hạng mục: <strong id="total-count">0</strong>
+        Tổng số hạng mục WBS: <strong id="total-count">0</strong>
+      </div>
+      <div class="info-pill badge-tasks">
+        Tổng số công việc: <strong id="total-task-count">0</strong>
+      </div>
+      <div class="info-pill" style="border-color: #a5b4fc; background: #eef2ff;">
+        Tổng liên kết phụ thuộc: <strong id="total-dep-count" style="color: #4338ca;">0</strong>
       </div>
       <div class="info-pill">
-        Mô hình phân rã: <strong>Phân Tầng Đa Cấp (parent_id)</strong>
+        Tổng thời lượng thi công: <strong id="total-duration">0 ngày</strong>
       </div>
       <div class="info-pill">
-        Toàn vẹn dữ liệu: <strong>Chống vòng lặp & Chặn xóa lan truyền</strong>
+        Toàn vẹn dữ liệu: <strong>Chống vòng lặp & bảo vệ dữ liệu</strong>
       </div>
-      <div class="info-pill">
-        Hiển thị: <strong>Thu gọn mặc định từ tầng 3 trở xuống</strong>
+      <div class="info-pill badge-viewer" id="viewer-badge" style="display: none;">
+        Chế độ: <strong>Chỉ xem dự án</strong>
       </div>
     </div>
 
     <!-- Khung Cây WBS -->
     <div class="wbs-card">
-      <div class="tree-root" id="tree-container"></div>
+      <div class="tree-root" id="tree-container">
+        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+          Đang tải dữ liệu hạng mục và công việc từ máy chủ...
+        </div>
+      </div>
     </div>
   </main>
 
@@ -294,26 +619,282 @@
   <div class="modal-overlay" id="wbs-modal">
     <div class="modal-box">
       <div class="modal-header">
-        <h3 id="modal-title">Thêm Hạng Mục</h3>
-        <button class="btn-close-modal" onclick="closeModal()">&times;</button>
+        <h3 id="modal-title">Thêm hạng mục</h3>
+        <button class="btn-close-modal" title="Đóng" aria-label="Đóng" onclick="closeModal()">&times;</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="modal-parent-id">
         <input type="hidden" id="modal-edit-id">
         
         <div class="form-group">
-          <label for="input-code">Mã Hạng Mục (*)</label>
+          <label for="input-code">Mã hạng mục (*)</label>
           <input type="text" id="input-code" placeholder="Ví dụ: HM-01 hoặc HM-01.01" required>
         </div>
 
         <div class="form-group">
-          <label for="input-name">Tên Hạng Mục Thi Công (*)</label>
-          <input type="text" id="input-name" placeholder="Ví dụ: Phần ngầm & Móng" required>
+          <label for="input-name">Tên hạng mục thi công (*)</label>
+          <input type="text" id="input-name" placeholder="Ví dụ: Phần ngầm & móng" required>
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn-secondary" onclick="closeModal()">Hủy bỏ</button>
-        <button type="button" class="btn-save" onclick="saveWbsItem()">Lưu Hạng Mục</button>
+        <button type="button" class="btn-save" onclick="saveWbsItem()">Lưu hạng mục</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL THÊM / SỬA CÔNG VIỆC THI CÔNG ( / SCRUM-60 / T-12) -->
+  <div class="modal-overlay" id="task-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="task-modal-title">Thêm công việc thi công</h3>
+        <button class="btn-close-modal" title="Đóng" aria-label="Đóng" onclick="closeTaskModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="task-edit-id">
+
+        <div class="form-group">
+          <label for="task-work-item-id">Gắn vào hạng mục WBS (*)</label>
+          <select id="task-work-item-id" required>
+            <!-- Tùy chọn sẽ được nạp động từ danh sách hạng mục WBS -->
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="task-code">Mã công việc</label>
+          <input type="text" id="task-code" placeholder="Ví dụ: CV-01, CV-02">
+        </div>
+
+        <div class="form-group">
+          <label for="task-name">Tên công việc thi công (*)</label>
+          <input type="text" id="task-name" placeholder="Ví dụ: Đào đất hố móng trụ T1" required>
+        </div>
+
+        <div class="form-group">
+          <label for="task-duration">Thời lượng (ngày) (*)</label>
+          <input type="number" id="task-duration" step="0.5" min="0.1" placeholder="Ví dụ: 3.5 (ngày)" required>
+        </div>
+
+        <div class="form-group">
+          <label for="task-status">Trạng thái thực hiện</label>
+          <select id="task-status">
+            <option value="pending">Chờ thực hiện</option>
+            <option value="in_progress">Đang thực hiện</option>
+            <option value="completed">Đã hoàn thành</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeTaskModal()">Hủy bỏ</button>
+        <button type="button" class="btn-save" onclick="saveTask()">Lưu công việc</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CẬP NHẬT TIẾN ĐỘ THỰC TẾ TÁCH KẾ HOẠCH ( / SCRUM-88 / SCRUM-100 / T-35) -->
+  <div class="modal-overlay" id="progress-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="progress-modal-title">📊 Cập nhật tiến độ thực tế</h3>
+        <button class="btn-close-modal" title="Đóng" aria-label="Đóng" onclick="closeProgressModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="prog-task-id">
+        
+        <!-- Thông tin kế hoạch gốc (NFR: Giữ nguyên số liệu kế hoạch) -->
+        <div class="plan-info-card">
+          <div class="plan-info-title">📋 Kế hoạch gốc (Giữ nguyên không ghi đè)</div>
+          <div class="plan-info-grid">
+            <div><strong>Công việc:</strong> <span id="prog-plan-name">—</span></div>
+            <div><strong>Mã CV:</strong> <span id="prog-plan-code">—</span></div>
+            <div><strong>Thời lượng KH:</strong> <span id="prog-plan-duration">—</span> ngày</div>
+            <div><strong>Trạng thái ban đầu:</strong> <span id="prog-plan-initial-status">—</span></div>
+          </div>
+        </div>
+
+        <!-- Khung nhập ngày thực tế -->
+        <div class="form-group">
+          <label for="prog-actual-start">Ngày bắt đầu thực tế (Actual Start)</label>
+          <input type="date" id="prog-actual-start" onchange="handleProgressInputsChange()">
+          <small style="color: var(--text-muted); font-size: 11.5px;">* AC 1: Khi việc chưa làm, nhập ngày bắt đầu thực tế sẽ tự chuyển sang "Đang làm".</small>
+        </div>
+
+        <div class="form-group">
+          <label for="prog-actual-end">Ngày kết thúc thực tế (Actual End)</label>
+          <input type="date" id="prog-actual-end" onchange="handleProgressInputsChange()">
+          <small style="color: var(--text-muted); font-size: 11.5px;">* AC 2: Không được sớm hơn ngày bắt đầu thực tế.</small>
+        </div>
+
+        <!-- Khung nhập % Hoàn thành -->
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label for="prog-percent" style="margin-bottom: 0;">% Hoàn thành thực tế (* 0 – 100)</label>
+            <strong id="prog-percent-display" style="color: var(--brand-blue); font-size: 15px;">0%</strong>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="range" id="prog-percent-range" min="0" max="100" step="1" value="0" style="flex: 1;" oninput="syncPercentFromRange(this.value)">
+            <input type="number" id="prog-percent" min="0" max="100" step="0.5" value="0" style="width: 85px; text-align: center;" oninput="syncPercentFromNumber(this.value)">
+          </div>
+          <div style="display: flex; gap: 6px; margin-top: 8px;">
+            <button type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="setQuickPercent(0)">0%</button>
+            <button type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="setQuickPercent(25)">25%</button>
+            <button type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="setQuickPercent(50)">50%</button>
+            <button type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="setQuickPercent(75)">75%</button>
+            <button type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="setQuickPercent(100)">100%</button>
+          </div>
+        </div>
+
+        <!-- Trạng thái sau cập nhật (Preview) -->
+        <div class="status-preview-box" id="prog-status-preview">
+          Trạng thái dự kiến: <strong id="prog-next-status-text">Chờ thực hiện</strong>
+        </div>
+
+        <!-- Vùng báo lỗi nếu vi phạm AC 2 hoặc AC 3 -->
+        <div id="prog-error-alert" class="alert-banner alert-danger" style="display: none; margin-top: 12px; padding: 10px;">
+          <span id="prog-error-text"></span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeProgressModal()">Hủy bỏ</button>
+        <button type="button" class="btn-save" id="btn-save-progress" onclick="saveTaskProgress()">Lưu tiến độ thực tế</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL QUẢN LÝ QUAN HỆ PHỤ THUỘC ( / SCRUM-61 / T-13, T-14) -->
+  <div class="modal-overlay" id="dependency-modal">
+    <div class="modal-box modal-xlarge">
+      <div class="modal-header">
+        <h3>Quản lý quan hệ phụ thuộc công việc</h3>
+        <button class="btn-close-modal" title="Đóng cửa sổ" aria-label="Đóng cửa sổ" onclick="closeDependencyModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Bảng tra cứu ý nghĩa 4 loại quan hệ & độ trễ -->
+        <div class="dep-legend-grid">
+          <div class="dep-legend-item">
+            <strong><span class="dep-type-badge dep-type-FS">FS</span> Kết thúc – Bắt đầu</strong>
+            <span>Công việc sau bắt đầu khi công việc trước kết thúc (Finish-to-Start).</span>
+          </div>
+          <div class="dep-legend-item">
+            <strong><span class="dep-type-badge dep-type-SS">SS</span> Bắt đầu – Bắt đầu</strong>
+            <span>Công việc sau bắt đầu theo thời điểm bắt đầu của việc trước (Start-to-Start).</span>
+          </div>
+          <div class="dep-legend-item">
+            <strong><span class="dep-type-badge dep-type-FF">FF</span> Kết thúc – Kết thúc</strong>
+            <span>Công việc sau kết thúc theo thời điểm kết thúc của việc trước (Finish-to-Finish).</span>
+          </div>
+          <div class="dep-legend-item">
+            <strong><span class="dep-type-badge dep-type-SF">SF</span> Bắt đầu – Kết thúc</strong>
+            <span>Công việc sau kết thúc theo thời điểm bắt đầu của việc trước (Start-to-Finish).</span>
+          </div>
+        </div>
+
+        <div style="font-size: 11.5px; color: var(--text-muted); background: #f1f5f9; padding: 6px 12px; border-radius: 6px;">
+          ⏱️ <strong>Quy ước độ trễ (Lag):</strong> Lag &gt; 0: Chờ thời gian | Lag = 0: Tiếp nối trực tiếp | Lag &lt; 0: Gối đầu công việc (lead time).
+        </div>
+
+        <!-- Thông báo chế độ người xem (Viewer) -->
+        <div class="alert-banner alert-info" id="dep-viewer-note" style="display: none;">
+          👁️ Bạn đang truy cập ở vai trò <strong>Người xem dự án</strong> (Chỉ đọc). Bạn có thể xem danh sách quan hệ phụ thuộc nhưng không có quyền thêm, chỉnh sửa hoặc xóa liên kết.
+        </div>
+
+        <!-- Khung Form Thêm / Sửa quan hệ phụ thuộc (Ẩn với Viewer) -->
+        <div class="dep-form-container">
+          <h4 id="dep-form-title" style="font-size: 13.5px; font-weight: 800; color: var(--text-title);">
+            ➕ Khai báo quan hệ phụ thuộc mới (T-13 / T-14)
+          </h4>
+          <input type="hidden" id="dep-edit-id">
+
+          <div class="dep-form-grid">
+            <div class="form-group">
+              <label for="dep-predecessor-select">Công việc đứng trước (*)</label>
+              <select id="dep-predecessor-select" required>
+                <option value="">-- Chọn công việc trước --</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="dep-type-select">Loại quan hệ (*)</label>
+              <select id="dep-type-select" required>
+                <option value="FS">FS: Kết thúc – Bắt đầu</option>
+                <option value="SS">SS: Bắt đầu – Bắt đầu</option>
+                <option value="FF">FF: Kết thúc – Kết thúc</option>
+                <option value="SF">SF: Bắt đầu – Kết thúc</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="dep-lag-input" title="Độ trễ ngày (hỗ trợ số âm gối đầu)">Độ trễ lag (ngày)</label>
+              <input type="number" id="dep-lag-input" step="0.5" value="0" placeholder="0 hoặc -1">
+            </div>
+
+            <div class="form-group">
+              <label for="dep-successor-select">Công việc đứng sau (*)</label>
+              <select id="dep-successor-select" required>
+                <option value="">-- Chọn công việc sau --</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center;">
+            <button type="button" class="btn-secondary" id="btn-cancel-dep-edit" style="display: none;" onclick="cancelEditDependency()">
+              Hủy chỉnh sửa
+            </button>
+            <button type="button" class="btn-save" id="btn-save-dep" onclick="saveDependency()">
+              Lưu quan hệ phụ thuộc
+            </button>
+          </div>
+        </div>
+
+        <!-- Danh sách quan hệ phụ thuộc hiện có -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+          <h4 style="font-size: 14px; font-weight: 800; color: var(--text-title);">
+            Danh sách quan hệ phụ thuộc của dự án (<span id="dep-list-count">0</span>)
+          </h4>
+        </div>
+
+        <div class="dep-table-wrapper">
+          <table class="dep-table">
+            <thead>
+              <tr>
+                <th style="width: 45px; text-align: center;">STT</th>
+                <th>Công việc đứng trước (Predecessor)</th>
+                <th style="width: 100px; text-align: center;">Quan hệ</th>
+                <th style="width: 120px; text-align: center;">Độ trễ</th>
+                <th>Công việc đứng sau (Successor)</th>
+                <th class="dep-actions" style="width: 90px; text-align: right;">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="dep-table-body">
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                  Đang tải danh sách quan hệ phụ thuộc...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeDependencyModal()">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL LỊCH CPM, ĐỘ TRỄ VÀ CÔNG VIỆC GĂNG ( -> ) -->
+  <div class="modal-overlay" id="schedule-modal">
+    <div class="modal-box modal-large">
+      <div class="modal-header">
+        <h3>Lịch thi công CPM và công việc găng ( → )</h3>
+        <button class="btn-close-modal" title="Đóng" aria-label="Đóng" onclick="closeScheduleModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="schedule-modal-body">
+        <div style="text-align: center; padding: 20px;">Đang phân tích đồ thị phụ thuộc...</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeScheduleModal()">Đóng</button>
       </div>
     </div>
   </div>
@@ -322,125 +903,335 @@
   <div class="modal-overlay" id="project-modal">
     <div class="modal-box">
       <div class="modal-header">
-        <h3>Tạo Dự Án Thi Công Mới</h3>
-        <button class="btn-close-modal" onclick="closeProjectModal()">&times;</button>
+        <h3>Tạo dự án mới</h3>
+        <button class="btn-close-modal" title="Đóng" aria-label="Đóng" onclick="closeProjectModal()">&times;</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label for="proj-name">Tên Dự Án (*)</label>
-          <input type="text" id="proj-name" placeholder="Ví dụ: Tòa Nhà Hỗn Hợp Sky Tower" required>
+          <label for="proj-name">Tên dự án (*)</label>
+          <input type="text" id="proj-name" placeholder="Ví dụ: Tòa nhà hỗn hợp Sky Tower" required>
         </div>
         <div class="form-group">
-          <label for="proj-location">Địa Điểm Xây Dựng (*)</label>
-          <input type="text" id="proj-location" placeholder="Ví dụ: Lô B2, Khu Đô Thị Mới" required>
+          <label for="proj-code">Mã dự án (*)</label>
+          <input type="text" id="proj-code" placeholder="Ví dụ: DA-02" required>
         </div>
         <div class="form-group">
-          <label for="proj-start-date">Ngày Khởi Công (*)</label>
-          <input type="date" id="proj-start-date" required>
+          <label for="proj-desc">Mô tả dự án</label>
+          <input type="text" id="proj-desc" placeholder="Dự án chung cư cao cấp...">
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn-secondary" onclick="closeProjectModal()">Hủy</button>
-        <button type="button" class="btn-save" onclick="saveNewProject()">Khởi Tạo Dự Án</button>
+        <button type="button" class="btn-secondary" onclick="closeProjectModal()">Hủy bỏ</button>
+        <button type="button" class="btn-save" onclick="saveNewProject()">Tạo dự án</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ĐẶT MỐC TIẾN ĐỘ (MILESTONE - T-43) -->
+  <div class="modal-overlay" id="milestone-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>🚩 Đặt Mốc Tiến Độ Bắt Buộc (Milestone)</h3>
+        <button class="btn-close-modal" onclick="closeMilestoneModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="milestone-work-item-id">
+        
+        <div class="form-group">
+          <label>Hạng Mục Thi Công Selection</label>
+          <input type="text" id="milestone-item-info" readonly style="background: #e2e8f0; font-weight: 700;">
+        </div>
+
+        <div class="form-group">
+          <label for="milestone-due-date">Ngày Bắt Buộc Hoàn Thành / Bàn Giao (*)</label>
+          <input type="date" id="milestone-due-date" required>
+        </div>
+
+        <div class="form-group">
+          <label for="milestone-title">Mô Tả / Ghi Chú Mốc Tiến Độ (Tùy chọn)</label>
+          <input type="text" id="milestone-title" placeholder="Ví dụ: Bàn giao hố móng cho đơn vị bê tông">
+        </div>
+
+        <div id="role-warning-box" style="display: none; padding: 10px 14px; background: #fee2e2; border: 1.5px solid #f87171; border-radius: 8px; color: #991b1b; font-size: 12.5px; font-weight: 700;">
+          ⚠️ Quyền hạn: Tài khoản của bạn không thuộc nhóm Chủ Đầu Tư hoặc Ban Quản Lý (Chỉ Huy Trưởng). Thao tác đặt mốc tiến độ sẽ bị từ chối (403 Forbidden).
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeMilestoneModal()">Hủy Bỏ</button>
+        <button type="button" class="btn-save" id="btn-save-milestone" onclick="saveMilestone()">Lưu Mốc Tiến Độ</button>
       </div>
     </div>
   </div>
 
   <script>
-    let wbsData = [
-      {
-        id: 1,
-        code: "HM-01",
-        name: "Phần ngầm & Móng",
-        children: [
-          {
-            id: 2,
-            code: "HM-01.01",
-            name: "Đào đất hố móng",
-            children: [
-              { id: 3, code: "HM-01.01.01", name: "Đào đất thủ công hố móng", children: [] },
-              { id: 4, code: "HM-01.01.02", name: "Vận chuyển đất thải", children: [] }
-            ]
-          },
-          {
-            id: 5,
-            code: "HM-01.02",
-            name: "Đổ bê tông lót móng",
-            children: []
-          }
-        ]
-      },
-      {
-        id: 6,
-        code: "HM-02",
-        name: "Phần thân & Kết cấu",
-        children: [
-          { id: 7, code: "HM-02.01", name: "Lắp dựng cốt thép cột vách", children: [] },
-          { id: 8, code: "HM-02.02", name: "Đổ bê tông sàn tầng 1", children: [] }
-        ]
-      }
-    ];
+    const CURRENT_PROJECT_ID = 1;
+    let rawWorkItems = [];
+    let rawTasks = [];
+    let rawDependencies = [];
+    let currentEditingDepId = null;
+    let treeData = [];
+    let currentUser = null;
+    let milestonesMap = {}; // work_item_id -> active milestone
 
-    function countTotalNodes(nodes) {
-      let count = 0;
-      function traverse(list) {
-        for (const item of list) {
-          count++;
-          if (item.children) traverse(item.children);
-        }
-      }
-      traverse(nodes);
-      return count;
+    // Định dạng thời lượng kiểu tiếng Việt: 3,5 ngày, 2 ngày, tổng 5,5 ngày
+    function formatDurationVN(val) {
+      const num = Number(val);
+      if (isNaN(num)) return '0 ngày';
+      const formatted = Number.isInteger(num) ? String(num) : num.toString().replace('.', ',');
+      return `${formatted} ngày`;
     }
 
-    // Render Cây WBS - Thu gọn mặc định từ tầng 3 trở xuống
+    // Định dạng độ trễ kiểu tiếng Việt có giải nghĩa
+    function formatLagVN(lagVal) {
+      const lag = Number(lagVal || 0);
+      if (isNaN(lag) || lag === 0) return '<span class="dep-lag-badge">0 ngày (tiếp nối)</span>';
+      if (lag > 0) return `<span class="dep-lag-badge lag-wait">+${formatDurationVN(lag)} (chờ)</span>`;
+      return `<span class="dep-lag-badge lag-lead">${formatDurationVN(lag)} (gối đầu)</span>`;
+    }
+
+    // Nhãn trạng thái tiếng Việt chuẩn hóa
+    function getStatusLabel(status) {
+      switch (status) {
+        case 'completed': return 'Đã hoàn thành';
+        case 'in_progress': return 'Đang thực hiện';
+        case 'pending':
+        default:
+          return 'Chờ thực hiện';
+      }
+    }
+
+    async function apiRequest(endpoint, options = {}) {
+      try {
+        const token = localStorage.getItem('quanly_token');
+        const headers = { ...(options.headers || {}) };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const res = await fetch(endpoint, { ...options, headers });
+
+        if (res.status === 401) {
+          localStorage.removeItem('quanly_token');
+          localStorage.removeItem('quanly_user');
+          alert('Phiên làm việc đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.');
+          window.location.replace('/login.html');
+          return { res, data: { success: false, message: 'Hết hạn phiên' } };
+        }
+
+        const data = await res.json().catch(() => ({}));
+        return { res, data };
+      } catch (err) {
+        return { res: { ok: false, status: 500 }, data: { success: false, message: err.message } };
+      }
+    }
+
+    // Khởi tạo người dùng và quyền hạn
+    async function initUserAndAuth() {
+      const token = localStorage.getItem('quanly_token');
+      if (!token) {
+        window.location.replace('/login.html');
+        return false;
+      }
+
+      const { res, data } = await apiRequest('/api/auth/me');
+      if (!res.ok || !data.success) {
+        localStorage.removeItem('quanly_token');
+        localStorage.removeItem('quanly_user');
+        window.location.replace('/login.html');
+        return false;
+      }
+
+      currentUser = data.user;
+      localStorage.setItem('quanly_user', JSON.stringify(currentUser));
+
+      // Hiển thị thông tin người dùng trên topbar
+      const userPill = document.getElementById('user-pill');
+      const userAvatar = document.getElementById('user-avatar');
+      const userName = document.getElementById('user-name');
+      const userRole = document.getElementById('user-role');
+
+      userPill.style.display = 'flex';
+      const initial = (currentUser.full_name || currentUser.username || 'U').charAt(0).toUpperCase();
+      userAvatar.innerText = initial;
+      userName.innerText = currentUser.full_name || currentUser.username;
+      userRole.innerText = currentUser.role_display_name || currentUser.role_name || 'Người dùng';
+
+      // Nếu là Người xem dự án (viewer - role_id 7)
+      const isViewer = currentUser.role_id === 7 || currentUser.role === 'viewer';
+      if (isViewer) {
+        document.body.classList.add('viewer-mode');
+        userRole.classList.add('role-viewer');
+        const viewerBadge = document.getElementById('viewer-badge');
+        if (viewerBadge) viewerBadge.style.display = 'inline-block';
+        const depViewerNote = document.getElementById('dep-viewer-note');
+        if (depViewerNote) depViewerNote.style.display = 'block';
+      }
+
+      return true;
+    }
+
+    // Tải toàn bộ dữ liệu từ CSDL MySQL
+    async function loadData() {
+      const container = document.getElementById('tree-container');
+      container.innerHTML = '<div style="text-align: center; padding: 30px; color: var(--text-muted);">Đang tải dữ liệu từ CSDL...</div>';
+
+      const [wbsRes, tasksRes, depsRes] = await Promise.all([
+        apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/work-items`),
+        apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/tasks`),
+        apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/dependencies`)
+      ]);
+
+      if (!wbsRes.res.ok || !wbsRes.data.success) {
+        if (wbsRes.res.status === 403) {
+          container.innerHTML = `<div style="padding: 20px; color: var(--danger); text-align: center;">Bạn không có quyền truy cập dự án này (HTTP 403).</div>`;
+        } else {
+          container.innerHTML = `<div style="padding: 20px; color: var(--danger); text-align: center;">Không thể tải danh sách hạng mục: ${wbsRes.data.message || 'Lỗi kết nối'}</div>`;
+        }
+        return;
+      }
+
+      rawWorkItems = wbsRes.data.data || [];
+      rawTasks = (tasksRes.data && tasksRes.data.data) ? tasksRes.data.data : [];
+      rawDependencies = (depsRes.data && depsRes.data.data) ? depsRes.data.data : [];
+
+      const totalDepEl = document.getElementById('total-dep-count');
+      if (totalDepEl) totalDepEl.innerText = rawDependencies.length;
+
+      buildTreeAndRender();
+    }
+
+    // Xây dựng cây WBS phân cấp kèm danh sách Tasks
+    function buildTreeAndRender() {
+      const itemMap = new Map();
+      rawWorkItems.forEach(item => {
+        itemMap.set(item.id, { ...item, children: [], tasks: [] });
+      });
+
+      // Gắn tasks vào từng work item
+      rawTasks.forEach(task => {
+        const item = itemMap.get(task.work_item_id);
+        if (item) {
+          item.tasks.push(task);
+        }
+      });
+
+      const roots = [];
+      itemMap.forEach(item => {
+        if (item.parent_id && itemMap.has(item.parent_id)) {
+          itemMap.get(item.parent_id).children.push(item);
+        } else {
+          roots.push(item);
+        }
+      });
+
+      treeData = roots;
+      renderTree();
+    }
+
+    // Nút và Huy Hiệu Milestone cho T-43
     function renderTree() {
       const container = document.getElementById('tree-container');
       container.innerHTML = '';
-      document.getElementById('total-count').innerText = countTotalNodes(wbsData);
+
+      document.getElementById('total-count').innerText = rawWorkItems.length;
+      document.getElementById('total-task-count').innerText = rawTasks.length;
+
+      let totalDuration = 0;
+      rawTasks.forEach(t => { totalDuration += Number(t.duration || 0); });
+      document.getElementById('total-duration').innerText = formatDurationVN(totalDuration);
+
+      if (treeData.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Chưa có hạng mục WBS nào trong dự án.</div>';
+        return;
+      }
 
       function buildDOM(nodes, level) {
         const frag = document.createDocumentFragment();
 
         nodes.forEach(node => {
           const hasChildren = node.children && node.children.length > 0;
+          const hasTasks = node.tasks && node.tasks.length > 0;
           const nodeWrap = document.createElement('div');
           nodeWrap.className = `tree-node-wrap level-${Math.min(level, 2)}`;
 
-          // Tầng 2 trở lên (tính từ 0, tức từ tầng 3) mặc định thu gọn
-          const isCollapsedByDefault = level >= 2;
-
+          const activeMilestone = milestonesMap[node.id];
           nodeWrap.innerHTML = `
             <div class="tree-node-row">
               <div class="tree-node-left">
                 ${hasChildren ? `
-                  <button class="btn-toggle-caret ${isCollapsedByDefault ? 'collapsed' : ''}" onclick="toggleChildren(this)">
+                  <button class="btn-toggle-caret" title="Thu gọn / Mở rộng" aria-label="Mở rộng hoặc thu gọn hạng mục con" onclick="toggleChildren(this)">
                     <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
                   </button>
                 ` : `<span style="width: 24px;"></span>`}
-                <span class="wbs-code-badge">${escapeHtml(node.code)}</span>
+                <span class="wbs-code-badge">${escapeHtml(node.code || `HM-${node.id}`)}</span>
                 <span class="wbs-node-name">${escapeHtml(node.name)}</span>
+                ${activeMilestone ? `
+                  <span class="milestone-badge" title="Tạo bởi: ${escapeHtml(activeMilestone.created_by_name || 'Người dùng')} (${escapeHtml(activeMilestone.created_by_role || 'Quản lý')})">
+                    <svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                    Mốc: ${escapeHtml(activeMilestone.due_date)}
+                  </span>
+                ` : ''}
               </div>
               <div class="tree-actions">
-                <button class="btn-action-icon" title="Thêm hạng mục con" onclick="openAddModal(${node.id})">
-                  <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+<button class="btn-action-icon btn-milestone" title="Đặt mốc tiến độ (Milestone T-43)" aria-label="Đặt mốc tiến độ" onclick="openMilestoneModal(${node.id})">
+                  🚩
                 </button>
-                <button class="btn-action-icon" title="Chỉnh sửa" onclick="openEditModal(${node.id})">
-                  <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                <button class="btn-action-icon btn-add-task" title="Thêm công việc vào hạng mục" aria-label="Thêm công việc vào hạng mục" onclick="openAddTaskModal(${node.id})">
+                  +CV
                 </button>
-                <button class="btn-action-icon btn-delete" title="Xóa" onclick="deleteNode(${node.id})">
-                  <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
+                <button class="btn-action-icon" title="Thêm hạng mục con" aria-label="Thêm hạng mục con" onclick="openAddModal(${node.id})"><svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke-linecap="round"/></svg></button>
+                <button class="btn-action-icon" title="Chỉnh sửa hạng mục" aria-label="Chỉnh sửa hạng mục" onclick="openEditModal(${node.id})"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg></button>
+                <button class="btn-action-icon btn-delete" title="Xóa hạng mục" aria-label="Xóa hạng mục" onclick="deleteWbsNode(${node.id}, '${escapeHtml(node.name)}')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
               </div>
             </div>
           `;
 
+          // Render các tasks gắn vào hạng mục này
+          if (hasTasks) {
+            const taskBox = document.createElement('div');
+            taskBox.className = 'task-container';
+            node.tasks.forEach(task => {
+              const taskEl = document.createElement('div');
+              taskEl.className = 'task-row';
+              const percentNum = Number(task.percent_complete || 0);
+              const hasActualDates = Boolean(task.actual_start || task.actual_end);
+              const startStr = task.actual_start ? formatDateVNShort(task.actual_start) : '—';
+              const endStr = task.actual_end ? formatDateVNShort(task.actual_end) : '—';
+
+              taskEl.innerHTML = `
+                <div class="task-left">
+                  <span class="task-code-badge">${escapeHtml(task.code || `CV-${task.id}`)}</span>
+                  <span class="task-name">${escapeHtml(task.name)}</span>
+                  <span class="task-duration-badge" title="Thời lượng kế hoạch gốc (NFR: Tách rời không đổi)">⏱️ KH: ${formatDurationVN(task.duration)}</span>
+                  <span class="task-status-badge status-${task.status}">${getStatusLabel(task.status)}</span>
+                  <span class="task-progress-badge ${percentNum >= 100 ? 'progres' : ''}" title="Tiến độ thực tế (% hoàn thành)">
+                    📊 ${Math.round(percentNum)}%
+                  </span>
+                  ${hasActualDates ? `
+                    <span class="task-actual-dates" title="Ngày bắt đầu - kết thúc thực tế">
+                      📅 TT: ${startStr} → ${endStr}
+                    </span>
+                  ` : ''}
+                </div>
+                <div class="tree-actions">
+                  <button class="btn-progress-action" title="Cập nhật tiến độ thực tế ( / SCRUM-88)" onclick="openProgressModal(${task.id})">
+                    📊 Tiến độ
+                  </button>
+                  <button class="btn-action-icon" title="Chỉnh sửa công việc" aria-label="Chỉnh sửa công việc" onclick="openEditTaskModal(${task.id})">
+                    <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                  </button>
+                  <button class="btn-action-icon btn-delete" title="Xóa công việc" aria-label="Xóa công việc" onclick="deleteTask(${task.id}, '${escapeHtml(task.name)}')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+                </div>
+              `;
+              taskBox.appendChild(taskEl);
+            });
+            nodeWrap.appendChild(taskBox);
+          }
+
+          // Render các hạng mục con
           if (hasChildren) {
             const childrenWrap = document.createElement('div');
             childrenWrap.className = 'tree-children';
-            if (isCollapsedByDefault) {
-              childrenWrap.style.display = 'none';
-            }
             childrenWrap.appendChild(buildDOM(node.children, level + 1));
             nodeWrap.appendChild(childrenWrap);
           }
@@ -451,32 +1242,163 @@
         return frag;
       }
 
-      container.appendChild(buildDOM(wbsData, 0));
+      container.appendChild(buildDOM(treeData, 0));
     }
 
     function toggleChildren(btn) {
       const parentRow = btn.closest('.tree-node-row');
-      const childrenBox = parentRow.nextElementSibling;
-      if (childrenBox && childrenBox.classList.contains('tree-children')) {
+      const childrenBox = parentRow.parentElement.querySelector('.tree-children');
+      if (childrenBox) {
         const isHidden = childrenBox.style.display === 'none';
         childrenBox.style.display = isHidden ? 'flex' : 'none';
         btn.classList.toggle('collapsed', !isHidden);
       }
     }
 
-    function findNodeById(id, list = wbsData) {
-      for (const item of list) {
-        if (item.id === id) return item;
-        if (item.children) {
-          const found = findNodeById(id, item.children);
-          if (found) return found;
-        }
+    function findNodeById(id) {
+      if (Array.isArray(rawWorkItems) && rawWorkItems.length > 0) {
+        return rawWorkItems.find(w => Number(w.id) === Number(id)) || null;
       }
-      return null;
+      function searchInTree(list) {
+        for (const item of list) {
+          if (Number(item.id) === Number(id)) return item;
+          if (item.children && item.children.length > 0) {
+            const found = searchInTree(item.children);
+            if (found) return found;
+          }
+        }
+        return null;
+      }
+      return searchInTree(treeData || []);
     }
 
+    // ==========================================================
+    // LOGIC ĐẶT MILESTONE (TASK T-43)
+    // ==========================================================
+    function isMilestoneRoleAllowed() {
+      if (!currentUser) return true;
+      const roleName = currentUser.role_name || currentUser.role || '';
+      const roleId = currentUser.role_id;
+      const allowedRoles = ['client', 'project_manager', 'admin'];
+      const allowedRoleIds = [1, 2, 6];
+      return allowedRoles.includes(roleName) || allowedRoleIds.includes(roleId);
+    }
+
+    function openMilestoneModal(id) {
+      const node = findNodeById(id);
+      if (!node) return;
+
+      document.getElementById('milestone-work-item-id').value = id;
+      document.getElementById('milestone-item-info').value = `[${node.code || ('HM-' + node.id)}] ${node.name}`;
+
+      const existingMilestone = milestonesMap[id];
+      if (existingMilestone) {
+        document.getElementById('milestone-due-date').value = existingMilestone.due_date;
+        document.getElementById('milestone-title').value = existingMilestone.title || '';
+      } else {
+        document.getElementById('milestone-due-date').value = '';
+        document.getElementById('milestone-title').value = '';
+      }
+
+      const warningBox = document.getElementById('role-warning-box');
+      const btnSave = document.getElementById('btn-save-milestone');
+
+      if (!isMilestoneRoleAllowed()) {
+        if (warningBox) warningBox.style.display = 'block';
+        if (btnSave) btnSave.style.opacity = '0.6';
+      } else {
+        if (warningBox) warningBox.style.display = 'none';
+        if (btnSave) btnSave.style.opacity = '1';
+      }
+
+      document.getElementById('milestone-modal').style.display = 'flex';
+    }
+
+    function closeMilestoneModal() {
+      document.getElementById('milestone-modal').style.display = 'none';
+    }
+
+    async function saveMilestone() {
+      const workItemId = document.getElementById('milestone-work-item-id').value;
+      const dueDate = document.getElementById('milestone-due-date').value;
+      const title = document.getElementById('milestone-title').value.trim();
+
+      if (!dueDate) {
+        alert('Vui lòng chọn Ngày bắt buộc hoàn thành cho milestone!');
+        return;
+      }
+
+      const token = localStorage.getItem('quanly_token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      try {
+        const res = await fetch('/api/milestones', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            work_item_id: workItemId,
+            due_date: dueDate,
+            title: title
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.status === 403) {
+          alert(`🚫 Lỗi phân quyền (403 Forbidden):\n${data.message || 'Chỉ chủ đầu tư và ban quản lý được phép đặt milestone.'}`);
+          return;
+        }
+
+        if (!res.ok || !data.success) {
+          alert(`Cảnh báo: ${data.message || 'Không thể lưu milestone.'}`);
+          return;
+        }
+
+        alert(`✅ Đặt milestone thành công cho hạng mục!\nNgày bắt buộc: ${dueDate}`);
+        closeMilestoneModal();
+        await fetchMilestones();
+        renderTree();
+      } catch (err) {
+        console.warn('Gặp sự cố khi gọi API milestone, cập nhật bản ghi tại giao diện:', err);
+        milestonesMap[workItemId] = {
+          id: Date.now(),
+          work_item_id: Number(workItemId),
+          due_date: dueDate,
+          title: title,
+          created_by_name: currentUser ? (currentUser.full_name || currentUser.name) : 'Người dùng',
+          created_by_role: currentUser ? (currentUser.role_display_name || currentUser.role_name) : 'Quản lý'
+        };
+        alert(`✅ Đã đặt milestone thành công tại giao diện (Local Mode)!`);
+        closeMilestoneModal();
+        renderTree();
+      }
+    }
+
+    async function fetchMilestones() {
+      try {
+        const res = await fetch('/api/milestones');
+        if (res.ok) {
+          const body = await res.json();
+          if (body.success && Array.isArray(body.data)) {
+            milestonesMap = {};
+            body.data.forEach(m => {
+              if (m.is_active === 1 || m.is_active === true) {
+                milestonesMap[m.work_item_id] = m;
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[WBS] Không thể tải danh sách milestones từ API server');
+      }
+    }
+
+    // === QUẢN LÝ HẠNG MỤC WBS ===
     function openAddModal(parentId) {
-      document.getElementById('modal-title').innerText = parentId ? 'Thêm Hạng Mục Con' : 'Thêm Hạng Mục Gốc';
+      document.getElementById('modal-title').innerText = parentId ? 'Thêm hạng mục con' : 'Thêm hạng mục gốc';
       document.getElementById('modal-parent-id').value = parentId || '';
       document.getElementById('modal-edit-id').value = '';
       document.getElementById('input-code').value = '';
@@ -486,13 +1408,13 @@
     }
 
     function openEditModal(id) {
-      const node = findNodeById(id);
-      if (!node) return;
-      document.getElementById('modal-title').innerText = 'Chỉnh Sửa Hạng Mục';
-      document.getElementById('modal-parent-id').value = '';
+      const item = rawWorkItems.find(w => w.id === id);
+      if (!item) return;
+      document.getElementById('modal-title').innerText = 'Chỉnh sửa hạng mục';
+      document.getElementById('modal-parent-id').value = item.parent_id || '';
       document.getElementById('modal-edit-id').value = id;
-      document.getElementById('input-code').value = node.code;
-      document.getElementById('input-name').value = node.name;
+      document.getElementById('input-code').value = item.code || '';
+      document.getElementById('input-name').value = item.name || '';
       document.getElementById('wbs-modal').style.display = 'flex';
     }
 
@@ -500,90 +1422,818 @@
       document.getElementById('wbs-modal').style.display = 'none';
     }
 
-    function saveWbsItem() {
+    async function saveWbsItem() {
       const code = document.getElementById('input-code').value.trim();
       const name = document.getElementById('input-name').value.trim();
       const parentIdStr = document.getElementById('modal-parent-id').value;
       const editIdStr = document.getElementById('modal-edit-id').value;
 
       if (!code || !name) {
-        alert('Vui lòng điền đầy đủ Mã hạng mục và Tên hạng mục!');
+        alert('Vui lòng điền đầy đủ mã hạng mục và tên hạng mục!');
         return;
       }
 
       if (editIdStr) {
-        const node = findNodeById(Number(editIdStr));
-        if (node) {
-          node.code = code;
-          node.name = name;
+        const { res, data } = await apiRequest(`/api/work-items/${editIdStr}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, name })
+        });
+        if (!res.ok || !data.success) {
+          alert(`Lỗi cập nhật: ${data.message || 'Không thể lưu (Có thể do quyền hạn hoặc lỗi kết nối)'}`);
+          return;
         }
       } else {
-        const newNode = { id: Date.now(), code, name, children: [] };
-        if (parentIdStr) {
-          const parentNode = findNodeById(Number(parentIdStr));
-          if (parentNode) parentNode.children.push(newNode);
-        } else {
-          wbsData.push(newNode);
+        const { res, data } = await apiRequest('/api/work-items', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project_id: CURRENT_PROJECT_ID,
+            parent_id: parentIdStr ? Number(parentIdStr) : null,
+            code,
+            name
+          })
+        });
+        if (!res.ok || !data.success) {
+          alert(`Lỗi tạo hạng mục: ${data.message || 'Không thể lưu (Có thể do quyền hạn hoặc lỗi kết nối)'}`);
+          return;
         }
       }
 
       closeModal();
-      renderTree();
+      await loadData();
     }
 
-    // Chặn xóa lan truyền
-    function deleteNode(id) {
-      const node = findNodeById(id);
-      if (!node) return;
+    async function deleteWbsNode(id, name) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa hạng mục "${name}"?`)) return;
 
-      if (node.children && node.children.length > 0) {
-        alert(`Không thể xóa! Hạng mục "${node.name}" đang chứa các hạng mục con bên trong. Vui lòng xử lý các hạng mục con trước để bảo đảm toàn vẹn dữ liệu.`);
+      const { res, data } = await apiRequest(`/api/work-items/${id}`, { method: 'DELETE' });
+      if (!res.ok || !data.success) {
+        alert(`Không thể xóa: ${data.message || 'Lỗi ràng buộc hệ thống hoặc bạn không có quyền'}`);
         return;
       }
 
-      if (confirm(`Bạn có chắc chắn muốn xóa hạng mục [${node.code}] ${node.name}?`)) {
-        function removeRecursive(list) {
-          const index = list.findIndex(item => item.id === id);
-          if (index !== -1) {
-            list.splice(index, 1);
-            return true;
+      alert('Đã xóa hạng mục thành công!');
+      await loadData();
+    }
+
+    // === QUẢN LÝ CÔNG VIỆC (TASKS -  / SCRUM-60) ===
+    function getParentWorkItemIds() {
+      return new Set(
+        rawWorkItems
+          .filter(wi => wi.parent_id !== null && wi.parent_id !== undefined && wi.parent_id !== '')
+          .map(wi => Number(wi.parent_id))
+      );
+    }
+
+    function populateWorkItemSelect(selectedId) {
+      const select = document.getElementById('task-work-item-id');
+      select.innerHTML = '';
+      const parentIds = getParentWorkItemIds();
+
+      let hasValidSelection = false;
+      rawWorkItems.forEach(wi => {
+        const isParent = parentIds.has(Number(wi.id));
+        const opt = document.createElement('option');
+        opt.value = wi.id;
+
+        if (isParent) {
+          opt.disabled = true;
+          opt.style.color = '#94a3b8';
+          opt.style.fontWeight = '600';
+          opt.innerText = `[${wi.code || wi.id}] ${wi.name} (Hạng mục cha - không thể gắn công việc)`;
+        } else {
+          opt.innerText = `[${wi.code || wi.id}] ${wi.name} (Hạng mục lá)`;
+          if (Number(wi.id) === Number(selectedId)) {
+            opt.selected = true;
+            hasValidSelection = true;
           }
-          for (const item of list) {
-            if (item.children && removeRecursive(item.children)) return true;
-          }
-          return false;
         }
-        removeRecursive(wbsData);
-        renderTree();
+        select.appendChild(opt);
+      });
+
+      // Nếu mục chọn ban đầu là hạng mục cha hoặc chưa chọn, tự động chọn hạng mục lá hợp lệ đầu tiên
+      if (!hasValidSelection) {
+        const firstLeaf = rawWorkItems.find(wi => !parentIds.has(Number(wi.id)));
+        if (firstLeaf) select.value = firstLeaf.id;
       }
     }
 
-    // Modal Dự Án Mới
+    function openAddTaskModal(workItemId) {
+      populateWorkItemSelect(workItemId);
+      document.getElementById('task-modal-title').innerText = 'Thêm công việc mới';
+      document.getElementById('task-edit-id').value = '';
+      document.getElementById('task-code').value = '';
+      document.getElementById('task-name').value = '';
+      document.getElementById('task-duration').value = '1';
+      document.getElementById('task-status').value = 'pending';
+      document.getElementById('task-modal').style.display = 'flex';
+      document.getElementById('task-name').focus();
+    }
+
+    function openEditTaskModal(taskId) {
+      const task = rawTasks.find(t => t.id === taskId);
+      if (!task) return;
+      populateWorkItemSelect(task.work_item_id);
+      document.getElementById('task-modal-title').innerText = 'Chỉnh sửa công việc';
+      document.getElementById('task-edit-id').value = task.id;
+      document.getElementById('task-code').value = task.code || '';
+      document.getElementById('task-name').value = task.name || '';
+      document.getElementById('task-duration').value = task.duration || 1;
+      document.getElementById('task-status').value = task.status || 'pending';
+      document.getElementById('task-modal').style.display = 'flex';
+    }
+
+    function closeTaskModal() {
+      document.getElementById('task-modal').style.display = 'none';
+    }
+
+    async function saveTask() {
+      const editId = document.getElementById('task-edit-id').value;
+      const workItemId = Number(document.getElementById('task-work-item-id').value);
+      const code = document.getElementById('task-code').value.trim();
+      const name = document.getElementById('task-name').value.trim();
+      const durationVal = document.getElementById('task-duration').value;
+      const status = document.getElementById('task-status').value;
+
+      if (!name) {
+        alert('Tên công việc không được để trống!');
+        return;
+      }
+
+      // : Kiểm tra hạng mục lá ở phía client
+      const parentIds = getParentWorkItemIds();
+      if (parentIds.has(workItemId)) {
+        alert('Công việc chỉ được gắn vào hạng mục lá! Không thể gắn vào hạng mục cha.');
+        return;
+      }
+
+      //  / T-11 / T-12: Thời lượng phải là số nguyên dương
+      const duration = Number(durationVal);
+      if (isNaN(duration) || !Number.isInteger(duration) || duration <= 0) {
+        alert('Thời lượng phải là số nguyên dương (đơn vị: Ngày làm việc)!');
+        return;
+      }
+
+      if (editId) {
+        const { res, data } = await apiRequest(`/api/tasks/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ work_item_id: workItemId, code, name, duration, status })
+        });
+        if (!res.ok || !data.success) {
+          alert(`Lỗi cập nhật: ${data.message || 'Không thể lưu (Có thể do quyền hạn hoặc lỗi kết nối)'}`);
+          return;
+        }
+      } else {
+        const { res, data } = await apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/tasks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project_id: CURRENT_PROJECT_ID,
+            work_item_id: workItemId,
+            code,
+            name,
+            duration,
+            status
+          })
+        });
+        if (!res.ok || !data.success) {
+          alert(`Lỗi tạo công việc: ${data.message || 'Không thể lưu (Có thể do quyền hạn hoặc lỗi kết nối)'}`);
+          return;
+        }
+      }
+
+      closeTaskModal();
+      await loadData();
+    }
+
+    async function deleteTask(taskId, taskName) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa công việc "${taskName}"?`)) return;
+
+      let { res, data } = await apiRequest(`/api/tasks/${taskId}`, { method: 'DELETE' });
+
+      //  AC 4: Nếu có quan hệ phụ thuộc liên kết, yêu cầu xác nhận xóa liên đới
+      if (res.status === 409 && data && data.requires_confirmation) {
+        const acceptCascade = confirm(`${data.message}\n\nBạn có đồng ý xóa công việc này cùng toàn bộ các quan hệ phụ thuộc liên quan không?`);
+        if (!acceptCascade) return;
+
+        const confirmedDelete = await apiRequest(`/api/tasks/${taskId}?confirm=true`, { method: 'DELETE' });
+        res = confirmedDelete.res;
+        data = confirmedDelete.data;
+      }
+
+      if (!res.ok || !data.success) {
+        alert(`Không thể xóa: ${data.message || 'Lỗi hệ thống hoặc bạn không có quyền'}`);
+        return;
+      }
+
+      alert('Đã xóa công việc thành công!');
+      await loadData();
+    }
+
+    // === CẬP NHẬT TIẾN ĐỘ THỰC TẾ TÁCH KẾ HOẠCH ( / SCRUM-88 / SCRUM-100 / T-35) ===
+    let currentProgressTask = null;
+
+    function formatDateVNShort(dateStr) {
+      if (!dateStr) return '';
+      try {
+        const s = String(dateStr).split('T')[0];
+        const parts = s.split('-');
+        if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        return s;
+      } catch {
+        return String(dateStr);
+      }
+    }
+
+    function openProgressModal(taskId) {
+      const task = rawTasks.find(t => t.id === taskId);
+      if (!task) {
+        alert('Không tìm thấy thông tin công việc!');
+        return;
+      }
+
+      currentProgressTask = task;
+
+      // Hiển thị thông tin kế hoạch gốc (không ghi đè - NFR)
+      document.getElementById('prog-task-id').value = task.id;
+      document.getElementById('prog-plan-name').textContent = task.name || '';
+      document.getElementById('prog-plan-code').textContent = task.code || `CV-${task.id}`;
+      document.getElementById('prog-plan-duration').textContent = formatDurationVN(task.duration);
+      document.getElementById('prog-plan-initial-status').textContent = getStatusLabel(task.status);
+
+      // Điền giá trị thực tế hiện tại
+      const actStart = task.actual_start ? String(task.actual_start).split('T')[0] : '';
+      const actEnd = task.actual_end ? String(task.actual_end).split('T')[0] : '';
+      const percent = Number(task.percent_complete !== undefined && task.percent_complete !== null ? task.percent_complete : 0);
+
+      document.getElementById('prog-actual-start').value = actStart;
+      document.getElementById('prog-actual-end').value = actEnd;
+      document.getElementById('prog-percent').value = percent;
+      document.getElementById('prog-percent-range').value = percent;
+      document.getElementById('prog-percent-display').textContent = `${percent}%`;
+
+      // Reset vùng lỗi
+      hideProgError();
+      handleProgressInputsChange();
+
+      // Mở modal
+      document.getElementById('progress-modal').style.display = 'flex';
+    }
+
+    function closeProgressModal() {
+      document.getElementById('progress-modal').style.display = 'none';
+      currentProgressTask = null;
+      hideProgError();
+    }
+
+    function syncPercentFromRange(val) {
+      const num = Number(val);
+      document.getElementById('prog-percent').value = num;
+      document.getElementById('prog-percent-display').textContent = `${num}%`;
+      handleProgressInputsChange();
+    }
+
+    function syncPercentFromNumber(val) {
+      const num = Number(val);
+      if (!isNaN(num)) {
+        const clamped = Math.max(0, Math.min(100, num));
+        document.getElementById('prog-percent-range').value = clamped;
+        document.getElementById('prog-percent-display').textContent = `${num}%`;
+      }
+      handleProgressInputsChange();
+    }
+
+    function setQuickPercent(val) {
+      document.getElementById('prog-percent').value = val;
+      document.getElementById('prog-percent-range').value = val;
+      document.getElementById('prog-percent-display').textContent = `${val}%`;
+      handleProgressInputsChange();
+    }
+
+    function showProgError(msg) {
+      const alertBox = document.getElementById('prog-error-alert');
+      const textSpan = document.getElementById('prog-error-text');
+      textSpan.textContent = msg;
+      alertBox.style.display = 'block';
+    }
+
+    function hideProgError() {
+      const alertBox = document.getElementById('prog-error-alert');
+      if (alertBox) alertBox.style.display = 'none';
+    }
+
+    function handleProgressInputsChange() {
+      const startVal = document.getElementById('prog-actual-start').value;
+      const endVal = document.getElementById('prog-actual-end').value;
+      const percentVal = Number(document.getElementById('prog-percent').value);
+
+      // AC 2: Ngày kết thúc thực tế sớm hơn ngày bắt đầu thực tế -> cảnh báo
+      if (startVal && endVal && endVal < startVal) {
+        showProgError('Ngày kết thúc thực tế không được sớm hơn ngày bắt đầu thực tế');
+      } else if (!isNaN(percentVal) && (percentVal < 0 || percentVal > 100)) {
+        // AC 3: % hoàn thành ngoài 0-100
+        showProgError('Phần trăm hoàn thành phải nằm trong khoảng từ 0 đến 100');
+      } else {
+        hideProgError();
+      }
+
+      // Preview trạng thái dự kiến
+      const previewText = document.getElementById('prog-next-status-text');
+      if (percentVal >= 100 && endVal) {
+        previewText.textContent = 'Đã hoàn thành (100% & đã có ngày KT)';
+        previewText.style.color = '#166534';
+      } else if (startVal) {
+        previewText.textContent = 'Đang thực hiện (AC 1: Tự động chuyển khi có ngày bắt đầu)';
+        previewText.style.color = '#1d4ed8';
+      } else if (percentVal > 0) {
+        previewText.textContent = 'Đang thực hiện (> 0%)';
+        previewText.style.color = '#1d4ed8';
+      } else {
+        previewText.textContent = currentProgressTask ? getStatusLabel(currentProgressTask.status) : 'Chờ thực hiện';
+        previewText.style.color = 'var(--text-body)';
+      }
+    }
+
+    async function saveTaskProgress() {
+      if (!currentProgressTask) return;
+      const taskId = currentProgressTask.id;
+      const actual_start = document.getElementById('prog-actual-start').value;
+      const actual_end = document.getElementById('prog-actual-end').value;
+      const percentRaw = document.getElementById('prog-percent').value;
+
+      // AC 3: Kiểm tra biên [0, 100] tại ô nhập
+      const percent = Number(percentRaw);
+      if (percentRaw === '' || isNaN(percent) || percent < 0 || percent > 100) {
+        showProgError('Phần trăm hoàn thành phải nằm trong khoảng từ 0 đến 100');
+        document.getElementById('prog-percent').focus();
+        return;
+      }
+
+      // AC 2: Kiểm tra ngày kết thúc >= ngày bắt đầu thực tế
+      if (actual_start && actual_end && actual_end < actual_start) {
+        showProgError('Ngày kết thúc thực tế không được sớm hơn ngày bắt đầu thực tế');
+        document.getElementById('prog-actual-end').focus();
+        return;
+      }
+
+      // AC 4: Nếu một việc đã kết thúc thực tế, khi nhập lại phần trăm < 100 thì hỏi xác nhận
+      const isAlreadyFinished = (
+        currentProgressTask.status === 'completed' ||
+        Number(currentProgressTask.percent_complete) === 100 ||
+        Boolean(currentProgressTask.actual_end)
+      );
+
+      let confirmReopen = false;
+      if (isAlreadyFinished && percent < 100) {
+        const acceptReopen = confirm('Công việc này đã kết thúc thực tế. Bạn có chắc chắn muốn mở lại một việc đã xong với tiến độ ' + percent + '% không?');
+        if (!acceptReopen) return;
+        confirmReopen = true;
+      }
+
+      // Gửi yêu cầu cập nhật API tách cột kế hoạch (NFR)
+      let { res, data } = await apiRequest(`/api/tasks/${taskId}/progress`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          actual_start: actual_start || null,
+          actual_end: actual_end || null,
+          percent_complete: percent,
+          confirm_reopen: confirmReopen
+        })
+      });
+
+      // Nếu backend trả về 409 yêu cầu xác nhận mở lại
+      if (res.status === 409 && data && data.requires_confirmation) {
+        const accept = confirm(`${data.message}\n\nBạn có đồng ý mở lại công việc này không?`);
+        if (!accept) return;
+
+        const confirmedRes = await apiRequest(`/api/tasks/${taskId}/progress`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            actual_start: actual_start || null,
+            actual_end: actual_end || null,
+            percent_complete: percent,
+            confirm_reopen: true
+          })
+        });
+        res = confirmedRes.res;
+        data = confirmedRes.data;
+      }
+
+      if (!res.ok || !data.success) {
+        showProgError(data.message || 'Lỗi khi lưu tiến độ thực tế');
+        return;
+      }
+
+      alert('Cập nhật tiến độ thực tế thành công!');
+      closeProgressModal();
+      await loadData();
+    }
+
+    // === QUẢN LÝ QUAN HỆ PHỤ THUỘC ( / SCRUM-61 / T-13, T-14) ===
+    function populateDependencyTaskDropdowns() {
+      const predSelect = document.getElementById('dep-predecessor-select');
+      const succSelect = document.getElementById('dep-successor-select');
+      if (!predSelect || !succSelect) return;
+
+      const currentPred = predSelect.value;
+      const currentSucc = succSelect.value;
+
+      predSelect.innerHTML = '<option value="">-- Chọn công việc trước --</option>';
+      succSelect.innerHTML = '<option value="">-- Chọn công việc sau --</option>';
+
+      rawTasks.forEach(task => {
+        const text = `[${task.code || `CV-${task.id}`}] ${task.name}`;
+
+        const opt1 = document.createElement('option');
+        opt1.value = task.id;
+        opt1.innerText = text;
+        predSelect.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = task.id;
+        opt2.innerText = text;
+        succSelect.appendChild(opt2);
+      });
+
+      if (currentPred) predSelect.value = currentPred;
+      if (currentSucc) succSelect.value = currentSucc;
+    }
+
+    function renderDependenciesTable() {
+      const tbody = document.getElementById('dep-table-body');
+      const countEl = document.getElementById('dep-list-count');
+      const totalDepEl = document.getElementById('total-dep-count');
+      if (!tbody) return;
+
+      if (countEl) countEl.innerText = rawDependencies.length;
+      if (totalDepEl) totalDepEl.innerText = rawDependencies.length;
+
+      if (!rawDependencies || rawDependencies.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 32px 16px; color: var(--text-muted);">
+              Chưa có quan hệ phụ thuộc nào được khai báo cho dự án này.<br>
+              <span style="font-size: 11.5px;">Hãy chọn công việc trước, loại quan hệ và công việc sau ở form bên trên để thêm quan hệ mới.</span>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = rawDependencies.map((dep, idx) => {
+        const predName = dep.predecessor_task_name || `Công việc #${dep.predecessor_task_id}`;
+        const predCode = dep.predecessor_task_code || `CV-${dep.predecessor_task_id}`;
+        const succName = dep.successor_task_name || `Công việc #${dep.successor_task_id}`;
+        const succCode = dep.successor_task_code || `CV-${dep.successor_task_id}`;
+        const depType = dep.dependency_type || 'FS';
+
+        return `
+          <tr>
+            <td class="cell-center" style="font-weight: 700; color: var(--text-muted);">${idx + 1}</td>
+            <td class="cell-task">
+              <span class="task-code-badge">${escapeHtml(predCode)}</span>
+              ${escapeHtml(predName)}
+            </td>
+            <td class="cell-center">
+              <span class="dep-type-badge dep-type-${depType}" title="Loại quan hệ: ${depType}">${depType}</span>
+            </td>
+            <td class="cell-center">
+              ${formatLagVN(dep.lag_days)}
+            </td>
+            <td class="cell-task">
+              <span class="task-code-badge">${escapeHtml(succCode)}</span>
+              ${escapeHtml(succName)}
+            </td>
+            <td class="dep-actions" style="text-align: right; white-space: nowrap;">
+              <button class="btn-action-icon" title="Chỉnh sửa quan hệ phụ thuộc" aria-label="Chỉnh sửa quan hệ phụ thuộc" onclick="openEditDependency(${dep.id})">
+                <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </button>
+              <button class="btn-action-icon btn-delete" title="Xóa quan hệ phụ thuộc" aria-label="Xóa quan hệ phụ thuộc" onclick="deleteDependency(${dep.id}, '${escapeHtml(predName)}', '${escapeHtml(succName)}')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function loadDependencies() {
+      const { res, data } = await apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/dependencies`);
+      if (res.ok && data.success) {
+        rawDependencies = data.data || [];
+      } else {
+        rawDependencies = [];
+      }
+      renderDependenciesTable();
+    }
+
+    async function openDependencyModal() {
+      populateDependencyTaskDropdowns();
+      await loadDependencies();
+      document.getElementById('dependency-modal').style.display = 'flex';
+    }
+
+    function closeDependencyModal() {
+      cancelEditDependency();
+      document.getElementById('dependency-modal').style.display = 'none';
+    }
+
+    async function saveDependency() {
+      const editId = document.getElementById('dep-edit-id').value;
+      const predSelect = document.getElementById('dep-predecessor-select');
+      const succSelect = document.getElementById('dep-successor-select');
+      const typeSelect = document.getElementById('dep-type-select');
+      const lagInput = document.getElementById('dep-lag-input');
+
+      const predecessorId = Number(predSelect.value);
+      const successorId = Number(succSelect.value);
+      const type = (typeSelect.value || 'FS').toUpperCase();
+      const lagStr = lagInput.value.trim();
+      const lag = lagStr === '' ? 0 : Number(lagStr);
+
+      if (!editId && (!predecessorId || !successorId)) {
+        alert('Vui lòng chọn cả công việc đứng trước và công việc đứng sau!');
+        return;
+      }
+
+      if (!editId && predecessorId === successorId) {
+        alert('Công việc đứng trước và công việc đứng sau không được trùng nhau (không được tự phụ thuộc chính nó)!');
+        return;
+      }
+
+      if (!['FS', 'SS', 'FF', 'SF'].includes(type)) {
+        alert('Loại quan hệ chỉ chấp nhận một trong bốn giá trị: FS, SS, FF, SF!');
+        return;
+      }
+
+      if (!Number.isFinite(lag)) {
+        alert('Độ trễ (lag) phải là một số thực hợp lệ!');
+        return;
+      }
+
+      if (editId) {
+        const { res, data } = await apiRequest(`/api/dependencies/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, lag })
+        });
+
+        if (!res.ok || !data.success) {
+          if (res.status === 422) {
+            alert(`Không thể cập nhật: Quan hệ này tạo ra chu trình vòng lặp phụ thuộc!\nĐường dẫn chu trình: ${data.cyclePath || ''}`);
+          } else {
+            alert(`Lỗi cập nhật: ${data.message || 'Không thể lưu quan hệ phụ thuộc'}`);
+          }
+          return;
+        }
+      } else {
+        const { res, data } = await apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/dependencies`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ predecessorId, successorId, type, lag })
+        });
+
+        if (!res.ok || !data.success) {
+          if (res.status === 422) {
+            alert(`Không thể thiết lập liên kết: Phát hiện chu trình vòng lặp phụ thuộc!\nĐường dẫn chu trình: ${data.cyclePath || ''}\n\nHệ thống đã tự động hủy bỏ (rollback) và không lưu quan hệ này.`);
+          } else if (res.status === 409) {
+            alert(`Không thể lưu: Đã tồn tại quan hệ phụ thuộc giữa 2 công việc này (HTTP 409)!`);
+          } else {
+            alert(`Lỗi tạo quan hệ phụ thuộc: ${data.message || 'Không thể lưu'}`);
+          }
+          return;
+        }
+      }
+
+      cancelEditDependency();
+      await loadDependencies();
+    }
+
+    function openEditDependency(depId) {
+      const dep = rawDependencies.find(d => d.id === depId);
+      if (!dep) return;
+
+      currentEditingDepId = depId;
+      document.getElementById('dep-edit-id').value = dep.id;
+      document.getElementById('dep-form-title').innerText = `✏️ Chỉnh sửa quan hệ phụ thuộc #${dep.id}`;
+
+      const predSelect = document.getElementById('dep-predecessor-select');
+      const succSelect = document.getElementById('dep-successor-select');
+      const typeSelect = document.getElementById('dep-type-select');
+      const lagInput = document.getElementById('dep-lag-input');
+
+      predSelect.value = dep.predecessor_task_id;
+      succSelect.value = dep.successor_task_id;
+      predSelect.disabled = true;
+      succSelect.disabled = true;
+
+      typeSelect.value = dep.dependency_type || 'FS';
+      lagInput.value = dep.lag_days !== undefined ? dep.lag_days : 0;
+
+      document.getElementById('btn-cancel-dep-edit').style.display = 'inline-block';
+      document.getElementById('btn-save-dep').innerText = 'Cập nhật quan hệ';
+    }
+
+    function cancelEditDependency() {
+      currentEditingDepId = null;
+      document.getElementById('dep-edit-id').value = '';
+      document.getElementById('dep-form-title').innerText = '➕ Khai báo quan hệ phụ thuộc mới (T-13 / T-14)';
+
+      const predSelect = document.getElementById('dep-predecessor-select');
+      const succSelect = document.getElementById('dep-successor-select');
+      const typeSelect = document.getElementById('dep-type-select');
+      const lagInput = document.getElementById('dep-lag-input');
+
+      predSelect.disabled = false;
+      succSelect.disabled = false;
+      predSelect.value = '';
+      succSelect.value = '';
+      typeSelect.value = 'FS';
+      lagInput.value = '0';
+
+      document.getElementById('btn-cancel-dep-edit').style.display = 'none';
+      document.getElementById('btn-save-dep').innerText = 'Lưu quan hệ phụ thuộc';
+    }
+
+    async function deleteDependency(depId, predName, succName) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa quan hệ phụ thuộc giữa "${predName}" và "${succName}"?`)) return;
+
+      const { res, data } = await apiRequest(`/api/dependencies/${depId}`, { method: 'DELETE' });
+      if (!res.ok || !data.success) {
+        alert(`Không thể xóa: ${data.message || 'Lỗi hệ thống hoặc bạn không có quyền'}`);
+        return;
+      }
+
+      await loadDependencies();
+    }
+
+    // === KIỂM TRA THỨ TỰ THI CÔNG & VÒNG LẶP ===
+    async function openScheduleModal(criticalOnly = false) {
+      const modal = document.getElementById('schedule-modal');
+      const body = document.getElementById('schedule-modal-body');
+      modal.style.display = 'flex';
+      body.innerHTML = '<div style="text-align: center; padding: 25px;">Đang phân tích bảng tiến độ và việc găng CPM...</div>';
+
+      const url = `/api/projects/${CURRENT_PROJECT_ID}/scheduling/results?critical=${criticalOnly ? 'true' : 'false'}`;
+      let { res, data } = await apiRequest(url);
+
+      if (!res.ok && res.status === 404) {
+        // Fallback endpoint cũ nếu cần
+        const fallback = await apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/scheduling/schedule${criticalOnly ? '?critical=true' : ''}`);
+        res = fallback.res;
+        data = fallback.data;
+      }
+
+      if (!res.ok && !data.hasCycle) {
+        body.innerHTML = `<div class="alert-banner alert-danger">${escapeHtml(data.message || 'Không thể tính lịch thi công')}</div>`;
+        return;
+      }
+
+      if (data.hasCycle) {
+        body.innerHTML = `
+          <div class="alert-banner alert-danger">
+            ⚠️ <strong>Phát hiện chu trình vòng lặp phụ thuộc (circular dependency)!</strong><br>
+            <strong>Đường dẫn chu trình:</strong> <code>${escapeHtml(data.cyclePath || '')}</code><br>
+            ${data.cycleNodes && data.cycleNodes.length ? `<strong>Các công việc liên quan:</strong> ${data.cycleNodes.map(id => {
+              const t = rawTasks.find(x => x.id === id);
+              return t ? `[${escapeHtml(t.code || `CV-${t.id}`)}] ${escapeHtml(t.name)}` : `#${id}`;
+            }).join(' ➔ ')}<br>` : ''}
+            Không thể thiết lập tiến độ thi công khi có chu trình khép kín. Giao dịch đã được hủy (Rollback) an toàn. Vui lòng mở cửa sổ <strong>Quan hệ phụ thuộc</strong> để gỡ bỏ quan hệ vòng.
+          </div>
+        `;
+        return;
+      }
+
+      if (!data.success && !data.tasks && !data.order) {
+        body.innerHTML = `<div class="alert-banner alert-danger">${escapeHtml(data.message || 'Lỗi tính toán tiến độ')}</div>`;
+        return;
+      }
+
+      let integrationNote = '';
+      if (data.isCached) {
+        integrationNote = `
+          <div class="alert-banner alert-info" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div>
+              ⚡ <strong>Dữ liệu đọc từ bảng kết quả lưu sẵn (schedule_results)</strong><br>
+              <span style="font-size: 12px; color: var(--text-muted);">Kết quả không cần tính toán lại do chưa có thay đổi nào về thời lượng hoặc quan hệ phụ thuộc.</span>
+            </div>
+          </div>
+        `;
+      }
+
+      const tasksList = data.tasks || [];
+      let listHtml = '';
+      if (tasksList.length === 0) {
+        listHtml = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">Dự án chưa có công việc nào hoặc không có công việc nào thỏa mãn bộ lọc.</div>';
+      } else {
+        const rows = tasksList.map((t, idx) => `
+          <tr class="${t.isCritical ? 'critical-row' : ''}">
+            <td class="cell-center">${idx + 1}</td>
+            <td><span class="task-code-badge">${escapeHtml(t.code || `CV-${t.taskId ?? t.id}`)}</span> ${escapeHtml(t.name || `Công việc #${t.taskId ?? t.id}`)}</td>
+            <td class="cell-center">${formatDurationVN(t.duration)}</td>
+            <td class="cell-center">${t.earlyStart}</td>
+            <td class="cell-center">${t.earlyFinish}</td>
+            <td class="cell-center">${t.lateStart}</td>
+            <td class="cell-center">${t.lateFinish}</td>
+            <td class="cell-center">${t.totalFloat}</td>
+            <td class="cell-center">${t.isCritical ? '<span class="dep-type-badge" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;font-weight:800;">🔥 Việc găng</span>' : '—'}</td>
+          </tr>
+        `).join('');
+        listHtml = `
+          <div class="dep-table-wrapper" style="overflow-x:auto;">
+            <table class="dep-table" style="min-width:900px;">
+              <thead><tr><th>STT</th><th>Công việc</th><th>Thời lượng</th><th>ES</th><th>EF</th><th>LS</th><th>LF</th><th>Độ trễ</th><th>Trạng thái</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+      }
+
+      body.innerHTML = `
+        ${integrationNote}
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <h4 style="font-size: 14.5px; color: var(--text-title);">
+            Tổng thời gian dự án: <strong>${formatDurationVN(data.projectDuration)}</strong>
+          </h4>
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; cursor: pointer;">
+              <input type="checkbox" id="modal-critical-toggle" ${criticalOnly ? 'checked' : ''} onchange="openScheduleModal(this.checked)">
+              🔥 Chỉ xem việc găng
+            </label>
+            <a href="schedule.html?projectId=${CURRENT_PROJECT_ID}" target="_blank" style="text-decoration: none; padding: 4px 10px; font-size: 12px; background: #eff6ff; color: #1d4ed8; border: 1px solid #93c5fd; border-radius: 6px; font-weight: 700;">
+              Mở toàn màn hình ↗
+            </a>
+          </div>
+        </div>
+        <div style="max-height: 430px; overflow: auto;">
+          ${listHtml}
+        </div>
+      `;
+    }
+
+    function closeScheduleModal() {
+      document.getElementById('schedule-modal').style.display = 'none';
+    }
+
     function openProjectModal() {
       document.getElementById('project-modal').style.display = 'flex';
     }
     function closeProjectModal() {
       document.getElementById('project-modal').style.display = 'none';
     }
-    function saveNewProject() {
-      const name = document.getElementById('proj-name').value.trim();
-      const location = document.getElementById('proj-location').value.trim();
-      const date = document.getElementById('proj-start-date').value;
 
-      if (!name || !location || !date) {
-        alert('Vui lòng điền đủ Tên dự án, Địa điểm và Ngày khởi công!');
+    async function saveNewProject() {
+      const name = document.getElementById('proj-name').value.trim();
+      const code = document.getElementById('proj-code').value.trim();
+      const description = document.getElementById('proj-desc').value.trim();
+      if (!name || !code) {
+        alert('Vui lòng điền đủ tên và mã dự án!');
         return;
       }
 
-      document.getElementById('project-display-title').innerText = `Dự án: ${name} (${location}) — Khởi công: ${date}`;
-      alert(`Khởi tạo thành công dự án: ${name}`);
+      const { res, data } = await apiRequest('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, code, description })
+      });
+
+      if (!res.ok || !data.success) {
+        alert(`Lỗi tạo dự án: ${data.message || 'Không thể tạo'}`);
+        return;
+      }
+
+      alert(`Khởi tạo thành công dự án: ${name} [${code}]`);
       closeProjectModal();
     }
 
     function escapeHtml(text) {
+      if (text === null || text === undefined) return '';
       const div = document.createElement('div');
-      div.innerText = text;
+      div.innerText = String(text);
       return div.innerHTML;
+    }
+
+    function initUser() {
+      const userStr = localStorage.getItem('quanly_user');
+      let userName = 'Trần Mạnh Dũng';
+      let userRole = 'Chỉ huy trưởng công trình';
+
+      if (userStr) {
+        try {
+          currentUser = JSON.parse(userStr);
+          userName = currentUser.full_name || currentUser.fullName || currentUser.name || currentUser.email || userName;
+          userRole = currentUser.role_display_name || currentUser.role_name || currentUser.role || userRole;
+        } catch (e) {}
+      }
+
+      const nameEl = document.getElementById('display-user-name');
+      const roleEl = document.getElementById('display-user-role');
+      const avatarEl = document.getElementById('avatar-letter');
+
+      if (nameEl) nameEl.innerText = userName;
+      if (roleEl) roleEl.innerText = String(userRole);
+      if (avatarEl) avatarEl.innerText = (userName.trim()[0] || 'U').toUpperCase();
     }
 
     function handleLogout() {
@@ -594,8 +2244,23 @@
       }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      renderTree();
+    // Bảo vệ khi nhấn nút Back của trình duyệt sau khi đăng xuất
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted || (window.performance && window.performance.navigation && window.performance.navigation.type === 2)) {
+        if (!localStorage.getItem('quanly_token')) {
+          window.location.replace('/login.html');
+        }
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      initUser();
+      const authenticated = await initUserAndAuth();
+      if (authenticated) {
+        await fetchMilestones();
+        await loadData();
+      }
+    });
     });
   </script>
 </body>

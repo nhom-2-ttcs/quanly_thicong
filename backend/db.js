@@ -20,10 +20,11 @@ try {
 }
 
 // Hàm khởi tạo bảng và seed 6 vai trò khi kết nối MySQL thành công (SCRUM-29 / T-04)
-async function initDbSchema() {
+async function initDbSchema(maxRetries = 10, delayMs = 1500) {
   if (!pool) return;
-  try {
-    // 1. Tạo bảng roles
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // 1. Tạo bảng roles
     await pool.query(`
       CREATE TABLE IF NOT EXISTS roles (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -52,7 +53,172 @@ async function initDbSchema() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    // Seed 6 vai trò
+    // 3. Tạo bảng projects (Quản lý dự án thi công)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        code VARCHAR(50) NOT NULL UNIQUE,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Seed dự án mặc định (id = 1)
+    await pool.query(`
+      INSERT INTO projects (id, name, code, description)
+      VALUES (1, 'Dự án Thi Công Mẫu', 'DA-01', 'Dự án mẫu quản trị tiến độ thi công')
+      ON DUPLICATE KEY UPDATE name = VALUES(name);
+    `);
+
+    // 4. Tạo bảng work_items (Cơ cấu công việc WBS)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS work_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        parent_id INT NULL,
+        name VARCHAR(255) NOT NULL,
+        code VARCHAR(50) NULL,
+        unit VARCHAR(50) NULL,
+        quantity DECIMAL(12,2) DEFAULT 0,
+        status ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (parent_id) REFERENCES work_items(id) ON DELETE RESTRICT
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Seed hạng mục WBS mẫu (id = 1)
+    await pool.query(`
+      INSERT INTO work_items (id, project_id, name, code, unit, quantity, status)
+      VALUES (1, 1, 'Thi công phần móng', 'WBS-01', 'Gói', 1, 'in_progress')
+      ON DUPLICATE KEY UPDATE name = VALUES(name);
+    `);
+
+    // 5. Tạo bảng tasks (S-05 / SCRUM-60 / T-11 & S-15 / SCRUM-88 / T-34: Tiến độ thực tế tách kế hoạch)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tasks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        work_item_id INT NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        code VARCHAR(50) NULL,
+        duration INT NOT NULL,
+        actual_start DATE NULL,
+        actual_end DATE NULL,
+        percent_complete DECIMAL(5, 2) NOT NULL DEFAULT 0.00,
+        status ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_tasks_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        CONSTRAINT fk_tasks_work_item FOREIGN KEY (work_item_id) REFERENCES work_items(id) ON DELETE RESTRICT,
+        CONSTRAINT chk_task_duration_positive CHECK (duration > 0),
+        CONSTRAINT chk_task_percent_complete CHECK (percent_complete >= 0.00 AND percent_complete <= 100.00)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // S-15 / SCRUM-99 (T-34): Đảm bảo các cột tiến độ thực tế tồn tại nếu bảng đã tạo từ trước
+    try {
+      const [taskCols] = await pool.query(`
+        SELECT COLUMN_NAME 
+        FROM information_schema.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tasks' AND COLUMN_NAME IN ('actual_start', 'actual_end', 'percent_complete')
+      `);
+      const existingColNames = (taskCols || []).map(c => c.COLUMN_NAME.toLowerCase());
+      if (!existingColNames.includes('actual_start')) {
+        await pool.query('ALTER TABLE tasks ADD COLUMN actual_start DATE NULL AFTER duration');
+      }
+      if (!existingColNames.includes('actual_end')) {
+        await pool.query('ALTER TABLE tasks ADD COLUMN actual_end DATE NULL AFTER actual_start');
+      }
+      if (!existingColNames.includes('percent_complete')) {
+        await pool.query('ALTER TABLE tasks ADD COLUMN percent_complete DECIMAL(5, 2) NOT NULL DEFAULT 0.00 AFTER actual_end');
+      }
+    } catch (migErr) {
+      console.warn('[DB] Lưu ý khi kiểm tra cột tiến độ thực tế bảng tasks:', migErr.message);
+    }
+
+    // Seed các công việc mẫu (task 1: CV-01, task 2: CV-02)
+    await pool.query(`
+      INSERT INTO tasks (id, project_id, work_item_id, name, code, duration, actual_start, actual_end, percent_complete, status)
+      VALUES
+        (1, 1, 1, 'Đào đất hố móng trụ T1', 'CV-01', 5, NULL, NULL, 0.00, 'pending'),
+        (2, 1, 1, 'Đổ bê tông lót móng', 'CV-02', 3, NULL, NULL, 0.00, 'pending')
+      ON DUPLICATE KEY UPDATE name = VALUES(name);
+    `);
+
+    // 6. Tạo bảng project_members (Phân quyền người xem / thành viên dự án)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS project_members (
+        project_id INT NOT NULL,
+        user_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (project_id, user_id),
+        CONSTRAINT fk_pm_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        CONSTRAINT fk_pm_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // 7. Tạo bảng task_dependencies (S-06 / SCRUM-61: Quan hệ phụ thuộc công việc FS, SS, FF, SF và lag)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS task_dependencies (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        predecessor_task_id INT NOT NULL,
+        successor_task_id INT NOT NULL,
+        dependency_type ENUM('FS', 'SS', 'FF', 'SF') NOT NULL DEFAULT 'FS',
+        lag_days DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (predecessor_task_id) REFERENCES tasks(id) ON DELETE RESTRICT,
+        FOREIGN KEY (successor_task_id) REFERENCES tasks(id) ON DELETE RESTRICT,
+        UNIQUE KEY unique_dependency_pair (predecessor_task_id, successor_task_id),
+        INDEX idx_deps_project (project_id),
+        INDEX idx_deps_pred (predecessor_task_id),
+        INDEX idx_deps_succ (successor_task_id),
+        CONSTRAINT chk_no_self_loop CHECK (predecessor_task_id <> successor_task_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // 8. Tạo bảng schedule_results & project_schedule_status (S-12 / SCRUM-67: Bảng tiến độ và việc găng)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS schedule_results (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        task_id INT NOT NULL,
+        early_start DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+        early_finish DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+        late_start DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+        late_finish DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+        total_float DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+        is_critical BOOLEAN NOT NULL DEFAULT FALSE,
+        is_stale BOOLEAN NOT NULL DEFAULT FALSE,
+        calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_project_task (project_id, task_id),
+        INDEX idx_sr_project_es (project_id, early_start, task_id),
+        INDEX idx_sr_project_crit (project_id, is_critical),
+        INDEX idx_sr_task (task_id),
+        CONSTRAINT fk_sr_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        CONSTRAINT fk_sr_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS project_schedule_status (
+        project_id INT PRIMARY KEY,
+        needs_recalculation BOOLEAN NOT NULL DEFAULT TRUE,
+        project_duration DECIMAL(8, 2) NULL,
+        calculated_at TIMESTAMP NULL,
+        has_cycle BOOLEAN NOT NULL DEFAULT FALSE,
+        cycle_info TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_pss_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Seed 7 vai trò thi công xây dựng
     for (const r of SEED_ROLES) {
       await pool.query(`
         INSERT INTO roles (id, name, display_name, description)
@@ -60,9 +226,9 @@ async function initDbSchema() {
         ON DUPLICATE KEY UPDATE display_name = VALUES(display_name), description = VALUES(description);
       `, [r.id, r.name, r.display_name, r.description]);
     }
-    console.log('[DB] Đã seed 6 vai trò thi công xây dựng thành công (SCRUM-29)!');
+    console.log('[DB] Đã seed 7 vai trò thi công xây dựng thành công (SCRUM-29 & Sprint 2)!');
 
-    // Seed tài khoản admin và người dùng mẫu
+    // Seed tài khoản admin, PM và Người xem dự án mẫu
     const { inMemoryUsers } = require('./src/models/store');
     for (const u of inMemoryUsers) {
       await pool.query(`
@@ -71,6 +237,40 @@ async function initDbSchema() {
         ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), role_id = VALUES(role_id);
       `, [u.id, u.email, u.password_hash, u.salt, u.full_name, u.role_id]);
     }
+
+    // Gán quyền thành viên dự án mẫu 1 cho Admin (1), PM (2), Viewer (3)
+    await pool.query(`
+      INSERT IGNORE INTO project_members (project_id, user_id) VALUES (1, 1), (1, 2), (1, 3);
+    `);
+
+    // Sửa triệt để lỗi font/mojibake dữ liệu mẫu WBS và tasks theo cách idempotent
+    await pool.query(`
+      UPDATE work_items
+      SET name = 'Thi công phần móng'
+      WHERE code = 'WBS-01' OR (project_id = 1 AND (name LIKE '%ph%n m%ng%' OR name LIKE 'Thi c%ng%'));
+    `);
+    await pool.query(`
+      UPDATE tasks
+      SET name = 'Đào đất hố móng trụ T1'
+      WHERE code = 'CV-01' OR (project_id = 1 AND (name LIKE '%o d%t h% m%ng%' OR name LIKE '%tr% T1%'));
+    `);
+    await pool.query(`
+      UPDATE tasks
+      SET name = 'Đổ bê tông lót móng'
+      WHERE code = 'CV-02' OR (project_id = 1 AND (name LIKE '%b% t%ng l%t m%ng%' OR name LIKE '%l%t m%ng%'));
+    `);
+
+    // Seed quan hệ phụ thuộc mẫu: CV-01 -> CV-02, Loại FS, lag 0
+    await pool.query(`
+      INSERT IGNORE INTO task_dependencies (project_id, predecessor_task_id, successor_task_id, dependency_type, lag_days)
+      SELECT 1, 1, 2, 'FS', 0.00
+      FROM DUAL
+      WHERE EXISTS (SELECT 1 FROM tasks WHERE id = 1)
+        AND EXISTS (SELECT 1 FROM tasks WHERE id = 2)
+        AND NOT EXISTS (
+          SELECT 1 FROM task_dependencies WHERE predecessor_task_id = 1 AND successor_task_id = 2
+        );
+    `);
 
     // Đồng bộ người dùng đã đăng ký từ MySQL vào bộ nhớ
     const [rows] = await pool.query(`
@@ -128,9 +328,57 @@ async function initDbSchema() {
       ON DUPLICATE KEY UPDATE work_days_per_week = VALUES(work_days_per_week), working_days_mask = VALUES(working_days_mask);
     `);
     console.log('[DB] Đã khởi tạo bảng calendars & holidays (S-17 / T-38) thành công!');
+
+    // 9. Tạo bảng milestones (TASK T-43)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS milestones (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        work_item_id INT NOT NULL,
+        due_date DATE NOT NULL,
+        title VARCHAR(255) NULL,
+        created_by INT NOT NULL,
+        is_active TINYINT(1) NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (work_item_id) REFERENCES work_items(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // 10. Tạo bảng milestone_alerts (TASK T-44: Cảnh báo vượt mốc tiến độ)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS milestone_alerts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        milestone_id INT NOT NULL,
+        work_item_id INT NOT NULL,
+        due_date DATE NOT NULL,
+        max_early_finish DECIMAL(8, 2) NOT NULL,
+        overdue_days INT NOT NULL,
+        status ENUM('active', 'closed') NOT NULL DEFAULT 'active',
+        opened_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        closed_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (milestone_id) REFERENCES milestones(id) ON DELETE CASCADE,
+        FOREIGN KEY (work_item_id) REFERENCES work_items(id) ON DELETE CASCADE,
+        INDEX idx_ma_project_status (project_id, status),
+        INDEX idx_ma_milestone (milestone_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    console.log(`[DB] Đã đồng bộ ${inMemoryUsers.length} tài khoản người dùng và schema calendars (S-17), milestones (T-43), milestone_alerts (T-44) sẵn sàng.`);
+    return;
   } catch (err) {
-    console.warn('[DB] Lưu ý khi tạo schema MySQL:', err.message);
+    if (attempt < maxRetries) {
+      console.warn(`[DB] Đang đợi MySQL sẵn sàng (lần ${attempt}/${maxRetries}): ${err.message}. Thử lại sau ${delayMs}ms...`);
+      await new Promise(r => setTimeout(r, delayMs));
+    } else {
+      console.warn('[DB] Lưu ý khi tạo schema MySQL:', err.message);
+    }
   }
+}
 }
 
 module.exports = {

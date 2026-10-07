@@ -1,111 +1,199 @@
-/**
- * T-20 & T-21: Duyệt ngược theo thứ tự đảo tô-pô, tính hai mốc muộn, độ trễ và việc găng.
- */
+const EPSILON = 1e-9;
+const DEPENDENCY_TYPES = new Set(['FS', 'SS', 'FF', 'SF']);
 
-const {
-  calculateReverseFS,
-  calculateReverseSS,
-  calculateReverseFF,
-  calculateReverseSF
-} = require('./dependencyConstraints');
+function normalizeId(value, fieldName = 'ID') {
+  if (value === undefined || value === null || value === '') {
+    throw new Error(`${fieldName} không hợp lệ`);
+  }
+  return String(value);
+}
 
-/**
- * Tính hai mốc muộn, độ trễ toàn phần và đánh dấu việc găng.
- * 
- * @param {Array} forwardResults Kết quả từ forwardPass (chứa earlyStart, earlyFinish, id, duration)
- * @param {Array} tasks Danh sách tasks gốc kèm predecessors
- * @param {Array<string>} topologicalOrder Thứ tự topo từ T-16
- * @param {number|null} projectFinish Mốc kết thúc dự án (mặc định lấy max(earlyFinish))
- * @returns {Array} Kết quả đầy đủ gồm 4 mốc, totalFloat và isCritical
- */
-function calculateBackwardPass(forwardResults, tasks, topologicalOrder, projectFinish = null) {
-  const taskMap = new Map();
+function normalizeNumber(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) throw new Error('Giá trị lịch phải là số hữu hạn');
+  if (Math.abs(number) <= EPSILON) return 0;
+  return Number(number.toFixed(12));
+}
 
-  for (const item of forwardResults) {
-    taskMap.set(item.id, {
-      ...item,
-      lateStart: null,
-      lateFinish: null,
-      totalFloat: null,
-      isCritical: false
+function getTaskId(task) {
+  return normalizeId(task?.id ?? task?.taskId ?? task?.task_id, 'task.id');
+}
+
+function getDuration(task) {
+  const duration = Number(task?.duration);
+  if (!Number.isFinite(duration) || duration < 0) {
+    throw new Error(`duration của task ${task?.id ?? ''} phải là số không âm hữu hạn`);
+  }
+  return duration;
+}
+
+function normalizeDependencies(tasks, dependencies) {
+  if (dependencies !== undefined && !Array.isArray(dependencies)) {
+    throw new Error('dependencies phải là một mảng');
+  }
+  if (Array.isArray(dependencies)) {
+    return dependencies.map((dependency, index) => {
+      if (!dependency || typeof dependency !== 'object') throw new Error(`dependency[${index}] không hợp lệ`);
+      const predecessorId = normalizeId(dependency.predecessorId, `dependency[${index}].predecessorId`);
+      const successorId = normalizeId(dependency.successorId, `dependency[${index}].successorId`);
+      const type = String(dependency.type ?? '').toUpperCase();
+      const lag = Number(dependency.lag ?? 0);
+      if (!DEPENDENCY_TYPES.has(type)) throw new Error(`Loại quan hệ "${type}" không hợp lệ`);
+      if (!Number.isFinite(lag)) throw new Error(`lag của dependency[${index}] phải là số hữu hạn`);
+      return { predecessorId, successorId, type, lag };
     });
   }
 
-  const successorsMap = new Map();
-  for (const taskId of topologicalOrder) {
-    successorsMap.set(taskId, []);
-  }
-
+  const result = [];
   for (const task of tasks) {
-    const preds = task.predecessors || [];
-    for (const dep of preds) {
-      if (successorsMap.has(dep.id)) {
-        successorsMap.get(dep.id).push({
-          successorId: task.id,
-          type: dep.type,
-          lag: dep.lag || 0
-        });
-      }
+    const successorId = getTaskId(task);
+    for (const dependency of task.predecessors || []) {
+      const rawPredecessorId = typeof dependency === 'object' ? dependency.id : dependency;
+      const predecessorId = normalizeId(rawPredecessorId, 'predecessor.id');
+      const type = String(typeof dependency === 'object' ? dependency.type ?? 'FS' : 'FS').toUpperCase();
+      const lag = Number(typeof dependency === 'object' ? dependency.lag ?? 0 : 0);
+      if (!DEPENDENCY_TYPES.has(type)) throw new Error(`Loại quan hệ "${type}" không hợp lệ`);
+      if (!Number.isFinite(lag)) throw new Error('lag phải là số hữu hạn');
+      result.push({ predecessorId, successorId, type, lag });
     }
   }
+  return result;
+}
 
-  const calculatedProjectFinish = projectFinish !== null 
-    ? projectFinish 
-    : Math.max(...forwardResults.map(t => t.earlyFinish));
+function calculateRelationWeight(predecessorTask, successorTask, type, lag = 0) {
+  const durationP = getDuration(predecessorTask);
+  const durationS = getDuration(successorTask);
+  const normalizedType = String(type).toUpperCase();
+  const normalizedLag = Number(lag);
+  if (!DEPENDENCY_TYPES.has(normalizedType)) throw new Error(`Loại quan hệ "${type}" không hợp lệ`);
+  if (!Number.isFinite(normalizedLag)) throw new Error('lag phải là số hữu hạn');
+  const weights = {
+    FS: durationP + normalizedLag,
+    SS: normalizedLag,
+    FF: durationP + normalizedLag - durationS,
+    SF: normalizedLag - durationS
+  };
+  return normalizeNumber(weights[normalizedType]);
+}
 
-  const reverseOrder = [...topologicalOrder].reverse();
-
-  for (const taskId of reverseOrder) {
-    const task = taskMap.get(taskId);
-    if (!task) {
-      throw new Error(`Task "${taskId}" không tồn tại`);
+function calculateProjectDuration(tasks, earlyScheduleMap) {
+  if (!Array.isArray(tasks)) throw new Error('tasks phải là một mảng');
+  if (tasks.length === 0) return 0;
+  if (!(earlyScheduleMap instanceof Map)) throw new Error('earlyScheduleMap không hợp lệ');
+  let projectDuration = -Infinity;
+  for (const task of tasks) {
+    const id = getTaskId(task);
+    const entry = earlyScheduleMap.get(id);
+    if (!entry || entry.earlyStart === undefined || entry.earlyFinish === undefined) {
+      throw new Error(`Thiếu ES/EF của task ${id}`);
     }
+    const earlyStart = Number(entry.earlyStart);
+    const earlyFinish = Number(entry.earlyFinish);
+    const duration = getDuration(task);
+    if (!Number.isFinite(earlyStart) || !Number.isFinite(earlyFinish)) {
+      throw new Error(`ES/EF của task ${id} phải là số hữu hạn`);
+    }
+    if (Math.abs(earlyFinish - earlyStart - duration) > EPSILON) {
+      throw new Error(`EF của task ${id} không nhất quán với ES + duration`);
+    }
+    projectDuration = Math.max(projectDuration, earlyFinish);
+  }
+  return normalizeNumber(projectDuration);
+}
 
-    const succs = successorsMap.get(taskId) || [];
+function calculateBackwardPass(tasks, topologicalOrder, earlySchedule, dependencies) {
+  if (!Array.isArray(tasks)) throw new Error('tasks phải là một mảng');
+  if (tasks.length === 0) return [];
+  if (!Array.isArray(topologicalOrder)) throw new Error('topologicalOrder phải là một mảng');
+  if (!Array.isArray(earlySchedule)) throw new Error('earlySchedule phải là một mảng');
 
-    if (succs.length === 0) {
-      task.lateFinish = calculatedProjectFinish;
+  const taskMap = new Map();
+  for (const task of tasks) {
+    const id = getTaskId(task);
+    if (taskMap.has(id)) throw new Error(`ID task bị trùng: ${id}`);
+    getDuration(task);
+    taskMap.set(id, task);
+  }
+  const order = topologicalOrder.map((item, index) =>
+    normalizeId(typeof item === 'object' ? item.id ?? item.taskId ?? item.task_id : item, `topologicalOrder[${index}]`)
+  );
+  if (order.length !== taskMap.size || new Set(order).size !== taskMap.size || order.some(id => !taskMap.has(id))) {
+    throw new Error('topologicalOrder thiếu, thừa hoặc trùng task');
+  }
+
+  const earlyMap = new Map();
+  for (const entry of earlySchedule) {
+    const id = normalizeId(entry?.id ?? entry?.taskId ?? entry?.task_id, 'earlySchedule.taskId');
+    if (earlyMap.has(id)) throw new Error(`Early schedule bị trùng task ${id}`);
+    earlyMap.set(id, entry);
+  }
+  const projectDuration = calculateProjectDuration(tasks, earlyMap);
+  const normalizedDependencies = normalizeDependencies(tasks, dependencies);
+  const successorMap = new Map([...taskMap.keys()].map(id => [id, []]));
+  const orderIndex = new Map(order.map((id, index) => [id, index]));
+  for (const dependency of normalizedDependencies) {
+    if (!taskMap.has(dependency.predecessorId) || !taskMap.has(dependency.successorId)) {
+      throw new Error(`Dependency tham chiếu task không tồn tại: ${dependency.predecessorId} -> ${dependency.successorId}`);
+    }
+    if (orderIndex.get(dependency.predecessorId) >= orderIndex.get(dependency.successorId)) {
+      throw new Error('Đồ thị có chu trình hoặc topologicalOrder không hợp lệ');
+    }
+    successorMap.get(dependency.predecessorId).push(dependency);
+  }
+
+  const lateStartMap = new Map();
+  const lateFinishMap = new Map();
+  for (let index = order.length - 1; index >= 0; index -= 1) {
+    const id = order[index];
+    const task = taskMap.get(id);
+    const successors = successorMap.get(id);
+    let lateStart;
+    if (successors.length === 0) {
+      lateStart = projectDuration - getDuration(task);
     } else {
-      let minLateFinish = Infinity;
-
-      for (const dep of succs) {
-        const successor = taskMap.get(dep.successorId);
-        if (!successor) {
-          throw new Error(`Successor "${dep.successorId}" không tồn tại`);
-        }
-
-        let constraint;
-        switch (dep.type) {
-          case 'FS':
-            constraint = calculateReverseFS(successor.lateStart, dep.lag);
-            break;
-          case 'SS':
-            constraint = calculateReverseSS(successor.lateStart, dep.lag, task.duration);
-            break;
-          case 'FF':
-            constraint = calculateReverseFF(successor.lateFinish, dep.lag);
-            break;
-          case 'SF':
-            constraint = calculateReverseSF(successor.lateFinish, dep.lag, task.duration);
-            break;
-          default:
-            throw new Error(`Loại quan hệ "${dep.type}" không hợp lệ`);
-        }
-
-        minLateFinish = Math.min(minLateFinish, constraint);
-      }
-
-      task.lateFinish = minLateFinish;
+      lateStart = Math.min(...successors.map(dependency => {
+        const successorTask = taskMap.get(dependency.successorId);
+        const successorLateStart = lateStartMap.get(dependency.successorId);
+        if (successorLateStart === undefined) throw new Error('topologicalOrder không hợp lệ');
+        return successorLateStart - calculateRelationWeight(task, successorTask, dependency.type, dependency.lag);
+      }));
     }
-
-    task.lateStart = task.lateFinish - task.duration;
-    task.totalFloat = task.lateStart - task.earlyStart;
-    task.isCritical = (task.totalFloat === 0);
+    lateStart = normalizeNumber(lateStart);
+    lateStartMap.set(id, lateStart);
+    lateFinishMap.set(id, normalizeNumber(lateStart + getDuration(task)));
   }
 
-  return topologicalOrder.map(id => taskMap.get(id));
+  return order.map(id => {
+    const task = taskMap.get(id);
+    const early = earlyMap.get(id);
+    const earlyStart = normalizeNumber(early.earlyStart);
+    const earlyFinish = normalizeNumber(early.earlyFinish);
+    const lateStart = lateStartMap.get(id);
+    const lateFinish = lateFinishMap.get(id);
+    const startFloat = normalizeNumber(lateStart - earlyStart);
+    const finishFloat = normalizeNumber(lateFinish - earlyFinish);
+    if (Math.abs(startFloat - finishFloat) > EPSILON) {
+      throw new Error(`Float của task ${id} không nhất quán giữa LS-ES và LF-EF`);
+    }
+    const totalFloat = Math.abs(startFloat) <= EPSILON ? 0 : startFloat;
+    return {
+      id: task.id ?? id,
+      taskId: task.id ?? id,
+      duration: getDuration(task),
+      earlyStart,
+      earlyFinish,
+      lateStart,
+      lateFinish,
+      totalFloat,
+      isCritical: totalFloat === 0
+    };
+  });
 }
 
 module.exports = {
-  calculateBackwardPass
+  EPSILON,
+  normalizeId,
+  calculateBackwardPass,
+  calculateProjectDuration,
+  calculateRelationWeight
 };

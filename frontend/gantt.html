@@ -3,471 +3,473 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tiến Độ Gantt | Hệ Thống Điều Hành Thi Công</title>
+  <title>Sơ đồ tiến độ thi công</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      -webkit-font-smoothing: antialiased;
+    :root {
+      --primary: #2563eb;
+      --critical: #ef4444;
+      --critical-border: #991b1b;
+      --new-critical: #f59e0b;
+      --new-critical-border: #b45309;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --border-subtle: #f1f5f9;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --task-col-w: 260px;
+      --row-h: 44px;
     }
 
-    body {
-      background-color: #f8fafc;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      color: #334155;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; }
+    body { background-color: var(--bg); color: var(--text-main); padding: 24px; }
 
-    /* TOPBAR - Unified System Header */
-    .topbar {
-      height: 68px;
-      background: #ffffff;
-      border-bottom: 2px solid #e2e8f0;
+    .top-bar {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      padding: 0 36px;
-      position: sticky;
-      top: 0;
-      z-index: 50;
-    }
-
-    .brand-group {
-      display: flex;
       align-items: center;
-      gap: 12px;
+      margin-bottom: 20px;
     }
-
-    .brand-icon {
-      width: 40px;
-      height: 40px;
-      background: #0f172a;
-      border-radius: 9px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .brand-icon svg {
-      width: 22px;
-      height: 22px;
-      stroke: #ffffff;
-      fill: none;
-      stroke-width: 2.2;
-    }
-
-    .brand-info h1 {
-      font-size: 16.5px;
-      font-weight: 800;
-      color: #0f172a;
-      letter-spacing: -0.01em;
-    }
-
-    .brand-info span {
-      font-size: 10.5px;
-      font-weight: 800;
-      color: #64748b;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-
-    .topbar-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .btn-nav {
+    .top-left { display: flex; align-items: center; gap: 12px; }
+    .back-btn {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      background: #ffffff;
-      border: 1.5px solid #e2e8f0;
-      padding: 8px 16px;
+      gap: 6px;
+      padding: 7px 12px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
       border-radius: 8px;
-      color: #0f172a;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
+      color: var(--text-muted);
       text-decoration: none;
-      transition: all 0.15s;
+      transition: all 0.15s ease;
     }
+    .back-btn:hover { background: #f1f5f9; color: var(--text-main); }
+    .top-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
 
-    .btn-nav:hover, .btn-nav.active {
-      background: #eff6ff;
-      border-color: #2563eb;
-      color: #2563eb;
-    }
-
-    .btn-nav svg {
-      width: 16px;
-      height: 16px;
-      stroke: currentColor;
-      fill: none;
-      stroke-width: 2;
-    }
-
-    .btn-logout {
-      padding: 8px 16px;
-      border-radius: 8px;
-      background: #fef2f2;
-      border: 1.5px solid #fecaca;
-      color: #b91c1c;
-      font-size: 12.5px;
-      font-weight: 800;
+    .top-actions { display: flex; align-items: center; gap: 12px; }
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      border-radius: 20px;
       cursor: pointer;
-      transition: background 0.15s;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .filter-chip.active { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
+
+    .segmented-tabs {
+      display: inline-flex;
+      background: #e2e8f0;
+      padding: 3px;
+      border-radius: 8px;
+    }
+    .segmented-tabs button {
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .segmented-tabs button.active {
+      background: var(--card-bg);
+      color: var(--primary);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
     }
 
-    .btn-logout:hover {
-      background: #fee2e2;
-    }
-
-    /* MAIN WRAPPER */
-    .main-wrapper {
-      max-width: 1320px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 28px 24px 48px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .gantt-header-card {
-      background: #ffffff;
-      border: 1.5px solid #e2e8f0;
+    /* Summary Bar hiển thị chênh lệch ngày hoàn thành  */
+    .summary-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 20px 24px;
+      padding: 14px 20px;
+      margin-bottom: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 16px;
+      gap: 12px;
     }
-
-    .gantt-header-title h2 {
-      font-size: 18px;
-      font-weight: 700;
-      color: #0f172a;
-    }
-
-    .gantt-header-title p {
-      font-size: 13px;
-      color: #64748b;
-      margin-top: 2px;
-    }
-
-    .btn-group {
-      display: inline-flex;
-      background: #f1f5f9;
-      padding: 3px;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-      gap: 2px;
-    }
-
-    .btn-group button {
-      padding: 7px 15px;
-      font-size: 12.5px;
-      font-weight: 600;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      border-radius: 6px;
-      color: #475569;
-      transition: all 0.15s;
-    }
-
-    .btn-group button.active {
-      background: #ffffff;
-      color: #0f172a;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    }
+    .metrics { display: flex; align-items: center; gap: 24px; font-size: 13px; }
+    .metric-item { display: flex; align-items: center; gap: 6px; }
+    .metric-label { color: var(--text-muted); }
+    .metric-val { font-weight: 700; color: var(--text-main); }
     
-    .error-box {
-      background: #fef2f2;
-      border-left: 4px solid #ef4444;
-      padding: 16px;
-      border-radius: 8px;
-      color: #991b1b;
-      border: 1px solid #fecaca;
-      border-left-width: 4px;
-    }
-
-    .error-chain {
-      background: #fee2e2;
-      padding: 8px 12px;
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
       border-radius: 6px;
-      font-family: inherit;
-      font-weight: bold;
-      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 700;
     }
+    .badge-status.ontime { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-status.delayed { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
 
-    .gantt-wrapper {
-      display: flex;
-      background: #ffffff;
-      border: 1.5px solid #e2e8f0;
+    .legend-box { display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--text-muted); }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+    .legend-mark { width: 10px; height: 10px; border-radius: 3px; }
+    .legend-mark.crit { background: var(--critical); border: 1.5px dashed var(--critical-border); }
+    .legend-mark.new-crit { background: var(--new-critical); border: 1.5px dashed var(--new-critical-border); }
+    .legend-mark.norm { background: var(--primary); }
+
+    .gantt-board {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
       border-radius: 12px;
       overflow: hidden;
+      display: flex;
+      position: relative;
     }
 
     .task-col {
-      width: 240px;
+      width: var(--task-col-w);
       flex-shrink: 0;
-      border-right: 1.5px solid #e2e8f0;
-      background: #ffffff;
+      border-right: 1px solid var(--border);
+      background: var(--card-bg);
       position: sticky;
       left: 0;
       z-index: 20;
     }
-
     .task-header {
       height: 48px;
       background: #f8fafc;
-      border-bottom: 1.5px solid #e2e8f0;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
       font-weight: 700;
-      font-size: 12.5px;
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
-      position: sticky;
-      top: 0;
-      z-index: 25;
-      color: #475569;
+      color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .task-row {
-      height: 42px;
-      border-bottom: 1px solid #f1f5f9;
       display: flex;
       align-items: center;
       padding: 0 16px;
-      font-size: 12.5px;
+    }
+    .task-row {
+      height: var(--row-h);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 8px;
+      font-size: 13px;
+    }
+    .code-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #dbeafe;
+    }
+    .task-title {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      color: #1e293b;
+      font-weight: 500;
     }
-    
+
     .timeline-col {
       flex: 1;
       overflow-x: auto;
       overflow-y: hidden;
       position: relative;
-      -webkit-overflow-scrolling: touch;
     }
-
     .timeline-header {
       height: 48px;
       background: #f8fafc;
-      border-bottom: 1.5px solid #e2e8f0;
+      border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
       z-index: 10;
     }
-
     .tick-label {
       position: absolute;
       bottom: 6px;
       font-size: 11px;
-      color: #64748b;
-      border-left: 1px solid #e2e8f0;
-      padding-left: 4px;
+      color: var(--text-muted);
+      border-left: 1px solid var(--border);
+      padding-left: 6px;
     }
+    .tick-major { font-weight: 700; color: var(--text-main); border-left-color: #94a3b8; }
 
-    .tick-major {
-      font-weight: 700;
-      color: #0f172a;
-      border-left-color: #cbd5e1;
-    }
-    
-    .chart-body {
-      position: relative;
-    }
-
+    .chart-body { position: relative; }
     .grid-line {
       position: absolute;
       top: 0;
       bottom: 0;
-      border-left: 1px solid #f1f5f9;
+      border-left: 1px solid var(--border-subtle);
     }
-
-    .grid-line.major {
-      border-left-color: #e2e8f0;
-    }
+    .grid-line.major { border-left-color: var(--border); }
 
     .gantt-bar {
       position: absolute;
       height: 26px;
-      border-radius: 5px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       padding: 0 10px;
       font-size: 11.5px;
       color: #ffffff;
-      font-weight: 600;
+      font-weight: 500;
       cursor: pointer;
-      transition: opacity 0.15s;
-      will-change: transform;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      transition: transform 0.12s ease;
     }
-
-    .bar-normal {
-      background: #2563eb;
-    }
-
+    .gantt-bar:hover { transform: translateY(-1px); }
+    .bar-normal { background: linear-gradient(135deg, #3b82f6, #2563eb); border: 1px solid #1d4ed8; }
+    
     .bar-critical {
-      background: #dc2626;
-      border: 1px solid #b91c1c;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      border: 2px dashed var(--critical-border) !important;
+      font-weight: 600;
+    }
+    
+    /* Việc mới trở thành găng  */
+    .bar-new-critical {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border: 2px dashed var(--new-critical-border) !important;
+      font-weight: 600;
+    }
+    .badge-new-crit-tag {
+      font-size: 9px;
+      background: rgba(0,0,0,0.25);
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-right: 4px;
+      font-weight: 700;
+    }
+
+    #ganttTooltip {
+      position: absolute;
+      display: none;
+      z-index: 9999;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(8px);
+      color: #f8fafc;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+      border: 1px solid #334155;
+      pointer-events: none;
+      min-width: 270px;
+    }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .top-bar, .summary-card, #ganttTooltip { display: none !important; }
+      .bar-normal { background: #e2e8f0 !important; border: 1px solid #64748b !important; color: #000 !important; }
+      .bar-critical { background: repeating-linear-gradient(45deg, #000, #000 4px, #fff 4px, #fff 8px) !important; border: 2px solid #000 !important; color: #000 !important; }
+      .bar-new-critical { background: repeating-linear-gradient(-45deg, #444, #444 4px, #fff 4px, #fff 8px) !important; border: 2px dashed #000 !important; color: #000 !important; }
     }
   </style>
 </head>
 <body>
 
-  <!-- TOPBAR -->
-  <header class="topbar">
-    <div class="brand-group">
-      <div class="brand-icon">
-        <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-      </div>
-      <div class="brand-info">
-        <h1>Hệ Thống Điều Hành Thi Công</h1>
-        <span>PHÂN HỆ TIẾN ĐỘ GANTT</span>
+  <div class="top-bar">
+    <div class="top-left">
+      <a href="/schedule.html" class="back-btn">⬅ Bảng tiến độ</a>
+      <a href="/calendar.html" class="back-btn">📅 Lịch làm việc</a>
+      <a href="/wbs.html" class="back-btn">🌳 WBS</a>
+      <a href="/index.html" class="back-btn">🏠 Trang chủ</a>
+      <h1 class="top-title">Sơ đồ tiến độ thi công & Đường găng</h1>
+    </div>
+    <div class="top-actions">
+      <button class="filter-chip" id="btnFilterCrit" onclick="toggleCriticalFilter()">
+        <span>◆</span> Chỉ xem việc găng
+      </button>
+      <div class="segmented-tabs">
+        <button id="btnDay" class="active" onclick="setView('day')">Ngày</button>
+        <button id="btnWeek" onclick="setView('week')">Tuần</button>
       </div>
     </div>
+  </div>
 
-    <div class="topbar-actions">
-      <a href="/index.html" class="btn-nav">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        Bảng Điều Khiển
-      </a>
-      <a href="/wbs.html" class="btn-nav">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-        Cơ Cấu WBS
-      </a>
-      <a href="/gantt.html" class="btn-nav active">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h5M7 12h8M7 16h3"/></svg>
-        Tiến Độ Gantt
-      </a>
-      <a href="/calendar.html" class="btn-nav">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Lịch Làm Việc & Nghỉ Lễ
-      </a>
-      <button class="btn-logout" onclick="handleLogout()">Đăng Xuất</button>
+  <!-- Summary Dashboard Bar với thông số tính lại  -->
+  <div class="summary-card">
+    <div class="metrics">
+      <div class="metric-item">
+        <span class="metric-label">Kế hoạch gốc:</span>
+        <span class="metric-val" id="valPlanEnd">15/11/2026</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">Dự kiến hiện tại:</span>
+        <span class="metric-val" id="valCurrentEnd">18/11/2026</span>
+      </div>
+      <div class="metric-item">
+        <span id="badgeDelayStatus" class="badge-status delayed">⚠️ Chậm 3 ngày</span>
+      </div>
     </div>
-  </header>
+    <div class="legend-box">
+      <div class="legend-item">
+        <div class="legend-mark crit"></div>
+        <span>Việc găng ban đầu</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-mark new-crit"></div>
+        <span>Mới trở thành găng </span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-mark norm"></div>
+        <span>Việc thông thường</span>
+      </div>
+    </div>
+  </div>
 
-  <main class="main-wrapper">
-    <div class="gantt-header-card">
-      <div class="gantt-header-title">
-        <h2>Sơ Đồ Trục Thời Gian Tiến Độ Thi Công</h2>
-        <p>Trực quan hóa thời gian khởi sớm (ES), kết sớm (EF) và đường găng xuyên suốt dự án</p>
-      </div>
-      <div class="btn-group">
-        <button id="btnDay" class="active" onclick="setView('day')">Xem theo Ngày</button>
-        <button id="btnWeek" onclick="setView('week')">Xem theo Tuần</button>
-      </div>
+  <div class="gantt-board" id="ganttContainer">
+    <div class="task-col">
+      <div class="task-header">Danh sách công việc</div>
+      <div id="taskList"></div>
     </div>
+    <div class="timeline-col" id="timelineCol">
+      <div class="timeline-header" id="timelineHeader"></div>
+      <div class="chart-body" id="chartBody"></div>
+    </div>
+  </div>
 
-    <div id="cycleAlert" style="display:none;" class="error-box">
-      <strong>⚠️ Lỗi chu trình phụ thuộc:</strong> Không thể hiển thị sơ đồ do dữ liệu có vòng lặp giữa các công việc:
-      <div id="cycleChain" class="error-chain"></div>
-    </div>
-
-    <div id="ganttContainer" class="gantt-wrapper">
-      <div class="task-col">
-        <div class="task-header">Tên công việc</div>
-        <div id="taskList"></div>
-      </div>
-      <div class="timeline-col" id="timelineCol">
-        <div class="timeline-header" id="timelineHeader"></div>
-        <div class="chart-body" id="chartBody"></div>
-      </div>
-    </div>
-  </main>
+  <div id="ganttTooltip"></div>
 
   <script src="js/timelineScale.js"></script>
+  <script src="js/recalculateSchedule.js"></script>
   <script>
-    function handleLogout() {
-      if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi phiên làm việc?')) {
-        localStorage.removeItem('quanly_token');
-        localStorage.removeItem('quanly_user');
-        window.location.replace('/login.html');
-      }
-    }
-
-    let scheduleData = {
+    // Dữ liệu mẫu kiểm thử các tiêu chí AC của S-16:
+    // CV-03 vốn không găng (độ trễ 2 ngày), nhưng bị trễ 5 ngày (> 2) -> Trở thành việc găng mới (AC 3, T-37)
+    // Toàn dự án lùi tương ứng 3 ngày (AC 1 & T-37)
+    const baseProjectData = {
       projectStartDate: "2026-10-01",
       projectEndDate: "2026-11-15",
-      hasCycle: false,
-      cycleChain: [],
       tasks: [
-        { id: "1", code: "CV01", name: "Đào đất móng", earlyStart: "2026-10-01", earlyFinish: "2026-10-06", isCritical: true },
-        { id: "2", code: "CV02", name: "Đổ bê tông lót", earlyStart: "2026-10-06", earlyFinish: "2026-10-10", isCritical: true },
-        { id: "3", code: "CV03", name: "Gia công cốt thép móng", earlyStart: "2026-10-08", earlyFinish: "2026-10-16", isCritical: false },
-        { id: "4", code: "CV04", name: "Đổ bê tông đài móng", earlyStart: "2026-10-16", earlyFinish: "2026-10-24", isCritical: true }
+        { id: "1", code: "CV-01", name: "Đào đất móng", earlyStart: "2026-10-01", earlyFinish: "2026-10-06", actualFinish: "2026-10-06", progress: 100, totalFloat: 0, isCritical: true },
+        { id: "2", code: "CV-02", name: "Đổ bê tông lót", earlyStart: "2026-10-06", earlyFinish: "2026-10-10", actualFinish: "2026-10-10", progress: 100, totalFloat: 0, isCritical: true },
+        { id: "3", code: "CV-03", name: "Gia công cốt thép móng (Trễ)", earlyStart: "2026-10-08", earlyFinish: "2026-10-16", actualFinish: "2026-10-21", progress: 100, totalFloat: 2, isCritical: false },
+        { id: "4", code: "CV-04", name: "Đổ bê tông đài móng", earlyStart: "2026-10-21", earlyFinish: "2026-11-18", actualFinish: null, progress: 20, totalFloat: 0, isCritical: true }
       ]
     };
 
+    const scheduleCalc = recalculateProjectSchedule(baseProjectData, "2026-10-25");
     let currentUnit = 'day';
+    let filterCriticalOnly = false;
 
     function renderGantt() {
-      if (scheduleData.hasCycle && scheduleData.cycleChain.length > 0) {
-        document.getElementById('cycleAlert').style.display = 'block';
-        document.getElementById('cycleChain').innerText = scheduleData.cycleChain.join(' ➔ ');
-        document.getElementById('ganttContainer').style.display = 'none';
-        return;
+      document.getElementById('valPlanEnd').innerText = scheduleCalc.originalEndDate;
+      document.getElementById('valCurrentEnd').innerText = scheduleCalc.currentEndDate;
+      const statusBadge = document.getElementById('badgeDelayStatus');
+      if (scheduleCalc.delayDays > 0) {
+        statusBadge.className = 'badge-status delayed';
+        statusBadge.innerText = `⚠️ Chậm ${scheduleCalc.delayDays} ngày`;
+      } else {
+        statusBadge.className = 'badge-status ontime';
+        statusBadge.innerText = '✓ Đúng tiến độ';
       }
 
-      const totalDays = getDiffDays(scheduleData.projectStartDate, scheduleData.projectEndDate) + 5;
-      const dayW = 40, weekW = 105;
+      const tasksToRender = filterCriticalOnly 
+        ? scheduleCalc.tasks.filter(t => t.isCriticalNow || t.isCritical)
+        : scheduleCalc.tasks;
+
+      const totalDays = getDiffDays(baseProjectData.projectStartDate, scheduleCalc.currentEndDate) + 5;
+      const dayW = 42, weekW = 110;
       const totalWidth = currentUnit === 'day' ? totalDays * dayW : Math.ceil(totalDays / 7) * weekW;
 
       const taskList = document.getElementById('taskList');
-      taskList.innerHTML = scheduleData.tasks.map(t => `
+      taskList.innerHTML = tasksToRender.map(t => `
         <div class="task-row" title="${t.name}">
-          <strong style="margin-right:6px; color:#6b7280;">[${t.code}]</strong> ${t.name}
+          <span class="code-badge">${t.code}</span>
+          <span class="task-title">${t.name}</span>
         </div>
       `).join('');
 
       const header = document.getElementById('timelineHeader');
       header.style.width = totalWidth + 'px';
-      const ticks = generateTimeTicks(scheduleData.projectStartDate, totalDays, currentUnit, dayW, weekW);
+      const ticks = generateTimeTicks(baseProjectData.projectStartDate, totalDays, currentUnit, dayW, weekW);
       header.innerHTML = ticks.map(t => `
         <div class="tick-label ${t.isMajor ? 'tick-major' : ''}" style="left:${t.x}px">${t.label}</div>
       `).join('');
 
       const body = document.getElementById('chartBody');
       body.style.width = totalWidth + 'px';
-      body.style.height = (scheduleData.tasks.length * 42) + 'px';
+      body.style.height = (tasksToRender.length * 44) + 'px';
 
       let html = ticks.map(t => `<div class="grid-line ${t.isMajor ? 'major' : ''}" style="left:${t.x}px"></div>`).join('');
-      scheduleData.tasks.forEach((t, i) => {
-        const x = dateToCoordinateX(t.earlyStart, scheduleData.projectStartDate, currentUnit, dayW, weekW);
-        const w = calculateBarWidth(t.earlyStart, t.earlyFinish, currentUnit, dayW, weekW);
-        const top = i * 42 + 8;
+
+      tasksToRender.forEach((t, i) => {
+        const x = dateToCoordinateX(t.earlyStart, baseProjectData.projectStartDate, currentUnit, dayW, weekW);
+        const w = calculateBarWidth(t.earlyStart, t.currentFinish, currentUnit, dayW, weekW);
+        const top = i * 44 + 9;
+        
+        let barClass = 'bar-normal';
+        let badgeHtml = '';
+        if (t.isNewCritical) {
+          barClass = 'bar-new-critical';
+          badgeHtml = '<span class="badge-new-crit-tag">MỚI GĂNG</span>';
+        } else if (t.isCriticalNow || t.isCritical) {
+          barClass = 'bar-critical';
+          badgeHtml = '<span style="margin-right:4px;">◆</span>';
+        }
+
         html += `
-          <div class="gantt-bar ${t.isCritical ? 'bar-critical' : 'bar-normal'}" 
-               style="left:${x}px; top:${top}px; width:${w}px;" 
-               title="${t.name}: ${t.earlyStart} đến ${t.earlyFinish}">
-            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${t.name}</span>
+          <div class="gantt-bar ${barClass}" data-id="${t.id}" style="left:${x}px; top:${top}px; width:${w}px;">
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              ${badgeHtml}${t.name}
+            </span>
           </div>
         `;
       });
       body.innerHTML = html;
+
+      setupTooltip();
+    }
+
+    function setupTooltip() {
+      const tooltip = document.getElementById('ganttTooltip');
+      document.querySelectorAll('.gantt-bar').forEach(bar => {
+        const t = scheduleCalc.tasks.find(x => x.id === bar.getAttribute('data-id'));
+        if (!t) return;
+        bar.addEventListener('mouseenter', (e) => {
+          tooltip.innerHTML = `
+            <div style="font-weight:700; margin-bottom:6px; border-bottom:1px solid #334155; padding-bottom:4px;">[${t.code}] ${t.name}</div>
+            <div>Khởi sớm: <b style="color:#fff">${t.earlyStart}</b></div>
+            <div>Kết thúc thực tế/dự kiến: <b style="color:#f59e0b">${t.currentFinish}</b></div>
+            <div>Trạng thái: <b style="color:${t.isNewCritical ? '#f59e0b' : (t.isCriticalNow ? '#ef4444' : '#38bdf8')}">
+              ${t.isNewCritical ? '⚠️ Mới trở thành việc găng' : (t.isCriticalNow ? 'Việc găng' : 'Bình thường')}
+            </b></div>
+          `;
+          tooltip.style.display = 'block';
+          tooltip.style.left = (e.clientX + 16) + 'px';
+          tooltip.style.top = (e.clientY - 75) + 'px';
+        });
+        bar.addEventListener('mousemove', (e) => {
+          tooltip.style.left = (e.clientX + 16) + 'px';
+          tooltip.style.top = (e.clientY - 75) + 'px';
+        });
+        bar.addEventListener('mouseleave', () => tooltip.style.display = 'none');
+      });
     }
 
     function setView(unit) {
       currentUnit = unit;
       document.getElementById('btnDay').className = unit === 'day' ? 'active' : '';
       document.getElementById('btnWeek').className = unit === 'week' ? 'active' : '';
+      renderGantt();
+    }
+
+    function toggleCriticalFilter() {
+      filterCriticalOnly = !filterCriticalOnly;
+      document.getElementById('btnFilterCrit').className = filterCriticalOnly ? 'filter-chip active' : 'filter-chip';
       renderGantt();
     }
 
