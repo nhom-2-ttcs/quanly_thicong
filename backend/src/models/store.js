@@ -226,6 +226,80 @@ function createMilestoneData({ work_item_id, due_date, title, created_by }) {
   return newMilestone;
 }
 
+// ==========================================
+// CẢNH BÁO VƯỢT MỐC MILESTONE (T-44)
+// ==========================================
+let inMemoryMilestoneAlerts = [];
+
+function getMilestoneAlerts(filter = {}) {
+  let list = inMemoryMilestoneAlerts;
+  if (filter.project_id !== undefined) {
+    list = list.filter(a => Number(a.project_id) === Number(filter.project_id));
+  }
+  if (filter.milestone_id !== undefined) {
+    list = list.filter(a => Number(a.milestone_id) === Number(filter.milestone_id));
+  }
+  if (filter.status) {
+    list = list.filter(a => a.status === filter.status);
+  }
+  return list;
+}
+
+function saveMilestoneAlert({ project_id, milestone_id, work_item_id, due_date, max_early_finish, overdue_days }) {
+  const pId = Number(project_id);
+  const mId = Number(milestone_id);
+  const wId = Number(work_item_id);
+
+  // Tìm cảnh báo đang active hiện có
+  let existing = inMemoryMilestoneAlerts.find(a => Number(a.milestone_id) === mId && a.status === 'active');
+  const nowStr = new Date().toISOString();
+
+  const parsedMaxEf = (typeof max_early_finish === 'number' || !isNaN(Number(max_early_finish))) ? Number(max_early_finish) : max_early_finish;
+
+  if (existing) {
+    existing.due_date = due_date;
+    existing.max_early_finish = parsedMaxEf;
+    existing.overdue_days = Number(overdue_days);
+    existing.updated_at = nowStr;
+    return existing;
+  } else {
+    const newId = inMemoryMilestoneAlerts.length > 0 ? Math.max(...inMemoryMilestoneAlerts.map(a => a.id)) + 1 : 1;
+    const newAlert = {
+      id: newId,
+      project_id: pId,
+      milestone_id: mId,
+      work_item_id: wId,
+      due_date,
+      max_early_finish: parsedMaxEf,
+      overdue_days: Number(overdue_days),
+      status: 'active',
+      opened_at: nowStr,
+      closed_at: null,
+      created_at: nowStr,
+      updated_at: nowStr
+    };
+    inMemoryMilestoneAlerts.push(newAlert);
+    return newAlert;
+  }
+}
+
+function closeMilestoneAlert(milestone_id) {
+  const mId = Number(milestone_id);
+  const nowStr = new Date().toISOString();
+  let updatedCount = 0;
+
+  inMemoryMilestoneAlerts.forEach(a => {
+    if (Number(a.milestone_id) === mId && a.status === 'active') {
+      a.status = 'closed';
+      a.closed_at = nowStr;
+      a.updated_at = nowStr;
+      updatedCount++;
+    }
+  });
+
+  return updatedCount;
+}
+
 module.exports = {
   SEED_ROLES,
   findUserByEmail,
@@ -240,7 +314,11 @@ module.exports = {
   userProjectAssignments,
   inMemoryWorkItems,
   inMemoryMilestones,
+  inMemoryMilestoneAlerts,
   findWorkItemById,
   getMilestones,
-  createMilestoneData
+  createMilestoneData,
+  getMilestoneAlerts,
+  saveMilestoneAlert,
+  closeMilestoneAlert
 };

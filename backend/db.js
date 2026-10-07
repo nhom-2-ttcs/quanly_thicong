@@ -312,7 +312,30 @@ async function initDbSchema(maxRetries = 10, delayMs = 1500) {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    console.log(`[DB] Đã đồng bộ ${inMemoryUsers.length} tài khoản người dùng và schema milestones (T-43) sẵn sàng.`);
+    // 10. Tạo bảng milestone_alerts (TASK T-44: Cảnh báo vượt mốc tiến độ)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS milestone_alerts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        milestone_id INT NOT NULL,
+        work_item_id INT NOT NULL,
+        due_date DATE NOT NULL,
+        max_early_finish DECIMAL(8, 2) NOT NULL,
+        overdue_days INT NOT NULL,
+        status ENUM('active', 'closed') NOT NULL DEFAULT 'active',
+        opened_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        closed_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (milestone_id) REFERENCES milestones(id) ON DELETE CASCADE,
+        FOREIGN KEY (work_item_id) REFERENCES work_items(id) ON DELETE CASCADE,
+        INDEX idx_ma_project_status (project_id, status),
+        INDEX idx_ma_milestone (milestone_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    console.log(`[DB] Đã đồng bộ ${inMemoryUsers.length} tài khoản người dùng và schema milestones (T-43), milestone_alerts (T-44) sẵn sàng.`);
     return;
   } catch (err) {
     if (attempt < maxRetries) {
