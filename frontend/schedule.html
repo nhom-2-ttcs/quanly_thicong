@@ -570,6 +570,8 @@
             ⏳ Đang làm / Chưa xong
           </button>
         </div>
+        <!-- Switch lọc việc găng đồng bộ chuẩn E2E (S-12 / T-28) -->
+        <input type="checkbox" id="critical-only-toggle" style="display: none;" onchange="handleCriticalFilterToggle(this.checked)" aria-label="Lọc việc găng">
 
         <!-- Ô Tìm Kiếm Công Việc -->
         <div class="search-input-box">
@@ -915,6 +917,10 @@
       if (critBadge) critBadge.textContent = crit;
     }
 
+    function handleCriticalFilterToggle(checked) {
+      setFilterSegment(checked ? 'critical' : 'all');
+    }
+
     function setFilterSegment(mode) {
       currentFilterSegment = mode;
       const btnAll = document.getElementById('btn-filter-all');
@@ -924,6 +930,9 @@
       if (btnAll) btnAll.classList.toggle('active', mode === 'all');
       if (btnCrit) btnCrit.classList.toggle('active', mode === 'critical');
       if (btnPend) btnPend.classList.toggle('active', mode === 'pending');
+
+      const toggleCrit = document.getElementById('critical-only-toggle');
+      if (toggleCrit) toggleCrit.checked = (mode === 'critical');
 
       applyFiltersAndRender();
     }

@@ -10,6 +10,12 @@ const { SEED_ROLES, findUserByEmail } = require('./src/models/store');
 let rawPool = null;
 let isConnected = false;
 
+const isDockerOrCi = Boolean(
+  (process.env.DB_HOST && process.env.DB_HOST !== 'localhost' && process.env.DB_HOST !== '127.0.0.1') ||
+  process.env.CI ||
+  process.env.NODE_ENV === 'production'
+);
+
 if (mysql) {
   try {
     rawPool = mysql.createPool({
@@ -18,8 +24,8 @@ if (mysql) {
       password: process.env.DB_PASSWORD || 'secret',
       database: process.env.DB_NAME || 'quanly_thicong',
       charset: "utf8mb4",
-      waitForConnections: false,
-      connectTimeout: 800,
+      waitForConnections: isDockerOrCi,
+      connectTimeout: isDockerOrCi ? 10000 : 1200,
       connectionLimit: 10,
       queueLimit: 0
     }).promise();
@@ -49,29 +55,44 @@ const safePool = {
 };
 
 // Hàm khởi tạo bảng và seed vai trò khi kết nối MySQL thành công (SCRUM-29 / T-04)
-async function initDbSchema(maxRetries = 1, delayMs = 500) {
+async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isDockerOrCi ? 1500 : 500)) {
   if (!rawPool) {
     isConnected = false;
     console.log('[DB] ⚡ Standalone Mode: Kích hoạt Fast In-Memory Store (Tốc độ phản hồi 0.1ms)!');
     return;
   }
   
-  // Kiểm tra kết nối nhanh 800ms
-  try {
-    await Promise.race([
-      rawPool.query('SELECT 1'),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Connect timeout 800ms')), 800))
-    ]);
-    isConnected = true;
-    console.log('[DB] ✅ Đã kết nối thành công CSDL MySQL!');
-  } catch (err) {
+  let connected = false;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      if (isDockerOrCi) {
+        await rawPool.query('SELECT 1');
+      } else {
+        await Promise.race([
+          rawPool.query('SELECT 1'),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Connect timeout 1200ms')), 1200))
+        ]);
+      }
+      connected = true;
+      isConnected = true;
+      console.log(`[DB] ✅ Đã kết nối thành công CSDL MySQL (lần thử ${attempt})!`);
+      break;
+    } catch (err) {
+      if (attempt < maxRetries && isDockerOrCi) {
+        console.log(`[DB] Đang đợi MySQL sẵn sàng (lần ${attempt}/${maxRetries}): ${err.message}. Thử lại sau ${delayMs}ms...`);
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+  }
+
+  if (!connected) {
     isConnected = false;
     console.log('[DB] ⚡ MySQL không hoạt động (Standalone Mode). Kích hoạt Fast In-Memory Engine (Tốc độ phản hồi cực nhanh 0.1ms)!');
     return;
   }
 
   const pool = rawPool;
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       // 1. Tạo bảng roles
     await pool.query(`

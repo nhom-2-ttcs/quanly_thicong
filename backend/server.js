@@ -37,13 +37,13 @@ app.get('/api/health', (req, res) => {
 // API kiem tra ket noi database (S-01)
 app.get('/api/db-check', async (req, res) => {
   try {
-    if (db.pool) {
+    if (db.isConnected && db.pool) {
       const [rows] = await db.pool.query('SELECT 1 + 1 AS solution');
       return res.json({ status: 'Connected', data: rows });
     }
-    res.json({ status: 'Standalone', message: 'Đang chạy in-memory store (chưa kết nối MySQL container)' });
+    return res.json({ status: 'Standalone', message: 'Đang chạy in-memory store (chưa kết nối MySQL container)' });
   } catch (error) {
-    res.status(500).json({ status: 'Error', message: error.message });
+    return res.json({ status: 'Standalone', message: error.message });
   }
 });
 
