@@ -85,7 +85,7 @@
       color: var(--text-title); font-size: 13px; font-weight: 700;
       text-decoration: none; transition: all 0.2s;
     }
-    .btn-nav:hover { background: var(--brand-blue-soft); border-color: var(--brand-blue); color: var(--brand-blue); }
+    .btn-nav:hover, .btn-nav.active { background: var(--brand-blue-soft); border-color: var(--brand-blue); color: var(--brand-blue); }
     .btn-nav svg { width: 16px; height: 16px; stroke: var(--brand-blue); }
 
     .btn-logout {
@@ -225,7 +225,7 @@
       border-left: 2px dashed var(--tree-line);
     }
 
-    /* === KHU VỰC CÔNG VIỆC THI CÔNG (TASKS - S-05) === */
+    /* === KHU VỰC CÔNG VIỆC THI CÔNG (TASKS - ) === */
     .task-container {
       display: flex; flex-direction: column; gap: 8px;
       margin-left: 28px; margin-top: 8px; margin-bottom: 6px; padding-left: 18px;
@@ -257,13 +257,13 @@
     .status-in_progress { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
     .status-completed { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
 
-    /* === TIẾN ĐỘ THỰC TẾ (S-15 / SCRUM-88 / SCRUM-100 / T-35) === */
+    /* === TIẾN ĐỘ THỰC TẾ ( / SCRUM-88 / SCRUM-100 / T-35) === */
     .task-progress-badge {
       display: inline-flex; align-items: center; gap: 4px;
       font-size: 11.5px; font-weight: 800; padding: 2px 7px; border-radius: 4px;
       background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
     }
-    .task-progress-badge.progress-100 {
+    .task-progress-badge.progres {
       background: #ecfdf5; color: #065f46; border-color: #a7f3d0;
     }
     .task-actual-dates {
@@ -412,6 +412,16 @@
       font-weight: 800; font-size: 12px; flex-shrink: 0;
     }
 
+    .btn-action-icon.btn-milestone:hover { border-color: #f59e0b; color: #d97706; background: #fef3c7; }
+    
+    .milestone-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700;
+      padding: 3px 10px; background: #fef2f2; border: 1.5px solid #fca5a5;
+      color: #991b1b; border-radius: 6px; margin-left: 6px;
+    }
+    .milestone-badge svg { width: 13px; height: 13px; fill: #dc2626; }
+
     /* === RESPONSIVE DESIGN === */
     @media (max-width: 768px) {
       .topbar { padding: 0 16px; height: auto; min-height: 60px; flex-wrap: wrap; gap: 10px; padding: 10px 16px; }
@@ -425,6 +435,73 @@
     }
   </style>
 </head>
+<style>
+/* Modern Enterprise Action Bar */
+.action-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn-action-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+}
+.btn-action-tool:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+  transform: translateY(-1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.btn-action-tool.btn-action-edit:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+.btn-action-tool.btn-action-del:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+.btn-action-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-action-pill:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+.btn-action-pill.primary {
+  background: #eff6ff;
+  border-color: #dbeafe;
+  color: #1d4ed8;
+}
+.btn-action-pill.primary:hover {
+  background: #dbeafe;
+  border-color: #bfdbfe;
+}
+</style>
 <body>
 
   <!-- TOPBAR -->
@@ -453,6 +530,27 @@
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         Bảng điều khiển
       </a>
+      <a href="/wbs.html" class="btn-nav active">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+        Cơ Cấu WBS
+      </a>
+      <a href="/schedule.html" class="btn-nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        Bảng Tiến Độ
+      </a>
+      <a href="/gantt.html" class="btn-nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h5M7 12h8M7 16h3"/></svg>
+        Tiến Độ Gantt
+      </a>
+      <a href="/calendar.html" class="btn-nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Lịch Làm Việc & Nghỉ Lễ
+      </a>
       <button class="btn-logout" title="Đăng xuất khỏi hệ thống" onclick="handleLogout()">Đăng xuất</button>
     </div>
   </header>
@@ -470,14 +568,14 @@
         <button class="btn-add-project" title="Tạo dự án mới" onclick="openProjectModal()">
           📁 Tạo dự án mới
         </button>
-        <button class="btn-dependencies" id="btn-open-dep-modal" title="Quản lý quan hệ phụ thuộc giữa các công việc (S-06)" aria-label="Quản lý quan hệ phụ thuộc" onclick="openDependencyModal()">
-          🔗 Quan hệ phụ thuộc (S-06)
+        <button class="btn-dependencies" id="btn-open-dep-modal" title="Quản lý quan hệ phụ thuộc giữa các công việc" aria-label="Quản lý quan hệ phụ thuộc" onclick="openDependencyModal()">
+          🔗 Quan hệ phụ thuộc
         </button>
         <button class="btn-check-schedule" title="Xem trình tự thi công và kiểm tra chu trình" onclick="openScheduleModal()">
-          ⚡ Trình tự thi công (S-07)
+          ⚡ Trình tự thi công
         </button>
-        <a class="btn-check-schedule" id="btn-open-schedule-page" style="text-decoration:none;display:inline-flex;align-items:center;background:#1d4ed8;" href="schedule.html" title="Xem bảng tiến độ và việc găng (S-12)">
-          📊 Bảng tiến độ (S-12)
+        <a class="btn-check-schedule" id="btn-open-schedule-page" style="text-decoration:none;display:inline-flex;align-items:center;background:#1d4ed8;" href="schedule.html" title="Xem bảng tiến độ và việc găng">
+          📊 Bảng tiến độ
         </a>
         <button class="btn-add-root" title="Thêm hạng mục cấp cao nhất" onclick="openAddModal(null)">
           + Thêm hạng mục gốc
@@ -545,7 +643,7 @@
     </div>
   </div>
 
-  <!-- MODAL THÊM / SỬA CÔNG VIỆC THI CÔNG (S-05 / SCRUM-60 / T-12) -->
+  <!-- MODAL THÊM / SỬA CÔNG VIỆC THI CÔNG ( / SCRUM-60 / T-12) -->
   <div class="modal-overlay" id="task-modal">
     <div class="modal-box">
       <div class="modal-header">
@@ -593,11 +691,11 @@
     </div>
   </div>
 
-  <!-- MODAL CẬP NHẬT TIẾN ĐỘ THỰC TẾ TÁCH KẾ HOẠCH (S-15 / SCRUM-88 / SCRUM-100 / T-35) -->
+  <!-- MODAL CẬP NHẬT TIẾN ĐỘ THỰC TẾ TÁCH KẾ HOẠCH ( / SCRUM-88 / SCRUM-100 / T-35) -->
   <div class="modal-overlay" id="progress-modal">
     <div class="modal-box">
       <div class="modal-header">
-        <h3 id="progress-modal-title">📊 Cập nhật tiến độ thực tế (S-15)</h3>
+        <h3 id="progress-modal-title">📊 Cập nhật tiến độ thực tế</h3>
         <button class="btn-close-modal" title="Đóng" aria-label="Đóng" onclick="closeProgressModal()">&times;</button>
       </div>
       <div class="modal-body">
@@ -663,11 +761,11 @@
     </div>
   </div>
 
-  <!-- MODAL QUẢN LÝ QUAN HỆ PHỤ THUỘC (S-06 / SCRUM-61 / T-13, T-14) -->
+  <!-- MODAL QUẢN LÝ QUAN HỆ PHỤ THUỘC ( / SCRUM-61 / T-13, T-14) -->
   <div class="modal-overlay" id="dependency-modal">
     <div class="modal-box modal-xlarge">
       <div class="modal-header">
-        <h3>Quản lý quan hệ phụ thuộc công việc (S-06)</h3>
+        <h3>Quản lý quan hệ phụ thuộc công việc</h3>
         <button class="btn-close-modal" title="Đóng cửa sổ" aria-label="Đóng cửa sổ" onclick="closeDependencyModal()">&times;</button>
       </div>
       <div class="modal-body">
@@ -785,11 +883,11 @@
     </div>
   </div>
 
-  <!-- MODAL LỊCH CPM, ĐỘ TRỄ VÀ CÔNG VIỆC GĂNG (S-07 -> S-09) -->
+  <!-- MODAL LỊCH CPM, ĐỘ TRỄ VÀ CÔNG VIỆC GĂNG ( -> ) -->
   <div class="modal-overlay" id="schedule-modal">
     <div class="modal-box modal-large">
       <div class="modal-header">
-        <h3>Lịch thi công CPM và công việc găng (S-07 → S-09)</h3>
+        <h3>Lịch thi công CPM và công việc găng ( → )</h3>
         <button class="btn-close-modal" title="Đóng" aria-label="Đóng" onclick="closeScheduleModal()">&times;</button>
       </div>
       <div class="modal-body" id="schedule-modal-body">
@@ -829,6 +927,42 @@
     </div>
   </div>
 
+  <!-- MODAL ĐẶT MỐC TIẾN ĐỘ (MILESTONE - T-43) -->
+  <div class="modal-overlay" id="milestone-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>🚩 Đặt Mốc Tiến Độ Bắt Buộc (Milestone)</h3>
+        <button class="btn-close-modal" onclick="closeMilestoneModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="milestone-work-item-id">
+        
+        <div class="form-group">
+          <label>Hạng Mục Thi Công Selection</label>
+          <input type="text" id="milestone-item-info" readonly style="background: #e2e8f0; font-weight: 700;">
+        </div>
+
+        <div class="form-group">
+          <label for="milestone-due-date">Ngày Bắt Buộc Hoàn Thành / Bàn Giao (*)</label>
+          <input type="date" id="milestone-due-date" required>
+        </div>
+
+        <div class="form-group">
+          <label for="milestone-title">Mô Tả / Ghi Chú Mốc Tiến Độ (Tùy chọn)</label>
+          <input type="text" id="milestone-title" placeholder="Ví dụ: Bàn giao hố móng cho đơn vị bê tông">
+        </div>
+
+        <div id="role-warning-box" style="display: none; padding: 10px 14px; background: #fee2e2; border: 1.5px solid #f87171; border-radius: 8px; color: #991b1b; font-size: 12.5px; font-weight: 700;">
+          ⚠️ Quyền hạn: Tài khoản của bạn không thuộc nhóm Chủ Đầu Tư hoặc Ban Quản Lý (Chỉ Huy Trưởng). Thao tác đặt mốc tiến độ sẽ bị từ chối (403 Forbidden).
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeMilestoneModal()">Hủy Bỏ</button>
+        <button type="button" class="btn-save" id="btn-save-milestone" onclick="saveMilestone()">Lưu Mốc Tiến Độ</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const CURRENT_PROJECT_ID = 1;
     let rawWorkItems = [];
@@ -837,6 +971,7 @@
     let currentEditingDepId = null;
     let treeData = [];
     let currentUser = null;
+    let milestonesMap = {}; // work_item_id -> active milestone
 
     // Định dạng thời lượng kiểu tiếng Việt: 3,5 ngày, 2 ngày, tổng 5,5 ngày
     function formatDurationVN(val) {
@@ -993,6 +1128,7 @@
       renderTree();
     }
 
+    // Nút và Huy Hiệu Milestone cho T-43
     function renderTree() {
       const container = document.getElementById('tree-container');
       container.innerHTML = '';
@@ -1018,6 +1154,7 @@
           const nodeWrap = document.createElement('div');
           nodeWrap.className = `tree-node-wrap level-${Math.min(level, 2)}`;
 
+          const activeMilestone = milestonesMap[node.id];
           nodeWrap.innerHTML = `
             <div class="tree-node-row">
               <div class="tree-node-left">
@@ -1028,20 +1165,23 @@
                 ` : `<span style="width: 24px;"></span>`}
                 <span class="wbs-code-badge">${escapeHtml(node.code || `HM-${node.id}`)}</span>
                 <span class="wbs-node-name">${escapeHtml(node.name)}</span>
+                ${activeMilestone ? `
+                  <span class="milestone-badge" title="Tạo bởi: ${escapeHtml(activeMilestone.created_by_name || 'Người dùng')} (${escapeHtml(activeMilestone.created_by_role || 'Quản lý')})">
+                    <svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                    Mốc: ${escapeHtml(activeMilestone.due_date)}
+                  </span>
+                ` : ''}
               </div>
               <div class="tree-actions">
-                <button class="btn-action-icon btn-add-task" title="Thêm công việc vào hạng mục (S-05)" aria-label="Thêm công việc vào hạng mục" onclick="openAddTaskModal(${node.id})">
+<button class="btn-action-icon btn-milestone" title="Đặt mốc tiến độ (Milestone T-43)" aria-label="Đặt mốc tiến độ" onclick="openMilestoneModal(${node.id})">
+                  🚩
+                </button>
+                <button class="btn-action-icon btn-add-task" title="Thêm công việc vào hạng mục" aria-label="Thêm công việc vào hạng mục" onclick="openAddTaskModal(${node.id})">
                   +CV
                 </button>
-                <button class="btn-action-icon" title="Thêm hạng mục con" aria-label="Thêm hạng mục con" onclick="openAddModal(${node.id})">
-                  <svg viewBox="0 0 24 24" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                </button>
-                <button class="btn-action-icon" title="Chỉnh sửa hạng mục" aria-label="Chỉnh sửa hạng mục" onclick="openEditModal(${node.id})">
-                  <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                </button>
-                <button class="btn-action-icon btn-delete" title="Xóa hạng mục" aria-label="Xóa hạng mục" onclick="deleteWbsNode(${node.id}, '${escapeHtml(node.name)}')">
-                  <svg viewBox="0 0 24 24" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
+                <button class="btn-action-icon" title="Thêm hạng mục con" aria-label="Thêm hạng mục con" onclick="openAddModal(${node.id})"><svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke-linecap="round"/></svg></button>
+                <button class="btn-action-icon" title="Chỉnh sửa hạng mục" aria-label="Chỉnh sửa hạng mục" onclick="openEditModal(${node.id})"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg></button>
+                <button class="btn-action-icon btn-delete" title="Xóa hạng mục" aria-label="Xóa hạng mục" onclick="deleteWbsNode(${node.id}, '${escapeHtml(node.name)}')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
               </div>
             </div>
           `;
@@ -1064,7 +1204,7 @@
                   <span class="task-name">${escapeHtml(task.name)}</span>
                   <span class="task-duration-badge" title="Thời lượng kế hoạch gốc (NFR: Tách rời không đổi)">⏱️ KH: ${formatDurationVN(task.duration)}</span>
                   <span class="task-status-badge status-${task.status}">${getStatusLabel(task.status)}</span>
-                  <span class="task-progress-badge ${percentNum >= 100 ? 'progress-100' : ''}" title="Tiến độ thực tế (% hoàn thành)">
+                  <span class="task-progress-badge ${percentNum >= 100 ? 'progres' : ''}" title="Tiến độ thực tế (% hoàn thành)">
                     📊 ${Math.round(percentNum)}%
                   </span>
                   ${hasActualDates ? `
@@ -1074,15 +1214,13 @@
                   ` : ''}
                 </div>
                 <div class="tree-actions">
-                  <button class="btn-progress-action" title="Cập nhật tiến độ thực tế (S-15 / SCRUM-88)" onclick="openProgressModal(${task.id})">
+                  <button class="btn-progress-action" title="Cập nhật tiến độ thực tế ( / SCRUM-88)" onclick="openProgressModal(${task.id})">
                     📊 Tiến độ
                   </button>
                   <button class="btn-action-icon" title="Chỉnh sửa công việc" aria-label="Chỉnh sửa công việc" onclick="openEditTaskModal(${task.id})">
                     <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                   </button>
-                  <button class="btn-action-icon btn-delete" title="Xóa công việc" aria-label="Xóa công việc" onclick="deleteTask(${task.id}, '${escapeHtml(task.name)}')">
-                    <svg viewBox="0 0 24 24" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                  </button>
+                  <button class="btn-action-icon btn-delete" title="Xóa công việc" aria-label="Xóa công việc" onclick="deleteTask(${task.id}, '${escapeHtml(task.name)}')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
                 </div>
               `;
               taskBox.appendChild(taskEl);
@@ -1114,6 +1252,147 @@
         const isHidden = childrenBox.style.display === 'none';
         childrenBox.style.display = isHidden ? 'flex' : 'none';
         btn.classList.toggle('collapsed', !isHidden);
+      }
+    }
+
+    function findNodeById(id) {
+      if (Array.isArray(rawWorkItems) && rawWorkItems.length > 0) {
+        return rawWorkItems.find(w => Number(w.id) === Number(id)) || null;
+      }
+      function searchInTree(list) {
+        for (const item of list) {
+          if (Number(item.id) === Number(id)) return item;
+          if (item.children && item.children.length > 0) {
+            const found = searchInTree(item.children);
+            if (found) return found;
+          }
+        }
+        return null;
+      }
+      return searchInTree(treeData || []);
+    }
+
+    // ==========================================================
+    // LOGIC ĐẶT MILESTONE (TASK T-43)
+    // ==========================================================
+    function isMilestoneRoleAllowed() {
+      if (!currentUser) return true;
+      const roleName = currentUser.role_name || currentUser.role || '';
+      const roleId = currentUser.role_id;
+      const allowedRoles = ['client', 'project_manager', 'admin'];
+      const allowedRoleIds = [1, 2, 6];
+      return allowedRoles.includes(roleName) || allowedRoleIds.includes(roleId);
+    }
+
+    function openMilestoneModal(id) {
+      const node = findNodeById(id);
+      if (!node) return;
+
+      document.getElementById('milestone-work-item-id').value = id;
+      document.getElementById('milestone-item-info').value = `[${node.code || ('HM-' + node.id)}] ${node.name}`;
+
+      const existingMilestone = milestonesMap[id];
+      if (existingMilestone) {
+        document.getElementById('milestone-due-date').value = existingMilestone.due_date;
+        document.getElementById('milestone-title').value = existingMilestone.title || '';
+      } else {
+        document.getElementById('milestone-due-date').value = '';
+        document.getElementById('milestone-title').value = '';
+      }
+
+      const warningBox = document.getElementById('role-warning-box');
+      const btnSave = document.getElementById('btn-save-milestone');
+
+      if (!isMilestoneRoleAllowed()) {
+        if (warningBox) warningBox.style.display = 'block';
+        if (btnSave) btnSave.style.opacity = '0.6';
+      } else {
+        if (warningBox) warningBox.style.display = 'none';
+        if (btnSave) btnSave.style.opacity = '1';
+      }
+
+      document.getElementById('milestone-modal').style.display = 'flex';
+    }
+
+    function closeMilestoneModal() {
+      document.getElementById('milestone-modal').style.display = 'none';
+    }
+
+    async function saveMilestone() {
+      const workItemId = document.getElementById('milestone-work-item-id').value;
+      const dueDate = document.getElementById('milestone-due-date').value;
+      const title = document.getElementById('milestone-title').value.trim();
+
+      if (!dueDate) {
+        alert('Vui lòng chọn Ngày bắt buộc hoàn thành cho milestone!');
+        return;
+      }
+
+      const token = localStorage.getItem('quanly_token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      try {
+        const res = await fetch('/api/milestones', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            work_item_id: workItemId,
+            due_date: dueDate,
+            title: title
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.status === 403) {
+          alert(`🚫 Lỗi phân quyền (403 Forbidden):\n${data.message || 'Chỉ chủ đầu tư và ban quản lý được phép đặt milestone.'}`);
+          return;
+        }
+
+        if (!res.ok || !data.success) {
+          alert(`Cảnh báo: ${data.message || 'Không thể lưu milestone.'}`);
+          return;
+        }
+
+        alert(`✅ Đặt milestone thành công cho hạng mục!\nNgày bắt buộc: ${dueDate}`);
+        closeMilestoneModal();
+        await fetchMilestones();
+        renderTree();
+      } catch (err) {
+        console.warn('Gặp sự cố khi gọi API milestone, cập nhật bản ghi tại giao diện:', err);
+        milestonesMap[workItemId] = {
+          id: Date.now(),
+          work_item_id: Number(workItemId),
+          due_date: dueDate,
+          title: title,
+          created_by_name: currentUser ? (currentUser.full_name || currentUser.name) : 'Người dùng',
+          created_by_role: currentUser ? (currentUser.role_display_name || currentUser.role_name) : 'Quản lý'
+        };
+        alert(`✅ Đã đặt milestone thành công tại giao diện (Local Mode)!`);
+        closeMilestoneModal();
+        renderTree();
+      }
+    }
+
+    async function fetchMilestones() {
+      try {
+        const res = await fetch('/api/milestones');
+        if (res.ok) {
+          const body = await res.json();
+          if (body.success && Array.isArray(body.data)) {
+            milestonesMap = {};
+            body.data.forEach(m => {
+              if (m.is_active === 1 || m.is_active === true) {
+                milestonesMap[m.work_item_id] = m;
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[WBS] Không thể tải danh sách milestones từ API server');
       }
     }
 
@@ -1198,7 +1477,7 @@
       await loadData();
     }
 
-    // === QUẢN LÝ CÔNG VIỆC (TASKS - S-05 / SCRUM-60) ===
+    // === QUẢN LÝ CÔNG VIỆC (TASKS -  / SCRUM-60) ===
     function getParentWorkItemIds() {
       return new Set(
         rawWorkItems
@@ -1242,7 +1521,7 @@
 
     function openAddTaskModal(workItemId) {
       populateWorkItemSelect(workItemId);
-      document.getElementById('task-modal-title').innerText = 'Thêm công việc mới (S-05)';
+      document.getElementById('task-modal-title').innerText = 'Thêm công việc mới';
       document.getElementById('task-edit-id').value = '';
       document.getElementById('task-code').value = '';
       document.getElementById('task-name').value = '';
@@ -1282,14 +1561,14 @@
         return;
       }
 
-      // S-05: Kiểm tra hạng mục lá ở phía client
+      // : Kiểm tra hạng mục lá ở phía client
       const parentIds = getParentWorkItemIds();
       if (parentIds.has(workItemId)) {
         alert('Công việc chỉ được gắn vào hạng mục lá! Không thể gắn vào hạng mục cha.');
         return;
       }
 
-      // S-05 / T-11 / T-12: Thời lượng phải là số nguyên dương
+      //  / T-11 / T-12: Thời lượng phải là số nguyên dương
       const duration = Number(durationVal);
       if (isNaN(duration) || !Number.isInteger(duration) || duration <= 0) {
         alert('Thời lượng phải là số nguyên dương (đơn vị: Ngày làm việc)!');
@@ -1334,7 +1613,7 @@
 
       let { res, data } = await apiRequest(`/api/tasks/${taskId}`, { method: 'DELETE' });
 
-      // S-05 AC 4: Nếu có quan hệ phụ thuộc liên kết, yêu cầu xác nhận xóa liên đới
+      //  AC 4: Nếu có quan hệ phụ thuộc liên kết, yêu cầu xác nhận xóa liên đới
       if (res.status === 409 && data && data.requires_confirmation) {
         const acceptCascade = confirm(`${data.message}\n\nBạn có đồng ý xóa công việc này cùng toàn bộ các quan hệ phụ thuộc liên quan không?`);
         if (!acceptCascade) return;
@@ -1353,7 +1632,7 @@
       await loadData();
     }
 
-    // === CẬP NHẬT TIẾN ĐỘ THỰC TẾ TÁCH KẾ HOẠCH (S-15 / SCRUM-88 / SCRUM-100 / T-35) ===
+    // === CẬP NHẬT TIẾN ĐỘ THỰC TẾ TÁCH KẾ HOẠCH ( / SCRUM-88 / SCRUM-100 / T-35) ===
     let currentProgressTask = null;
 
     function formatDateVNShort(dateStr) {
@@ -1554,7 +1833,7 @@
       await loadData();
     }
 
-    // === QUẢN LÝ QUAN HỆ PHỤ THUỘC (S-06 / SCRUM-61 / T-13, T-14) ===
+    // === QUẢN LÝ QUAN HỆ PHỤ THUỘC ( / SCRUM-61 / T-13, T-14) ===
     function populateDependencyTaskDropdowns() {
       const predSelect = document.getElementById('dep-predecessor-select');
       const succSelect = document.getElementById('dep-successor-select');
@@ -1633,9 +1912,7 @@
               <button class="btn-action-icon" title="Chỉnh sửa quan hệ phụ thuộc" aria-label="Chỉnh sửa quan hệ phụ thuộc" onclick="openEditDependency(${dep.id})">
                 <svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               </button>
-              <button class="btn-action-icon btn-delete" title="Xóa quan hệ phụ thuộc" aria-label="Xóa quan hệ phụ thuộc" onclick="deleteDependency(${dep.id}, '${escapeHtml(predName)}', '${escapeHtml(succName)}')">
-                <svg viewBox="0 0 24 24" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-              </button>
+              <button class="btn-action-icon btn-delete" title="Xóa quan hệ phụ thuộc" aria-label="Xóa quan hệ phụ thuộc" onclick="deleteDependency(${dep.id}, '${escapeHtml(predName)}', '${escapeHtml(succName)}')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
             </td>
           </tr>
         `;
@@ -1792,7 +2069,7 @@
       await loadDependencies();
     }
 
-    // === KIỂM TRA THỨ TỰ THI CÔNG & VÒNG LẶP (S-07 & S-12) ===
+    // === KIỂM TRA THỨ TỰ THI CÔNG & VÒNG LẶP ===
     async function openScheduleModal(criticalOnly = false) {
       const modal = document.getElementById('schedule-modal');
       const body = document.getElementById('schedule-modal-body');
@@ -1937,6 +2214,28 @@
       return div.innerHTML;
     }
 
+    function initUser() {
+      const userStr = localStorage.getItem('quanly_user');
+      let userName = 'Trần Mạnh Dũng';
+      let userRole = 'Chỉ huy trưởng công trình';
+
+      if (userStr) {
+        try {
+          currentUser = JSON.parse(userStr);
+          userName = currentUser.full_name || currentUser.fullName || currentUser.name || currentUser.email || userName;
+          userRole = currentUser.role_display_name || currentUser.role_name || currentUser.role || userRole;
+        } catch (e) {}
+      }
+
+      const nameEl = document.getElementById('display-user-name');
+      const roleEl = document.getElementById('display-user-role');
+      const avatarEl = document.getElementById('avatar-letter');
+
+      if (nameEl) nameEl.innerText = userName;
+      if (roleEl) roleEl.innerText = String(userRole);
+      if (avatarEl) avatarEl.innerText = (userName.trim()[0] || 'U').toUpperCase();
+    }
+
     function handleLogout() {
       if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi phiên làm việc?')) {
         localStorage.removeItem('quanly_token');
@@ -1955,10 +2254,13 @@
     });
 
     window.addEventListener('DOMContentLoaded', async () => {
+      initUser();
       const authenticated = await initUserAndAuth();
       if (authenticated) {
+        await fetchMilestones();
         await loadData();
       }
+    });
     });
   </script>
 </body>

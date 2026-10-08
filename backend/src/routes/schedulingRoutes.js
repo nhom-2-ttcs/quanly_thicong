@@ -142,6 +142,23 @@ module.exports = (db) => {
   router.get('/projects/:projectId/scheduling/baseline/history', getBaselineHistory);
   router.get('/projects/:projectId/baseline/history', getBaselineHistory);
 
+  // T-44: API truy vấn danh sách cảnh báo vượt mốc tiến độ
+  router.get('/projects/:projectId/milestone-alerts', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId không hợp lệ' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    try {
+      const statusFilter = req.query?.status;
+      const alerts = await schedulerService.milestoneAlertService.getProjectAlerts(projectId, { status: statusFilter });
+      return res.json({ success: true, projectId, data: alerts });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
   router.post('/projects/:projectId/scheduling/verify-order', (req, res) => {
     const { tasks, dependencies } = req.body;
     if (!Array.isArray(tasks) || (dependencies !== undefined && !Array.isArray(dependencies))) {

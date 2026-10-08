@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lịch Làm Việc & Ngày Nghỉ Lễ | Quản Lý Thi Công</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-canvas: #f8fafc;
+      --card-bg: #ffffff;
+      --card-hover: #f1f5f9;
+      --border: #e2e8f0;
+      --border-dark: #cbd5e1;
+      --text-title: #0f172a;
+      --text-body: #334155;
+      --text-muted: #64748b;
+      --primary: #0f172a;
+      --primary-hover: #1e293b;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --accent-border: #bfdbfe;
+      --emerald: #059669;
+      --emerald-soft: #f0fdf4;
+      --emerald-border: #bbf7d0;
+      --amber: #b45309;
+      --amber-soft: #fffbeb;
+      --amber-border: #fde68a;
+      --danger: #b91c1c;
+      --danger-soft: #fef2f2;
+      --danger-border: #fecaca;
+      --brand-blue: #2563eb;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* TOPBAR - Unified System Header */
+    .topbar {
+      height: 68px;
+      background: #ffffff;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 36px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--primary);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: #ffffff;
+      fill: none;
+      stroke-width: 2.2;
+    }
+
+    .brand-info h1 {
+      font-size: 16.5px;
+      font-weight: 800;
+      color: var(--text-title);
+      letter-spacing: -0.01em;
+    }
+
+    .brand-info span {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 8px;
+      color: var(--text-title);
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .btn-nav:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-nav.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .btn-nav svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .btn-logout {
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: var(--danger-soft);
+      border: 1.5px solid var(--danger-border);
+      color: var(--danger);
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-logout:hover {
+      background: #fee2e2;
+    }
+
+    /* MAIN CONTENT */
+    .main-content {
+      max-width: 1220px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* HERO BANNER - Clean Minimalist Flat Card */
+    .hero-banner {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--primary);
+      border-radius: 8px;
+      padding: 22px 26px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .hero-text h2 {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-title);
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+    }
+
+    .hero-text p {
+      font-size: 13px;
+      color: var(--text-muted);
+      max-width: 800px;
+      line-height: 1.55;
+    }
+
+    .hero-badge {
+      background: #f1f5f9;
+      border: 1px solid var(--border-dark);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-body);
+      font-family: inherit;
+    }
+
+    /* STATS STRIP */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 14px;
+    }
+
+    .stat-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-card .label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-card .value {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-title);
+      font-family: 'Inter', sans-serif;
+      letter-spacing: -0.01em;
+    }
+
+    .stat-card .desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* DEMO SCENARIO BAR */
+    .demo-bar {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .demo-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-title);
+    }
+
+    .demo-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn-demo {
+      background: #ffffff;
+      border: 1px solid var(--border-dark);
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-body);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .btn-demo strong {
+      font-weight: 600;
+      color: var(--text-title);
+    }
+
+    .btn-demo:hover {
+      background: #f8fafc;
+      border-color: var(--primary);
+    }
+
+    /* LAYOUT COLUMNS */
+    .layout-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 960px) {
+      .layout-columns {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* PANEL CARDS - Flat & Crisp */
+    .panel {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-title);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--primary);
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .panel-body {
+      padding: 20px;
+    }
+
+    /* FORM ELEMENTS */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-title);
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border-dark);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text-title);
+      background: #ffffff;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .form-control:focus {
+      border-color: var(--primary);
+    }
+
+    /* CALENDAR MODE SELECTOR */
+    .mode-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .mode-card {
+      border: 1px solid var(--border-dark);
+      border-radius: 6px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .mode-card:hover {
+      border-color: var(--primary);
+      background: #f8fafc;
+    }
+
+    .mode-card.selected {
+      border: 1.5px solid var(--primary);
+      background: #f8fafc;
+    }
+
+    .mode-card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-title);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mode-card-desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .mode-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .mode-badge-default {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid var(--border-dark);
+    }
+
+    /* BUTTONS - Solid Flat */
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+      border: 1px solid var(--primary);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-delete {
+      background: #ffffff;
+      color: var(--danger);
+      border: 1px solid var(--danger-border);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-delete:hover {
+      background: var(--danger-soft);
+    }
+
+    /* ALERT / NOTICE BOX - Clean Flat Tint */
+    .alert-box {
+      border-radius: 6px;
+      padding: 11px 14px;
+      font-size: 12px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.5;
+    }
+
+    .alert-info {
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-border);
+      color: #1e3a8a;
+    }
+
+    .alert-amber {
+      background: var(--amber-soft);
+      border: 1px solid var(--amber-border);
+      color: var(--amber);
+    }
+
+    /* TABLES - Crisp & Bordered */
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 12.5px;
+    }
+
+    th {
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+      color: var(--text-body);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: #f8fafc;
+    }
+
+    code {
+      font-family: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* BADGES - Flat Tinted */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11.5px;
+      font-weight: 600;
+      font-family: inherit;
+      white-space: nowrap;
+      letter-spacing: normal;
+    }
+
+    .badge-critical {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border: 1px solid var(--danger-border);
+      font-weight: 600;
+    }
+
+    .badge-normal {
+      background: #f1f5f9;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .badge-weekend {
+      background: var(--amber-soft);
+      color: var(--amber);
+      border: 1px solid var(--amber-border);
+    }
+
+    .toast-msg {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--primary);
+      color: #ffffff;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 500;
+      z-index: 999;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+  </style>
+
+</head>
+<body>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="brand-group">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      </div>
+      <div class="brand-info">
+        <h1>Hệ Thống Điều Hành Thi Công</h1>
+        <span>PHÂN HỆ LỊCH LÀM VIỆC & NGHỈ LỄ</span>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <a href="/index.html" class="btn-nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Bảng Điều Khiển
+      </a>
+      <a href="/wbs.html" class="btn-nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+        Cơ Cấu WBS
+      </a>
+      <a href="/gantt.html" class="btn-nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h5M7 12h8M7 16h3"/></svg>
+        Tiến Độ Gantt
+      </a>
+      <a href="/calendar.html" class="btn-nav active">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Lịch Làm Việc & Nghỉ Lễ
+      </a>
+      <button class="btn-logout" onclick="handleLogout()">Đăng Xuất</button>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="main-content">
+
+    <!-- HERO BANNER -->
+    <section class="hero-banner">
+      <div class="hero-text">
+        <h2>Quản Trị Lịch Công Trường & Tính Tiến Độ Theo Ngày Làm Việc</h2>
+        <p>Tính toán thời lượng thi công chính xác theo ngày làm việc thật của công trường. Tự động bỏ qua ngày Chủ Nhật (hoặc Thứ 7 & CN) và các ngày nghỉ lễ, xử lý không trừ lặp khi lễ trùng cuối tuần và hỗ trợ độ trễ làm việc.</p>
+      </div>
+      <div class="hero-badge">HỆ THỐNG ĐIỀU HÀNH THI CÔNG</div>
+    </section>
+
+    <!-- STATS STRIP -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <span class="label">Chế Độ Lịch Dự Án</span>
+        <div class="value" id="stat-calendar-mode">6 Ngày / Tuần</div>
+        <span class="desc" id="stat-calendar-desc">Làm việc Thứ 2 - Thứ 7, nghỉ Chủ Nhật</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="label">Ngày Khởi Công Dự Án</span>
+        <div class="value" id="stat-start-date">2026-10-08</div>
+        <span class="desc">Thứ Năm (Bắt đầu theo kịch bản AC 1)</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="label">Mốc Hoàn Thành Dự Án</span>
+        <div class="value" id="stat-end-date" style="color: var(--brand-blue);">Đang tính...</div>
+        <span class="desc" id="stat-end-desc">Tự động tính theo CPM & Lịch thi công</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="label">Số Ngày Nghỉ Lễ Đã Khai</span>
+        <div class="value" id="stat-holiday-count">0 Ngày</div>
+        <span class="desc">Áp dụng trừ tự động vào tiến độ</span>
+      </div>
+    </section>
+
+    <!-- DEMO AC SCENARIO QUICK TEST -->
+    <section class="demo-bar">
+      <div class="demo-title">
+        <span>⚡ Thử nghiệm nhanh các tiêu chí chấp nhận (Acceptance Criteria):</span>
+      </div>
+      <div class="demo-buttons">
+        <button class="btn-demo" onclick="applyScenarioAC1()">
+          <strong>AC 1:</strong> Việc 6 ngày từ Thứ Năm (Lịch 6 ngày) ➔ Kết thúc Thứ Tư tuần sau
+        </button>
+        <button class="btn-demo" onclick="applyScenarioAC2()">
+          <strong>AC 2:</strong> Khai ngày lễ rơi vào giữa việc ➔ Việc dài thêm & việc sau lùi theo
+        </button>
+        <button class="btn-demo" onclick="applyScenarioAC3()">
+          <strong>AC 3:</strong> Chuyển sang lịch 5 ngày/tuần ➔ Tiến độ đổi ngày hoàn thành
+        </button>
+        <button class="btn-demo" onclick="applyScenarioAC4()">
+          <strong>AC 4:</strong> Khai ngày lễ trùng Chủ Nhật ➔ Không trừ hai lần
+        </button>
+        <button class="btn-demo" onclick="applyScenarioAC5()">
+          <strong>AC 5:</strong> Độ trễ trong quan hệ là 2 ngày ➔ Tính theo 2 ngày làm việc
+        </button>
+      </div>
+    </section>
+
+    <!-- 2 COLUMNS: CONFIG & HOLIDAYS -->
+    <div class="layout-columns">
+      
+      <!-- CẤU HÌNH LỊCH (T-38 & AC 3) -->
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Cấu Hình Lịch Làm Việc Dự Án (NFR)
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label class="form-label">Chọn chế độ ngày làm việc trong tuần:</label>
+            <div class="mode-cards">
+              <div class="mode-card selected" id="card-mode-6" onclick="selectCalendarMode(6)">
+                <div class="mode-card-title">
+                  <span>6 Ngày / Tuần</span>
+                  <span class="mode-badge mode-badge-default">Mặc định</span>
+                </div>
+                <div class="mode-card-desc">Làm việc Thứ Hai đến Thứ Bảy. Nghỉ duy nhất ngày Chủ Nhật.</div>
+              </div>
+
+              <div class="mode-card" id="card-mode-5" onclick="selectCalendarMode(5)">
+                <div class="mode-card-title">
+                  <span>5 Ngày / Tuần</span>
+                </div>
+                <div class="mode-card-desc">Làm việc Thứ Hai đến Thứ Sáu. Nghỉ Thứ Bảy và Chủ Nhật.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert-box alert-info">
+            <span>ℹ️</span>
+            <div>
+              <strong>Quy tắc tính toán:</strong> Lịch làm việc mặc định công trường là 6 ngày/tuần. Khi thay đổi sang 5 ngày/tuần và lưu, toàn bộ tiến độ sẽ được tính lại theo thuật toán CPM và ngày hoàn thành sẽ thay đổi (AC 3).
+            </div>
+          </div>
+
+          <button class="btn-primary" id="btn-save-calendar" onclick="saveCalendarConfig()">
+            Lưu Cấu Hình & Tính Lại Tiến Độ
+          </button>
+        </div>
+      </section>
+
+      <!-- KHAI BÁO NGÀY LỄ (T-38, T-40 & AC 2, AC 4) -->
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            Khai Báo Ngày Nghỉ Lễ Công Trường
+          </div>
+        </div>
+        <div class="panel-body">
+          <div style="display: grid; grid-template-columns: 1fr 150px auto; gap: 10px; align-items: flex-end; margin-bottom: 14px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Tên ngày nghỉ lễ:</label>
+              <input type="text" id="input-holiday-name" class="form-control" placeholder="Ví dụ: Nghỉ Quốc Khánh, Giỗ Tổ...">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Ngày nghỉ:</label>
+              <input type="date" id="input-holiday-date" class="form-control" onchange="checkHolidayDateSunday(this.value)">
+            </div>
+            <button class="btn-primary" onclick="addHolidayFromForm()" style="height: 42px;">
+              Thêm Lễ
+            </button>
+          </div>
+
+          <!-- Alert thông minh nhận diện trùng Chủ Nhật (AC 4) -->
+          <div id="sunday-warning" class="alert-box alert-amber" style="display: none;">
+            <span>⚠️</span>
+            <div id="sunday-warning-text"></div>
+          </div>
+
+          <div class="table-wrap" style="max-height: 240px; overflow-y: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tên Ngày Nghỉ Lễ</th>
+                  <th>Ngày</th>
+                  <th>Thứ</th>
+                  <th>Ghi Chú</th>
+                  <th style="text-align: right;">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="holidays-table-body">
+                <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Đang tải danh sách ngày lễ...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- BẢNG CPM TIẾN ĐỘ THI CÔNG (T-40) -->
+    <section class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          Bảng Tiến Độ CPM Theo Lịch Làm Việc Thực Tế & Ngày Nghỉ Lễ
+        </div>
+        <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">
+          Mốc hoàn thành: <strong id="cpm-finish-badge" style="color: var(--brand-blue);">...</strong>
+        </div>
+      </div>
+      <div class="panel-body" style="padding: 0;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 80px;">Mã Việc</th>
+                <th>Tên Công Việc</th>
+                <th style="width: 140px;">Thời Lượng Thực</th>
+                <th>Công Việc Trước</th>
+                <th>Khởi Sớm (ES)</th>
+                <th>Kết Sớm (EF)</th>
+                <th>Khởi Muộn (LS)</th>
+                <th>Kết Muộn (LF)</th>
+                <th style="text-align: center;">Dự Phòng</th>
+                <th style="text-align: center;">Đường Găng</th>
+              </tr>
+            </thead>
+            <tbody id="cpm-table-body">
+              <tr><td colspan="10" style="text-align: center; padding: 24px;">Đang tính toán tiến độ CPM...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="toast" class="toast-msg"></div>
+
+  <script>
+    const PROJECT_ID = 1;
+    let currentWorkDaysPerWeek = 6;
+    let currentHolidays = [];
+    let currentSchedule = null;
+
+    function handleLogout() {
+      if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi phiên làm việc?')) {
+        localStorage.removeItem('quanly_token');
+        localStorage.removeItem('quanly_user');
+        window.location.replace('/login.html');
+      }
+    }
+
+    const weekdayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.style.display = 'flex';
+      setTimeout(() => { t.style.display = 'none'; }, 3500);
+    }
+
+    function selectCalendarMode(days) {
+      currentWorkDaysPerWeek = days;
+      document.getElementById('card-mode-6').classList.toggle('selected', days === 6);
+      document.getElementById('card-mode-5').classList.toggle('selected', days === 5);
+    }
+
+    function checkHolidayDateSunday(dateStr) {
+      const warnBox = document.getElementById('sunday-warning');
+      const warnText = document.getElementById('sunday-warning-text');
+      if (!dateStr) {
+        warnBox.style.display = 'none';
+        return;
+      }
+      const parts = dateStr.split('-');
+      const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      const day = d.getDay();
+
+      if (day === 0) {
+        warnBox.style.display = 'flex';
+        warnText.innerHTML = `<strong>Tiêu chí AC 4:</strong> Ngày <code>${dateStr}</code> rơi vào <strong>Chủ Nhật</strong> (vốn là ngày nghỉ cuối tuần). Khi tính toán, hệ thống sẽ tự động <strong>không trừ 2 lần</strong>!`;
+      } else if (day === 6 && currentWorkDaysPerWeek === 5) {
+        warnBox.style.display = 'flex';
+        warnText.innerHTML = `<strong>Tiêu chí AC 4:</strong> Ngày <code>${dateStr}</code> rơi vào <strong>Thứ Bảy</strong> trong chế độ 5 ngày/tuần. Hệ thống tự động không trừ 2 lần!`;
+      } else {
+        warnBox.style.display = 'none';
+      }
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch(`/api/projects/${PROJECT_ID}/calendar`);
+        const json = await res.json();
+        if (json.success) {
+          currentWorkDaysPerWeek = json.calendar.work_days_per_week || 6;
+          selectCalendarMode(currentWorkDaysPerWeek);
+          currentHolidays = json.holidays || [];
+          renderHolidaysTable();
+          updateStats();
+          calculateSchedule();
+        }
+      } catch (err) {
+        console.error('Lỗi tải dữ liệu lịch:', err);
+      }
+    }
+
+    function renderHolidaysTable() {
+      const tbody = document.getElementById('holidays-table-body');
+      if (!currentHolidays || currentHolidays.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 18px;">Chưa có ngày nghỉ lễ nào được khai báo cho dự án.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = currentHolidays.map(h => {
+        const parts = h.holiday_date.split('-');
+        const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        const dayOfWeek = d.getDay();
+        const isSun = (dayOfWeek === 0);
+        const isSat = (dayOfWeek === 6);
+
+        let noteBadge = '<span style="color: #64748b;">Ngày thường</span>';
+        if (isSun) {
+          noteBadge = '<span class="badge badge-weekend">Trùng Chủ Nhật (AC 4)</span>';
+        } else if (isSat && currentWorkDaysPerWeek === 5) {
+          noteBadge = '<span class="badge badge-weekend">Trùng Thứ Bảy (AC 4)</span>';
+        }
+
+        return `
+          <tr>
+            <td><strong>${escapeHtml(h.name)}</strong></td>
+            <td><code style="font-weight: 700;">${h.holiday_date}</code></td>
+            <td>${weekdayNames[dayOfWeek]}</td>
+            <td>${noteBadge}</td>
+            <td style="text-align: right;">
+              <button class="btn-delete" onclick="deleteHolidayById(${h.id})">Xóa</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateStats() {
+      document.getElementById('stat-calendar-mode').innerText = `${currentWorkDaysPerWeek} Ngày / Tuần`;
+      document.getElementById('stat-calendar-desc').innerText = currentWorkDaysPerWeek === 6 
+        ? 'Làm việc Thứ 2 - Thứ 7, nghỉ Chủ Nhật' 
+        : 'Làm việc Thứ 2 - Thứ 6, nghỉ Thứ 7 và Chủ Nhật';
+      document.getElementById('stat-holiday-count').innerText = `${currentHolidays.length} Ngày`;
+    }
+
+    async function saveCalendarConfig() {
+      const btn = document.getElementById('btn-save-calendar');
+      btn.disabled = true;
+      btn.innerText = 'Đang lưu...';
+
+      try {
+        const res = await fetch(`/api/projects/${PROJECT_ID}/calendar`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ work_days_per_week: currentWorkDaysPerWeek })
+        });
+        const json = await res.json();
+        if (json.success) {
+          showToast(json.message);
+          updateStats();
+          calculateSchedule();
+        } else {
+          alert('Lỗi: ' + json.message);
+        }
+      } catch (err) {
+        alert('Không thể kết nối máy chủ: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Lưu Cấu Hình & Tính Lại Tiến Độ';
+      }
+    }
+
+    async function addHolidayFromForm() {
+      const nameInput = document.getElementById('input-holiday-name');
+      const dateInput = document.getElementById('input-holiday-date');
+      const name = nameInput.value.trim();
+      const holiday_date = dateInput.value;
+
+      if (!name || !holiday_date) {
+        alert('Vui lòng nhập tên ngày lễ và chọn ngày!');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/projects/${PROJECT_ID}/holidays`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, holiday_date })
+        });
+        const json = await res.json();
+        if (json.success) {
+          showToast(json.message);
+          nameInput.value = '';
+          dateInput.value = '';
+          document.getElementById('sunday-warning').style.display = 'none';
+          loadData();
+        } else {
+          alert('Lỗi: ' + json.message);
+        }
+      } catch (err) {
+        alert('Không thể thêm ngày lễ: ' + err.message);
+      }
+    }
+
+    async function deleteHolidayById(id) {
+      if (!confirm('Bạn có chắc chắn muốn xóa ngày nghỉ lễ này?')) return;
+      try {
+        const res = await fetch(`/api/projects/${PROJECT_ID}/holidays/${id}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (json.success) {
+          showToast(json.message);
+          loadData();
+        }
+      } catch (err) {
+        alert('Lỗi xóa ngày lễ: ' + err.message);
+      }
+    }
+
+    async function calculateSchedule(customTasks = null, customStart = '2026-10-08') {
+      try {
+        const body = { projectStartDate: customStart };
+        if (customTasks) body.tasks = customTasks;
+
+        const res = await fetch(`/api/projects/${PROJECT_ID}/schedule/calculate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const json = await res.json();
+        if (json.success) {
+          currentSchedule = json.schedule;
+          renderScheduleTable(currentSchedule);
+        }
+      } catch (err) {
+        console.error('Lỗi tính tiến độ:', err);
+      }
+    }
+
+    function renderScheduleTable(sched) {
+      if (!sched) return;
+      document.getElementById('stat-end-date').innerText = sched.projectEndDate;
+      document.getElementById('cpm-finish-badge').innerText = sched.projectEndDate;
+
+      const tbody = document.getElementById('cpm-table-body');
+      tbody.innerHTML = sched.tasks.map(t => {
+        const predsStr = (t.predecessors && t.predecessors.length > 0)
+          ? t.predecessors.map(p => `${p.id} (${p.type || 'FS'}${p.lag ? ` +${p.lag}d` : ''})`).join(', ')
+          : '<span style="color:#94a3b8;">(Bắt đầu)</span>';
+
+        const criticalBadge = t.isCritical
+          ? '<span class="badge badge-critical">Găng (Critical)</span>'
+          : '<span class="badge badge-normal">Không găng</span>';
+
+        return `
+          <tr style="${t.isCritical ? 'background-color: #fffbfb;' : ''}">
+            <td><code style="font-weight: 800; color: ${t.isCritical ? 'var(--danger)' : 'var(--brand-blue)'};">${t.id}</code></td>
+            <td><strong>${escapeHtml(t.name)}</strong></td>
+            <td><strong>${t.duration}</strong> ngày làm việc</td>
+            <td style="font-size: 11.5px; color: var(--text-muted);">${predsStr}</td>
+            <td><code>${t.earlyStartDate}</code></td>
+            <td><code style="font-weight:700;">${t.earlyFinishDate}</code></td>
+            <td><code>${t.lateStartDate}</code></td>
+            <td><code>${t.lateFinishDate}</code></td>
+            <td style="text-align: center; font-weight: 800;">${t.totalFloat}d</td>
+            <td style="text-align: center;">${criticalBadge}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    /* === CÁC KỊCH BẢN THỬ NGHIỆM AC (1 -> 5) === */
+    function applyScenarioAC1() {
+      // AC 1: Việc 6 ngày bắt đầu Thứ Năm (2026-10-08) -> kết thúc Thứ Tư tuần sau (2026-10-14)
+      selectCalendarMode(6);
+      const tasks = [
+        { id: 'AC1-01', name: 'Công việc kiểm thử AC 1 (Bắt đầu Thứ Năm)', duration: 6, predecessors: [] }
+      ];
+      calculateSchedule(tasks, '2026-10-08');
+      showToast('Đang áp dụng kịch bản AC 1: Việc 6 ngày bắt đầu Thứ Năm ➔ Kết thúc Thứ Tư (2026-10-14)!');
+    }
+
+    async function applyScenarioAC2() {
+      // AC 2: Khai ngày lễ rơi vào giữa việc -> Việc dài thêm và việc sau lùi theo
+      selectCalendarMode(6);
+      const testHoliday = { name: 'Ngày Nghỉ Lễ Kịch Bản AC 2', holiday_date: '2026-10-09' };
+      await fetch(`/api/projects/${PROJECT_ID}/holidays`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(testHoliday)
+      });
+      const tasks = [
+        { id: 'AC2-A', name: 'Công việc A (Bị ảnh hưởng bởi lễ 09/10)', duration: 6, predecessors: [] },
+        { id: 'AC2-B', name: 'Công việc B (Nối tiếp A, lùi theo)', duration: 3, predecessors: [{ id: 'AC2-A', type: 'FS', lag: 0 }] }
+      ];
+      await loadData();
+      calculateSchedule(tasks, '2026-10-08');
+      showToast('Đang áp dụng kịch bản AC 2: Thêm lễ 09/10 làm việc A dài thêm và việc B lùi theo!');
+    }
+
+    function applyScenarioAC3() {
+      // AC 3: Đổi sang 5 ngày/tuần -> toàn bộ tiến độ tính lại và ngày hoàn thành đổi
+      selectCalendarMode(5);
+      saveCalendarConfig();
+      showToast('Đang chuyển sang 5 ngày/tuần: Tiến độ CPM được tính lại và ngày hoàn thành thay đổi!');
+    }
+
+    async function applyScenarioAC4() {
+      // AC 4: Khai lễ trùng Chủ Nhật -> không trừ 2 lần
+      selectCalendarMode(6);
+      const sundayHoliday = { name: 'Lễ Trùng Chủ Nhật 2026-10-11', holiday_date: '2026-10-11' };
+      await fetch(`/api/projects/${PROJECT_ID}/holidays`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sundayHoliday)
+      });
+      const tasks = [
+        { id: 'AC4-01', name: 'Việc 6 ngày trải qua Chủ Nhật trùng lễ', duration: 6, predecessors: [] }
+      ];
+      await loadData();
+      calculateSchedule(tasks, '2026-10-08');
+      showToast('Đã thêm lễ 2026-10-11 (trùng Chủ Nhật): Kiểm tra không trừ 2 lần!');
+    }
+
+    function applyScenarioAC5() {
+      // AC 5: Độ trễ trong quan hệ phụ thuộc là 2 ngày làm việc
+      selectCalendarMode(6);
+      const tasks = [
+        { id: 'AC5-A', name: 'Công việc trước A (Kết thúc Thứ Năm 08/10)', duration: 1, predecessors: [] },
+        { id: 'AC5-B', name: 'Công việc sau B (Lag = 2 ngày làm việc: T6, T7, CN nghỉ ➔ Bắt đầu Thứ Hai)', duration: 3, predecessors: [{ id: 'AC5-A', type: 'FS', lag: 2 }] }
+      ];
+      calculateSchedule(tasks, '2026-10-08');
+      showToast('Đang áp dụng kịch bản AC 5: Lag 2 ngày làm việc trải qua cuối tuần!');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    window.addEventListener('DOMContentLoaded', loadData);
+  </script>
+</body>
+</html>

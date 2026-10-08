@@ -364,7 +364,79 @@ async function initDbSchema(maxRetries = 10, delayMs = 1500) {
         }
       }
     }
-    console.log(`[DB] Đã đồng bộ ${inMemoryUsers.length} tài khoản người dùng sẵn sàng.`);
+    // 3. Tạo bảng calendars và holidays (S-17 / SCRUM-103 / T-38)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS calendars (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        work_days_per_week TINYINT NOT NULL DEFAULT 6,
+        working_days_mask VARCHAR(50) NOT NULL DEFAULT '1,2,3,4,5,6',
+        description VARCHAR(255) DEFAULT 'Lịch thi công công trường (Mặc định 6 ngày/tuần, nghỉ CN)',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_project_calendar (project_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS holidays (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NULL,
+        name VARCHAR(255) NOT NULL,
+        holiday_date DATE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_project_holiday (project_id, holiday_date)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Seed lịch làm việc mặc định 6 ngày/tuần cho dự án 1
+    await pool.query(`
+      INSERT INTO calendars (project_id, work_days_per_week, working_days_mask, description)
+      VALUES (1, 6, '1,2,3,4,5,6', 'Lịch làm việc mặc định công trường 6 ngày/tuần, nghỉ Chủ Nhật')
+      ON DUPLICATE KEY UPDATE work_days_per_week = VALUES(work_days_per_week), working_days_mask = VALUES(working_days_mask);
+    `);
+    console.log('[DB] Đã khởi tạo bảng calendars & holidays (S-17 / T-38) thành công!');
+
+    // 9. Tạo bảng milestones (TASK T-43)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS milestones (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        work_item_id INT NOT NULL,
+        due_date DATE NOT NULL,
+        title VARCHAR(255) NULL,
+        created_by INT NOT NULL,
+        is_active TINYINT(1) NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (work_item_id) REFERENCES work_items(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // 10. Tạo bảng milestone_alerts (TASK T-44: Cảnh báo vượt mốc tiến độ)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS milestone_alerts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        milestone_id INT NOT NULL,
+        work_item_id INT NOT NULL,
+        due_date DATE NOT NULL,
+        max_early_finish DECIMAL(8, 2) NOT NULL,
+        overdue_days INT NOT NULL,
+        status ENUM('active', 'closed') NOT NULL DEFAULT 'active',
+        opened_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        closed_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (milestone_id) REFERENCES milestones(id) ON DELETE CASCADE,
+        FOREIGN KEY (work_item_id) REFERENCES work_items(id) ON DELETE CASCADE,
+        INDEX idx_ma_project_status (project_id, status),
+        INDEX idx_ma_milestone (milestone_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    console.log(`[DB] Đã đồng bộ ${inMemoryUsers.length} tài khoản người dùng và schema calendars (S-17), milestones (T-43), milestone_alerts (T-44) sẵn sàng.`);
     return;
   } catch (err) {
     if (attempt < maxRetries) {
