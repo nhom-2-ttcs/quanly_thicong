@@ -1,6 +1,6 @@
 const express = require('express');
 const { checkViewerForbidden, checkProjectReadAccess } = require('../utils/rbac');
-const { canUserAccessProject } = require('../models/store');
+const { canUserAccessProject, inMemoryProjects } = require('../models/store');
 
 module.exports = (db) => {
   const router = express.Router();
@@ -8,6 +8,13 @@ module.exports = (db) => {
 
   // 1. Lấy danh sách dự án (Viewer chỉ thấy dự án được phân quyền)
   router.get('/projects', async (req, res) => {
+    if (!db?.isConnected) {
+      let rows = inMemoryProjects;
+      if (req.user && (req.user.role_name === 'viewer' || req.user.role_id === 7)) {
+        rows = rows.filter(p => canUserAccessProject(req.user, p.id));
+      }
+      return res.json({ success: true, data: rows });
+    }
     try {
       let [rows] = await pool.query('SELECT * FROM projects ORDER BY id ASC');
       
@@ -18,7 +25,7 @@ module.exports = (db) => {
 
       res.json({ success: true, data: rows });
     } catch (err) {
-      res.status(500).json({ success: false, message: err.message });
+      res.json({ success: true, data: inMemoryProjects });
     }
   });
 

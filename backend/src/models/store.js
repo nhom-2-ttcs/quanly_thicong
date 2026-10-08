@@ -300,6 +300,96 @@ function closeMilestoneAlert(milestone_id) {
   return updatedCount;
 }
 
+// ==========================================
+// DỰ ÁN, CÔNG VIỆC VÀ PHỤ THUỘC IN-MEMORY (FAST STANDALONE)
+// ==========================================
+let inMemoryProjects = [
+  { id: 1, name: 'Dự án Thi Công Mẫu', code: 'DA-01', description: 'Dự án mẫu quản trị tiến độ thi công công trình' }
+];
+
+let inMemoryTasks = [
+  { id: 1, project_id: 1, work_item_id: 3, name: 'Đào đất thủ công hố móng trụ T1', code: 'CV-01', duration: 4, actual_start: '2026-10-01', actual_end: '2026-10-04', percent_complete: 100, status: 'completed' },
+  { id: 2, project_id: 1, work_item_id: 4, name: 'Vận chuyển đất thải ra bãi tập kết', code: 'CV-02', duration: 3, actual_start: '2026-10-04', actual_end: null, percent_complete: 60, status: 'in_progress' },
+  { id: 3, project_id: 1, work_item_id: 5, name: 'Đổ bê tông lót móng M1 dày 100mm', code: 'CV-03', duration: 3, actual_start: null, actual_end: null, percent_complete: 0, status: 'pending' },
+  { id: 4, project_id: 1, work_item_id: 5, name: 'Gia công lắp dựng cốt thép móng', code: 'CV-04', duration: 5, actual_start: null, actual_end: null, percent_complete: 0, status: 'pending' },
+  { id: 5, project_id: 1, work_item_id: 5, name: 'Lắp dựng ván khuôn móng đài cọc', code: 'CV-05', duration: 3, actual_start: null, actual_end: null, percent_complete: 0, status: 'pending' },
+  { id: 6, project_id: 1, work_item_id: 6, name: 'Đổ bê tông móng thương phẩm B25', code: 'CV-06', duration: 2, actual_start: null, actual_end: null, percent_complete: 0, status: 'pending' },
+  { id: 7, project_id: 1, work_item_id: 6, name: 'Bảo dưỡng và tháo dỡ ván khuôn', code: 'CV-07', duration: 3, actual_start: null, actual_end: null, percent_complete: 0, status: 'pending' }
+];
+
+let inMemoryDependencies = [
+  { id: 1, project_id: 1, predecessor_task_id: 1, successor_task_id: 2, dependency_type: 'FS', lag_days: 0 },
+  { id: 2, project_id: 1, predecessor_task_id: 2, successor_task_id: 3, dependency_type: 'FS', lag_days: 0 },
+  { id: 3, project_id: 1, predecessor_task_id: 3, successor_task_id: 4, dependency_type: 'FS', lag_days: 1 },
+  { id: 4, project_id: 1, predecessor_task_id: 3, successor_task_id: 5, dependency_type: 'FS', lag_days: 1 },
+  { id: 5, project_id: 1, predecessor_task_id: 4, successor_task_id: 6, dependency_type: 'FS', lag_days: 0 },
+  { id: 6, project_id: 1, predecessor_task_id: 5, successor_task_id: 6, dependency_type: 'FS', lag_days: 0 },
+  { id: 7, project_id: 1, predecessor_task_id: 6, successor_task_id: 7, dependency_type: 'FS', lag_days: 2 }
+];
+
+function getTasks(projectId = 1, workItemId = null) {
+  let list = inMemoryTasks.filter(t => t.project_id === Number(projectId));
+  if (workItemId) {
+    list = list.filter(t => t.work_item_id === Number(workItemId));
+  }
+  return list.map(t => {
+    const wi = inMemoryWorkItems.find(w => w.id === t.work_item_id);
+    return {
+      ...t,
+      work_item_name: wi ? wi.name : '',
+      work_item_code: wi ? wi.code : ''
+    };
+  });
+}
+
+function createTaskData(data) {
+  const newId = inMemoryTasks.length > 0 ? Math.max(...inMemoryTasks.map(t => t.id)) + 1 : 1;
+  const newTask = {
+    id: newId,
+    project_id: Number(data.project_id || 1),
+    work_item_id: Number(data.work_item_id),
+    name: String(data.name).trim(),
+    code: data.code ? String(data.code).trim() : `CV-${String(newId).padStart(2, '0')}`,
+    duration: Number(data.duration || 1),
+    actual_start: data.actual_start || null,
+    actual_end: data.actual_end || null,
+    percent_complete: Number(data.percent_complete || 0),
+    status: data.status || 'pending',
+    created_at: new Date().toISOString()
+  };
+  inMemoryTasks.push(newTask);
+  const wi = inMemoryWorkItems.find(w => w.id === newTask.work_item_id);
+  return {
+    ...newTask,
+    work_item_name: wi ? wi.name : '',
+    work_item_code: wi ? wi.code : ''
+  };
+}
+
+function updateTaskData(id, updates) {
+  const t = inMemoryTasks.find(item => item.id === Number(id));
+  if (!t) return null;
+  Object.assign(t, updates);
+  const wi = inMemoryWorkItems.find(w => w.id === t.work_item_id);
+  return {
+    ...t,
+    work_item_name: wi ? wi.name : '',
+    work_item_code: wi ? wi.code : ''
+  };
+}
+
+function deleteTaskData(id) {
+  const taskId = Number(id);
+  const idx = inMemoryTasks.findIndex(t => t.id === taskId);
+  if (idx === -1) return false;
+  inMemoryTasks.splice(idx, 1);
+  // Xóa các quan hệ phụ thuộc liên quan
+  inMemoryDependencies = inMemoryDependencies.filter(
+    d => d.predecessor_task_id !== taskId && d.successor_task_id !== taskId
+  );
+  return true;
+}
+
 module.exports = {
   SEED_ROLES,
   findUserByEmail,
@@ -312,7 +402,10 @@ module.exports = {
   SESSION_TTL_MS,
   canUserAccessProject,
   userProjectAssignments,
+  inMemoryProjects,
   inMemoryWorkItems,
+  inMemoryTasks,
+  inMemoryDependencies,
   inMemoryMilestones,
   inMemoryMilestoneAlerts,
   findWorkItemById,
@@ -320,5 +413,10 @@ module.exports = {
   createMilestoneData,
   getMilestoneAlerts,
   saveMilestoneAlert,
-  closeMilestoneAlert
+  closeMilestoneAlert,
+  getTasks,
+  createTaskData,
+  updateTaskData,
+  deleteTaskData
 };
+

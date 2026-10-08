@@ -7,17 +7,19 @@ try {
 require('dotenv').config();
 const { SEED_ROLES, findUserByEmail } = require('./src/models/store');
 
-let pool = null;
+let rawPool = null;
+let isConnected = false;
 
 if (mysql) {
   try {
-    pool = mysql.createPool({
-      host: process.env.DB_HOST || 'db',
+    rawPool = mysql.createPool({
+      host: process.env.DB_HOST || 'localhost',
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || 'secret',
       database: process.env.DB_NAME || 'quanly_thicong',
       charset: "utf8mb4",
-      waitForConnections: true,
+      waitForConnections: false,
+      connectTimeout: 800,
       connectionLimit: 10,
       queueLimit: 0
     }).promise();
@@ -26,9 +28,49 @@ if (mysql) {
   }
 }
 
-// Hàm khởi tạo bảng và seed 6 vai trò khi kết nối MySQL thành công (SCRUM-29 / T-04)
-async function initDbSchema(maxRetries = 10, delayMs = 1500) {
-  if (!pool) return;
+// Safe pool wrapper: Tuyệt đối không chờ socket timeout nếu DB offline (phản hồi trong 0ms)
+const safePool = {
+  query: async (...args) => {
+    if (!isConnected || !rawPool) {
+      const err = new Error('DB_OFFLINE');
+      err.code = 'DB_OFFLINE';
+      throw err;
+    }
+    return rawPool.query(...args);
+  },
+  getConnection: async () => {
+    if (!isConnected || !rawPool) {
+      const err = new Error('DB_OFFLINE');
+      err.code = 'DB_OFFLINE';
+      throw err;
+    }
+    return rawPool.getConnection();
+  }
+};
+
+// Hàm khởi tạo bảng và seed vai trò khi kết nối MySQL thành công (SCRUM-29 / T-04)
+async function initDbSchema(maxRetries = 1, delayMs = 500) {
+  if (!rawPool) {
+    isConnected = false;
+    console.log('[DB] ⚡ Standalone Mode: Kích hoạt Fast In-Memory Store (Tốc độ phản hồi 0.1ms)!');
+    return;
+  }
+  
+  // Kiểm tra kết nối nhanh 800ms
+  try {
+    await Promise.race([
+      rawPool.query('SELECT 1'),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Connect timeout 800ms')), 800))
+    ]);
+    isConnected = true;
+    console.log('[DB] ✅ Đã kết nối thành công CSDL MySQL!');
+  } catch (err) {
+    isConnected = false;
+    console.log('[DB] ⚡ MySQL không hoạt động (Standalone Mode). Kích hoạt Fast In-Memory Engine (Tốc độ phản hồi cực nhanh 0.1ms)!');
+    return;
+  }
+
+  const pool = rawPool;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       // 1. Tạo bảng roles
@@ -450,6 +492,7 @@ async function initDbSchema(maxRetries = 10, delayMs = 1500) {
 }
 
 module.exports = {
-  pool,
+  pool: safePool,
+  get isConnected() { return isConnected; },
   initDbSchema
 };

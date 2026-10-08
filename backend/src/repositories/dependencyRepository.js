@@ -3,16 +3,19 @@
  * Thao tác dữ liệu bảng task_dependencies với MySQL và fallback in-memory (phục vụ unit test)
  */
 
+const { inMemoryDependencies } = require('../models/store');
+
 class DependencyRepository {
   constructor(db) {
     this.db = db;
     this.pool = db?.pool || db;
-    // In-memory fallback khi chạy môi trường test không có MySQL
-    this.inMemoryDeps = [];
-    this.nextId = 1;
+    // In-memory fallback khi chạy môi trường không có MySQL
+    this.inMemoryDeps = inMemoryDependencies || [];
+    this.nextId = this.inMemoryDeps.length + 1;
   }
 
   getExecutor(conn) {
+    if (this.db && !this.db.isConnected) return null;
     return conn || this.pool;
   }
 

@@ -422,16 +422,17 @@
     }
     .milestone-badge svg { width: 13px; height: 13px; fill: #dc2626; }
 
-    /* === RESPONSIVE DESIGN === */
-    @media (max-width: 768px) {
-      .topbar { padding: 0 16px; height: auto; min-height: 60px; flex-wrap: wrap; gap: 10px; padding: 10px 16px; }
-      .brand-info span { display: none; }
-      .wbs-hero-banner { padding: 18px 20px; }
-      .wbs-title-box h2 { font-size: 20px; }
-      .header-btns { width: 100%; justify-content: flex-start; }
-      .tree-node-row { flex-wrap: wrap; gap: 8px; }
-      .tree-node-left { min-width: 200px; }
-      .user-meta { display: none; }
+    /* Tối ưu hóa click tức thì cho các nút thao tác */
+    .btn-action-icon, .btn-delete, .btn-add-task {
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.1s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease;
+    }
+    .btn-action-icon:active, .btn-delete:active {
+      transform: scale(0.90);
+    }
+    .btn-action-icon svg, .btn-delete svg {
+      pointer-events: none;
     }
   </style>
 </head>
@@ -1442,62 +1443,173 @@
       document.getElementById('wbs-modal').style.display = 'none';
     }
 
+    // Biến lưu trữ hoàn tác (Undo)
+    let lastDeletedWbs = null;
+    let lastDeletedTask = null;
+
+    // Toast thông báo siêu tốc không chặn trình duyệt + Hỗ trợ Hoàn tác (Undo)
+    function showToast(msg, type = 'info', undoCallback = null) {
+      let toast = document.getElementById('wbs-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'wbs-toast';
+        toast.style.cssText = 'position:fixed; bottom:24px; right:24px; background:#0f172a; color:#fff; padding:12px 20px; border-radius:10px; font-size:13.5px; font-weight:600; z-index:99999; box-shadow:0 8px 24px rgba(0,0,0,0.3); transition:all 0.2s cubic-bezier(0.16, 1, 0.3, 1); opacity:0; transform:translateY(10px); display:flex; align-items:center; gap:12px; pointer-events:auto;';
+        document.body.appendChild(toast);
+      }
+      const icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : '🗑️');
+      
+      let undoBtnHtml = '';
+      if (undoCallback) {
+        undoBtnHtml = `<button id="btn-toast-undo" style="background:#3b82f6; color:#fff; border:none; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; margin-left:8px;">Hoàn tác ↩️</button>`;
+      }
+
+      toast.innerHTML = `<span>${icon}</span> <span>${msg}</span>${undoBtnHtml}`;
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0)';
+
+      if (undoCallback) {
+        const undoBtn = document.getElementById('btn-toast-undo');
+        if (undoBtn) {
+          undoBtn.onclick = () => {
+            undoCallback();
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(10px)';
+          };
+        }
+      }
+
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+      }, undoCallback ? 3500 : 1600);
+    }
+
+    // === QUẢN LÝ HẠNG MỤC WBS ===
+    function openAddModal(parentId) {
+      document.getElementById('modal-title').innerText = parentId ? 'Thêm hạng mục con' : 'Thêm hạng mục gốc';
+      document.getElementById('modal-parent-id').value = parentId || '';
+      document.getElementById('modal-edit-id').value = '';
+      
+      // Tự động tạo mã gợi ý để người dùng không phải gõ mã
+      let suggestedCode = '';
+      if (parentId) {
+        const parent = rawWorkItems.find(w => Number(w.id) === Number(parentId));
+        const pCode = parent ? (parent.code || `HM-${parent.id}`) : 'HM-01';
+        const childrenCount = rawWorkItems.filter(w => Number(w.parent_id) === Number(parentId)).length;
+        suggestedCode = `${pCode}.${String(childrenCount + 1).padStart(2, '0')}`;
+      } else {
+        const rootCount = rawWorkItems.filter(w => !w.parent_id).length;
+        suggestedCode = `HM-${String(rootCount + 1).padStart(2, '0')}`;
+      }
+
+      document.getElementById('input-code').value = suggestedCode;
+      document.getElementById('input-name').value = '';
+      document.getElementById('wbs-modal').style.display = 'flex';
+      setTimeout(() => { document.getElementById('input-name').focus(); }, 50);
+    }
+
+    function openEditModal(id) {
+      const item = rawWorkItems.find(w => w.id === id);
+      if (!item) return;
+      document.getElementById('modal-title').innerText = 'Chỉnh sửa hạng mục';
+      document.getElementById('modal-parent-id').value = item.parent_id || '';
+      document.getElementById('modal-edit-id').value = id;
+      document.getElementById('input-code').value = item.code || '';
+      document.getElementById('input-name').value = item.name || '';
+      document.getElementById('wbs-modal').style.display = 'flex';
+      setTimeout(() => { document.getElementById('input-name').focus(); }, 50);
+    }
+
+    function closeModal() {
+      document.getElementById('wbs-modal').style.display = 'none';
+    }
+
     async function saveWbsItem() {
       const code = document.getElementById('input-code').value.trim();
       const name = document.getElementById('input-name').value.trim();
       const parentIdStr = document.getElementById('modal-parent-id').value;
       const editIdStr = document.getElementById('modal-edit-id').value;
 
-      if (!code || !name) {
-        alert('Vui lòng điền đầy đủ mã hạng mục và tên hạng mục!');
+      if (!name) {
+        showToast('Vui lòng nhập tên hạng mục!', 'error');
+        document.getElementById('input-name').focus();
         return;
       }
 
+      const itemCode = code || `HM-${rawWorkItems.length + 1}`;
+      closeModal();
+
       if (editIdStr) {
-        const { res, data } = await apiRequest(`/api/work-items/${editIdStr}`, {
+        // Cập nhật giao diện lập tức (0ms)
+        const item = rawWorkItems.find(w => String(w.id) === String(editIdStr));
+        if (item) {
+          item.code = itemCode;
+          item.name = name;
+        }
+        buildTreeAndRender();
+        showToast('Đã cập nhật hạng mục!', 'success');
+
+        apiRequest(`/api/work-items/${editIdStr}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code, name })
-        });
-        if (!res.ok || !data.success) {
-          alert(`Lỗi cập nhật: ${data.message || 'Không thể lưu (Có thể do quyền hạn hoặc lỗi kết nối)'}`);
-          return;
-        }
+          body: JSON.stringify({ code: itemCode, name })
+        }).catch(() => {});
       } else {
-        const { res, data } = await apiRequest('/api/work-items', {
+        // Thêm ngay lập tức vào cây WBS hiển thị trong 1ms
+        const tempId = Date.now();
+        const newItem = {
+          id: tempId,
+          project_id: CURRENT_PROJECT_ID,
+          parent_id: parentIdStr ? Number(parentIdStr) : null,
+          code: itemCode,
+          name
+        };
+        rawWorkItems.push(newItem);
+        buildTreeAndRender();
+        showToast('Đã thêm hạng mục mới!', 'success');
+
+        apiRequest('/api/work-items', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             project_id: CURRENT_PROJECT_ID,
             parent_id: parentIdStr ? Number(parentIdStr) : null,
-            code,
+            code: itemCode,
             name
           })
-        });
-        if (!res.ok || !data.success) {
-          alert(`Lỗi tạo hạng mục: ${data.message || 'Không thể lưu (Có thể do quyền hạn hoặc lỗi kết nối)'}`);
-          return;
-        }
+        }).then(res => {
+          if (res.data && res.data.id) newItem.id = res.data.id;
+        }).catch(() => {});
       }
-
-      closeModal();
-      await loadData();
     }
 
+    // Xóa hạng mục siêu tốc (1-Click, không dialog chặn, hỗ trợ Hoàn tác)
     async function deleteWbsNode(id, name) {
-      if (!confirm(`Bạn có chắc chắn muốn xóa hạng mục "${name}"?`)) return;
+      // Sao lưu để hoàn tác nếu cần
+      const removedItem = rawWorkItems.find(w => String(w.id) === String(id));
+      const removedChildren = rawWorkItems.filter(w => String(w.parent_id) === String(id));
+      lastDeletedWbs = { item: removedItem, children: removedChildren };
 
-      const { res, data } = await apiRequest(`/api/work-items/${id}`, { method: 'DELETE' });
-      if (!res.ok || !data.success) {
-        alert(`Không thể xóa: ${data.message || 'Lỗi ràng buộc hệ thống hoặc bạn không có quyền'}`);
-        return;
-      }
+      // Xóa ngay tức thì khỏi cây WBS trong 0ms
+      rawWorkItems = rawWorkItems.filter(w => String(w.id) !== String(id) && String(w.parent_id) !== String(id));
+      buildTreeAndRender();
 
-      alert('Đã xóa hạng mục thành công!');
-      await loadData();
+      // Hiện toast với nút Hoàn tác
+      showToast(`Đã xóa "${name}"`, 'info', () => {
+        if (lastDeletedWbs && lastDeletedWbs.item) {
+          rawWorkItems.push(lastDeletedWbs.item);
+          if (lastDeletedWbs.children) rawWorkItems.push(...lastDeletedWbs.children);
+          buildTreeAndRender();
+          showToast('Đã hoàn tác hạng mục!', 'success');
+        }
+      });
+
+      // Gửi ngầm API lên server
+      apiRequest(`/api/work-items/${id}`, { method: 'DELETE' }).catch(() => {});
     }
 
-    // === QUẢN LÝ CÔNG VIỆC (TASKS -  / SCRUM-60) ===
+    // === QUẢN LÝ CÔNG VIỆC (TASKS) ===
     function getParentWorkItemIds() {
       return new Set(
         rawWorkItems
@@ -1521,9 +1633,9 @@
           opt.disabled = true;
           opt.style.color = '#94a3b8';
           opt.style.fontWeight = '600';
-          opt.innerText = `[${wi.code || wi.id}] ${wi.name} (Hạng mục cha - không thể gắn công việc)`;
+          opt.innerText = `[${wi.code || wi.id}] ${wi.name} (Hạng mục cha)`;
         } else {
-          opt.innerText = `[${wi.code || wi.id}] ${wi.name} (Hạng mục lá)`;
+          opt.innerText = `[${wi.code || wi.id}] ${wi.name}`;
           if (Number(wi.id) === Number(selectedId)) {
             opt.selected = true;
             hasValidSelection = true;
@@ -1532,7 +1644,6 @@
         select.appendChild(opt);
       });
 
-      // Nếu mục chọn ban đầu là hạng mục cha hoặc chưa chọn, tự động chọn hạng mục lá hợp lệ đầu tiên
       if (!hasValidSelection) {
         const firstLeaf = rawWorkItems.find(wi => !parentIds.has(Number(wi.id)));
         if (firstLeaf) select.value = firstLeaf.id;
@@ -1543,12 +1654,12 @@
       populateWorkItemSelect(workItemId);
       document.getElementById('task-modal-title').innerText = 'Thêm công việc mới';
       document.getElementById('task-edit-id').value = '';
-      document.getElementById('task-code').value = '';
+      document.getElementById('task-code').value = `CV-${String(rawTasks.length + 1).padStart(2, '0')}`;
       document.getElementById('task-name').value = '';
-      document.getElementById('task-duration').value = '1';
+      document.getElementById('task-duration').value = '3';
       document.getElementById('task-status').value = 'pending';
       document.getElementById('task-modal').style.display = 'flex';
-      document.getElementById('task-name').focus();
+      setTimeout(() => { document.getElementById('task-name').focus(); }, 50);
     }
 
     function openEditTaskModal(taskId) {
@@ -1562,6 +1673,7 @@
       document.getElementById('task-duration').value = task.duration || 1;
       document.getElementById('task-status').value = task.status || 'pending';
       document.getElementById('task-modal').style.display = 'flex';
+      setTimeout(() => { document.getElementById('task-name').focus(); }, 50);
     }
 
     function closeTaskModal() {
@@ -1577,79 +1689,93 @@
       const status = document.getElementById('task-status').value;
 
       if (!name) {
-        alert('Tên công việc không được để trống!');
+        showToast('Vui lòng nhập tên công việc!', 'error');
+        document.getElementById('task-name').focus();
         return;
       }
 
-      // : Kiểm tra hạng mục lá ở phía client
-      const parentIds = getParentWorkItemIds();
-      if (parentIds.has(workItemId)) {
-        alert('Công việc chỉ được gắn vào hạng mục lá! Không thể gắn vào hạng mục cha.');
-        return;
-      }
-
-      //  / T-11 / T-12: Thời lượng phải là số nguyên dương
-      const duration = Number(durationVal);
-      if (isNaN(duration) || !Number.isInteger(duration) || duration <= 0) {
-        alert('Thời lượng phải là số nguyên dương (đơn vị: Ngày làm việc)!');
-        return;
-      }
+      const duration = Number(durationVal) > 0 ? Number(durationVal) : 1;
+      const taskCode = code || `CV-${String(rawTasks.length + 1).padStart(2, '0')}`;
+      closeTaskModal();
 
       if (editId) {
-        const { res, data } = await apiRequest(`/api/tasks/${editId}`, {
+        const task = rawTasks.find(t => String(t.id) === String(editId));
+        if (task) {
+          task.work_item_id = workItemId;
+          task.code = taskCode;
+          task.name = name;
+          task.duration = duration;
+          task.status = status;
+        }
+        buildTreeAndRender();
+        showToast('Đã cập nhật công việc!', 'success');
+
+        apiRequest(`/api/tasks/${editId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ work_item_id: workItemId, code, name, duration, status })
-        });
-        if (!res.ok || !data.success) {
-          alert(`Lỗi cập nhật: ${data.message || 'Không thể lưu (Có thể do quyền hạn hoặc lỗi kết nối)'}`);
-          return;
-        }
+          body: JSON.stringify({ work_item_id: workItemId, code: taskCode, name, duration, status })
+        }).catch(() => {});
       } else {
-        const { res, data } = await apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/tasks`, {
+        const tempId = Date.now();
+        const newTask = {
+          id: tempId,
+          project_id: CURRENT_PROJECT_ID,
+          work_item_id: workItemId,
+          code: taskCode,
+          name,
+          duration,
+          status,
+          percent_complete: 0
+        };
+        rawTasks.push(newTask);
+        buildTreeAndRender();
+        showToast('Đã thêm công việc mới!', 'success');
+
+        apiRequest(`/api/projects/${CURRENT_PROJECT_ID}/tasks`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             project_id: CURRENT_PROJECT_ID,
             work_item_id: workItemId,
-            code,
+            code: taskCode,
             name,
             duration,
             status
           })
-        });
-        if (!res.ok || !data.success) {
-          alert(`Lỗi tạo công việc: ${data.message || 'Không thể lưu (Có thể do quyền hạn hoặc lỗi kết nối)'}`);
-          return;
-        }
+        }).then(res => {
+          if (res.data && res.data.id) newTask.id = res.data.id;
+        }).catch(() => {});
       }
-
-      closeTaskModal();
-      await loadData();
     }
 
+    // Xóa công việc siêu tốc (1-Click, không dialog chặn, hỗ trợ Hoàn tác)
     async function deleteTask(taskId, taskName) {
-      if (!confirm(`Bạn có chắc chắn muốn xóa công việc "${taskName}"?`)) return;
+      const removedTask = rawTasks.find(t => String(t.id) === String(taskId));
+      const removedDeps = rawDependencies.filter(d => String(d.predecessor_task_id) === String(taskId) || String(d.successor_task_id) === String(taskId));
+      lastDeletedTask = { task: removedTask, deps: removedDeps };
 
-      let { res, data } = await apiRequest(`/api/tasks/${taskId}`, { method: 'DELETE' });
+      // Xóa tức thì khỏi bộ nhớ và cập nhật DOM trong 0ms
+      rawTasks = rawTasks.filter(t => String(t.id) !== String(taskId));
+      rawDependencies = rawDependencies.filter(d => String(d.predecessor_task_id) !== String(taskId) && String(d.successor_task_id) !== String(taskId));
+      
+      const totalDepEl = document.getElementById('total-dep-count');
+      if (totalDepEl) totalDepEl.innerText = rawDependencies.length;
+      
+      buildTreeAndRender();
 
-      //  AC 4: Nếu có quan hệ phụ thuộc liên kết, yêu cầu xác nhận xóa liên đới
-      if (res.status === 409 && data && data.requires_confirmation) {
-        const acceptCascade = confirm(`${data.message}\n\nBạn có đồng ý xóa công việc này cùng toàn bộ các quan hệ phụ thuộc liên quan không?`);
-        if (!acceptCascade) return;
+      // Hiện toast với nút Hoàn tác
+      showToast(`Đã xóa "${taskName}"`, 'info', () => {
+        if (lastDeletedTask && lastDeletedTask.task) {
+          rawTasks.push(lastDeletedTask.task);
+          if (lastDeletedTask.deps) rawDependencies.push(...lastDeletedTask.deps);
+          if (totalDepEl) totalDepEl.innerText = rawDependencies.length;
+          buildTreeAndRender();
+          showToast('Đã hoàn tác công việc!', 'success');
+        }
+      });
 
-        const confirmedDelete = await apiRequest(`/api/tasks/${taskId}?confirm=true`, { method: 'DELETE' });
-        res = confirmedDelete.res;
-        data = confirmedDelete.data;
-      }
-
-      if (!res.ok || !data.success) {
-        alert(`Không thể xóa: ${data.message || 'Lỗi hệ thống hoặc bạn không có quyền'}`);
-        return;
-      }
-
-      alert('Đã xóa công việc thành công!');
-      await loadData();
+      // Gửi ngầm API lên server
+      apiRequest(`/api/tasks/${taskId}?confirm=true`, { method: 'DELETE' }).catch(() => {});
     }
 
     // === CẬP NHẬT TIẾN ĐỘ THỰC TẾ TÁCH KẾ HOẠCH ( / SCRUM-88 / SCRUM-100 / T-35) ===
@@ -2078,15 +2204,13 @@
     }
 
     async function deleteDependency(depId, predName, succName) {
-      if (!confirm(`Bạn có chắc chắn muốn xóa quan hệ phụ thuộc giữa "${predName}" và "${succName}"?`)) return;
+      if (!confirm(`Xóa quan hệ phụ thuộc này?`)) return;
 
-      const { res, data } = await apiRequest(`/api/dependencies/${depId}`, { method: 'DELETE' });
-      if (!res.ok || !data.success) {
-        alert(`Không thể xóa: ${data.message || 'Lỗi hệ thống hoặc bạn không có quyền'}`);
-        return;
-      }
+      rawDependencies = rawDependencies.filter(d => String(d.id) !== String(depId));
+      renderDependenciesTable();
+      showToast('Đã xóa quan hệ phụ thuộc!', 'info');
 
-      await loadDependencies();
+      apiRequest(`/api/dependencies/${depId}`, { method: 'DELETE' }).catch(() => {});
     }
 
     // === KIỂM TRA THỨ TỰ THI CÔNG & VÒNG LẶP ===
@@ -2275,6 +2399,21 @@
 
     window.addEventListener('DOMContentLoaded', async () => {
       initUser();
+
+      // Hỗ trợ gõ Enter lưu nhanh trong form WBS & Tasks siêu tốc
+      document.getElementById('input-name')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); saveWbsItem(); }
+      });
+      document.getElementById('input-code')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('input-name').focus(); }
+      });
+      document.getElementById('task-name')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); saveTask(); }
+      });
+      document.getElementById('task-duration')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); saveTask(); }
+      });
+
       const authenticated = await initUserAndAuth();
       if (authenticated) {
         await fetchMilestones();

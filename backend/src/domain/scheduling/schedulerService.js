@@ -9,6 +9,7 @@ const { MilestoneAlertService } = require('../../services/milestoneAlertService'
 
 class SchedulerService {
   constructor(db) {
+    this.db = db;
     this.pool = db?.pool || db;
     this.resultRepo = new ScheduleResultRepository(db);
     this.baselineRepo = new BaselineRepository(db);
@@ -74,7 +75,16 @@ class SchedulerService {
     const sourceById = new Map(tasks.map(task => [normalizeId(task.id, 'task.id'), task]));
     const scheduledTasks = schedule.map(item => {
       const source = sourceById.get(normalizeId(item.taskId, 'taskId'));
-      return { ...item, name: source?.name, code: source?.code, status: source?.status };
+      return {
+        ...item,
+        id: item.taskId,
+        name: source?.name,
+        code: source?.code,
+        status: source?.status,
+        actual_start: source?.actual_start,
+        actual_end: source?.actual_end,
+        percent_complete: source?.percent_complete !== undefined ? Number(source.percent_complete) : 0
+      };
     });
     const projectDuration = Math.max(...scheduledTasks.map(task => task.earlyFinish));
 
@@ -92,7 +102,7 @@ class SchedulerService {
     let dependencies = [];
     let integrationStatus = 'INTEGRATED WITH S-06';
 
-    if (this.pool?.query) {
+    if (this.db?.isConnected && this.pool?.query) {
       const [tRows] = await this.pool.query(
         'SELECT id, project_id, work_item_id, name, code, duration, status FROM tasks WHERE project_id = ? ORDER BY id ASC',
         [projectId]
@@ -115,12 +125,14 @@ class SchedulerService {
         }));
       }
     } else {
-      const { inMemoryWorkItems } = require('../../models/store');
-      tasks = [
-        { id: 1, project_id: Number(projectId), work_item_id: 1, name: 'Đào đất hố móng trụ T1', code: 'CV-01', duration: 5, status: 'pending' },
-        { id: 2, project_id: Number(projectId), work_item_id: 1, name: 'Đổ bê tông lót móng', code: 'CV-02', duration: 3, status: 'pending' }
-      ];
-      dependencies = Array.isArray(mockDependencies) ? mockDependencies : [{ predecessorId: 1, successorId: 2, type: 'FS', lag: 0 }];
+      const { inMemoryTasks, inMemoryDependencies } = require('../../models/store');
+      tasks = inMemoryTasks.filter(t => t.project_id === Number(projectId));
+      dependencies = (inMemoryDependencies || []).filter(d => d.project_id === Number(projectId)).map(d => ({
+        predecessorId: d.predecessor_task_id,
+        successorId: d.successor_task_id,
+        type: d.dependency_type,
+        lag: Number(d.lag_days || 0)
+      }));
     }
 
     const computed = this.computeSchedule(tasks, dependencies);
@@ -151,7 +163,54 @@ class SchedulerService {
       throw new Error('projectId không hợp lệ');
     }
 
-    const isStale = forceRecalculate || (await this.resultRepo.isStale(pId));
+    if (!this.db?.isConnected) {
+      const { inMemoryTasks } = require('../../models/store');
+      const schedule = await this.getProjectSchedule(pId);
+      const sortedTasks = [...schedule.tasks].sort((a, b) => a.earlyStart - b.earlyStart);
+      const filteredTasks = criticalOnly ? sortedTasks.filter(t => t.isCritical) : sortedTasks;
+      return {
+        success: true,
+        projectId: pId,
+        isCached: false,
+        projectDuration: schedule.projectDuration,
+        totalTasks: sortedTasks.length,
+        criticalTasksCount: sortedTasks.filter(t => t.isCritical).length,
+        calculatedAt: new Date().toISOString(),
+        tasks: filteredTasks.map(t => {
+          const tId = Number(t.id || t.taskId);
+          const orig = inMemoryTasks.find(it => Number(it.id) === tId) || t;
+          const pct = Number(orig.percent_complete !== undefined ? orig.percent_complete : (t.percent_complete || 0));
+          const actStart = orig.actual_start || t.actual_start || null;
+          const actEnd = orig.actual_end || t.actual_end || null;
+          const name = orig.name || t.name || `Công việc #${tId}`;
+          const code = orig.code || t.code || `CV-${tId}`;
+          const status = orig.status || t.status || (pct >= 100 ? 'completed' : (actStart ? 'in_progress' : 'pending'));
+
+          return {
+            taskId: tId,
+            id: tId,
+            name: name,
+            taskName: name,
+            code: code,
+            taskCode: code,
+            duration: Number(t.duration || orig.duration || 1),
+            earlyStart: Number(t.earlyStart || 0),
+            earlyFinish: Number(t.earlyFinish || 0),
+            lateStart: Number(t.lateStart || 0),
+            lateFinish: Number(t.lateFinish || 0),
+            totalFloat: Number(t.totalFloat || 0),
+            isCritical: Boolean(t.isCritical),
+            status: status,
+            percentComplete: pct,
+            percent_complete: pct,
+            actualStart: actStart,
+            actual_start: actStart,
+            actualEnd: actEnd,
+            actual_end: actEnd
+          };
+        })
+      };
+    }
     if (!isStale) {
       const saved = await this.resultRepo.getSavedResults(pId, { criticalOnly });
       if (!saved.error && (saved.totalTasks > 0 || (saved.tasks && saved.tasks.length === 0 && saved.totalTasks === 0))) {

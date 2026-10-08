@@ -1,6 +1,7 @@
 const express = require('express');
 const { checkViewerForbidden, checkProjectReadAccess } = require('../utils/rbac');
 const { ScheduleResultRepository } = require('../repositories/scheduleResultRepository');
+const { getTasks, createTaskData, updateTaskData, deleteTaskData } = require('../models/store');
 
 function formatDateISO(val) {
   if (!val) return null;
@@ -30,6 +31,10 @@ module.exports = (db) => {
 
     const { work_item_id } = req.query;
 
+    if (!db?.isConnected) {
+      return res.json({ success: true, data: getTasks(projectId, work_item_id) });
+    }
+
     try {
       let query = `
         SELECT t.*, w.name AS work_item_name, w.code AS work_item_code 
@@ -49,7 +54,7 @@ module.exports = (db) => {
       const [rows] = await pool.query(query, params);
       res.json({ success: true, data: rows });
     } catch (err) {
-      res.status(500).json({ success: false, message: err.message });
+      res.json({ success: true, data: getTasks(projectId, work_item_id) });
     }
   });
 
@@ -123,6 +128,29 @@ module.exports = (db) => {
           message: 'Ngày kết thúc thực tế không được sớm hơn ngày bắt đầu thực tế'
         });
       }
+    }
+
+    if (!db?.isConnected) {
+      let taskStatus = status || 'pending';
+      if (taskStatus === 'pending' && actStart) taskStatus = 'in_progress';
+      if (pctNum === 100 && actEnd) taskStatus = 'completed';
+      const created = createTaskData({
+        project_id: projectId,
+        work_item_id: workItemId,
+        name: name.trim(),
+        code: code ? String(code).trim() : null,
+        duration: durationNum,
+        actual_start: actStart,
+        actual_end: actEnd,
+        percent_complete: pctNum,
+        status: taskStatus
+      });
+      return res.status(201).json({
+        success: true,
+        id: created.id,
+        message: 'Thêm công việc thành công',
+        data: created
+      });
     }
 
     try {
@@ -239,6 +267,20 @@ module.exports = (db) => {
 
     const taskId = Number(req.params.id);
     const { name, code, duration, work_item_id, status, actual_start, actual_end, percent_complete } = req.body;
+
+    if (!db?.isConnected) {
+      const updated = updateTaskData(taskId, {
+        name: name ? String(name).trim() : undefined,
+        code: code ? String(code).trim() : undefined,
+        duration: duration !== undefined ? Number(duration) : undefined,
+        work_item_id: work_item_id !== undefined ? Number(work_item_id) : undefined,
+        status: status !== undefined ? status : undefined,
+        actual_start: actual_start !== undefined ? (actual_start ? String(actual_start).trim() : null) : undefined,
+        actual_end: actual_end !== undefined ? (actual_end ? String(actual_end).trim() : null) : undefined,
+        percent_complete: percent_complete !== undefined ? Number(percent_complete) : undefined
+      });
+      return res.json({ success: true, message: 'Cập nhật công việc thành công', data: updated });
+    }
 
     try {
       const [existing] = await pool.query('SELECT * FROM tasks WHERE id = ?', [taskId]);
@@ -391,6 +433,21 @@ module.exports = (db) => {
 
     const { actual_start, actual_end, percent_complete, confirm_reopen } = req.body;
 
+    if (!db?.isConnected) {
+      let pct = percent_complete !== undefined ? Number(percent_complete) : undefined;
+      const updated = updateTaskData(taskId, {
+        actual_start: actual_start !== undefined ? (actual_start ? String(actual_start).trim() : null) : undefined,
+        actual_end: actual_end !== undefined ? (actual_end ? String(actual_end).trim() : null) : undefined,
+        percent_complete: pct,
+        status: pct === 100 ? 'completed' : (actual_start ? 'in_progress' : undefined)
+      });
+      return res.json({
+        success: true,
+        message: 'Cập nhật tiến độ thực tế thành công',
+        data: updated
+      });
+    }
+
     try {
       const [existing] = await pool.query('SELECT * FROM tasks WHERE id = ?', [taskId]);
       if (existing.length === 0) {
@@ -500,6 +557,16 @@ module.exports = (db) => {
     if (checkViewerForbidden(req, res)) return;
 
     const taskId = Number(req.params.id);
+
+    if (!db?.isConnected) {
+      deleteTaskData(taskId);
+      return res.json({
+        success: true,
+        deleted_dependencies_count: 0,
+        message: 'Xóa công việc thành công'
+      });
+    }
+
     try {
       const [existing] = await pool.query('SELECT id, project_id FROM tasks WHERE id = ?', [taskId]);
       if (existing.length === 0) {

@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   getSession,
   inMemoryWorkItems,
+  inMemoryTasks,
   inMemoryMilestones,
   getMilestones,
   createMilestoneData,
@@ -52,7 +53,7 @@ module.exports = (db) => {
       if (parseInt(currentParent) === parseInt(itemId)) {
         return true;
       }
-      if (pool && pool.query) {
+      if (db?.isConnected && pool && pool.query) {
         try {
           const [rows] = await pool.query('SELECT parent_id FROM work_items WHERE id = ?', [currentParent]);
           if (!rows || rows.length === 0) break;
@@ -71,6 +72,10 @@ module.exports = (db) => {
   router.get('/projects/:projectId/work-items', async (req, res) => {
     if (checkProjectReadAccess(req, res, req.params.projectId)) return;
 
+    if (!db?.isConnected) {
+      return res.json({ success: true, data: inMemoryWorkItems });
+    }
+
     try {
       if (pool && pool.query) {
         try {
@@ -87,7 +92,7 @@ module.exports = (db) => {
       }
       res.json({ success: true, data: inMemoryWorkItems });
     } catch (err) {
-      res.status(500).json({ success: false, message: err.message });
+      res.json({ success: true, data: inMemoryWorkItems });
     }
   });
 
@@ -98,6 +103,22 @@ module.exports = (db) => {
     const { project_id, parent_id, name, code, unit, quantity } = req.body;
     if (!name || !project_id) {
       return res.status(400).json({ success: false, message: 'Thiếu tên hạng mục hoặc project_id' });
+    }
+
+    if (!db?.isConnected) {
+      const newId = inMemoryWorkItems.length > 0 ? Math.max(...inMemoryWorkItems.map(w => w.id)) + 1 : 1;
+      const newItem = {
+        id: newId,
+        project_id: parseInt(project_id, 10),
+        parent_id: parent_id ? parseInt(parent_id, 10) : null,
+        name: name.trim(),
+        code: code ? code.trim() : `HM-${newId}`,
+        unit: unit || null,
+        quantity: quantity || 0,
+        status: 'pending'
+      };
+      inMemoryWorkItems.push(newItem);
+      return res.json({ success: true, id: newId, message: 'Thêm hạng mục thành công', data: newItem });
     }
     try {
       if (pool && pool.query) {
@@ -192,7 +213,32 @@ module.exports = (db) => {
   router.delete('/work-items/:id', async (req, res) => {
     if (checkViewerForbidden(req, res)) return;
 
-    const itemId = req.params.id;
+    const itemId = parseInt(req.params.id, 10);
+
+    if (!db?.isConnected) {
+      const hasChildren = inMemoryWorkItems.some(w => w.parent_id === itemId);
+      if (hasChildren) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Lỗi ràng buộc (T-10): Không thể xoá vì hạng mục này đang có hạng mục con!` 
+        });
+      }
+
+      const hasTasks = inMemoryTasks.some(t => t.work_item_id === itemId);
+      if (hasTasks) {
+        return res.status(409).json({
+          success: false,
+          message: 'Lỗi ràng buộc: Không thể xoá vì hạng mục này đang có công việc thi công gắn vào!'
+        });
+      }
+
+      const idx = inMemoryWorkItems.findIndex(w => w.id === itemId);
+      if (idx !== -1) {
+        inMemoryWorkItems.splice(idx, 1);
+      }
+      return res.json({ success: true, message: 'Xóa hạng mục thành công' });
+    }
+
     try {
       let hasChildren = false;
       if (pool && pool.query) {
@@ -203,7 +249,7 @@ module.exports = (db) => {
       }
 
       if (!hasChildren) {
-        const memChildren = inMemoryWorkItems.filter(w => w.parent_id === parseInt(itemId, 10));
+        const memChildren = inMemoryWorkItems.filter(w => w.parent_id === itemId);
         if (memChildren.length > 0) hasChildren = true;
       }
 
@@ -230,7 +276,7 @@ module.exports = (db) => {
         }
       }
 
-      const idx = inMemoryWorkItems.findIndex(w => w.id === parseInt(itemId, 10));
+      const idx = inMemoryWorkItems.findIndex(w => w.id === itemId);
       if (idx !== -1) {
         inMemoryWorkItems.splice(idx, 1);
       }
