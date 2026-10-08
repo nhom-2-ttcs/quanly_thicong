@@ -1,22 +1,29 @@
-const mysql = require('mysql2');
+let mysql = null;
+try {
+  mysql = require('mysql2');
+} catch (e) {
+  // Khi chạy môi trường test độc lập chưa cài mysql2, sử dụng fallback in-memory
+}
 require('dotenv').config();
 const { SEED_ROLES, findUserByEmail } = require('./src/models/store');
 
 let pool = null;
 
-try {
-  pool = mysql.createPool({
-    host: process.env.DB_HOST || 'db',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'secret',
-    database: process.env.DB_NAME || 'quanly_thicong',
-  charset: "utf8mb4",
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-  }).promise();
-} catch (err) {
-  console.warn('[DB] Không thể tạo MySQL pool, sẽ sử dụng in-memory store:', err.message);
+if (mysql) {
+  try {
+    pool = mysql.createPool({
+      host: process.env.DB_HOST || 'db',
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || 'secret',
+      database: process.env.DB_NAME || 'quanly_thicong',
+      charset: "utf8mb4",
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0
+    }).promise();
+  } catch (err) {
+    console.warn('[DB] Không thể tạo MySQL pool, sẽ sử dụng in-memory store:', err.message);
+  }
 }
 
 // Hàm khởi tạo bảng và seed 6 vai trò khi kết nối MySQL thành công (SCRUM-29 / T-04)
@@ -217,6 +224,67 @@ async function initDbSchema(maxRetries = 10, delayMs = 1500) {
         CONSTRAINT fk_pss_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // 9. Bảng lưu trữ kế hoạch gốc và lịch sử chốt (S-18 / SCRUM-91)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS baseline_schedules (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        version INT NOT NULL DEFAULT 1,
+        is_current BOOLEAN NOT NULL DEFAULT TRUE,
+        project_duration DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+        created_by INT NULL,
+        created_by_name VARCHAR(100) NOT NULL DEFAULT 'Ban Quản Lý',
+        reason VARCHAR(255) NULL DEFAULT 'Khởi công chốt kế hoạch gốc',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_bs_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        INDEX idx_bs_project_curr (project_id, is_current),
+        INDEX idx_bs_project_ver (project_id, version)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS baseline_tasks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        baseline_schedule_id INT NOT NULL,
+        project_id INT NOT NULL,
+        task_id INT NOT NULL,
+        task_code VARCHAR(50) NULL,
+        task_name VARCHAR(255) NOT NULL,
+        duration INT NOT NULL DEFAULT 1,
+        early_start DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+        early_finish DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+        late_start DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+        late_finish DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+        total_float DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+        is_critical BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_bt_baseline FOREIGN KEY (baseline_schedule_id) REFERENCES baseline_schedules(id) ON DELETE CASCADE,
+        CONSTRAINT fk_bt_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+        INDEX idx_bt_base_task (baseline_schedule_id, task_id),
+        INDEX idx_bt_project (project_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS baseline_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        baseline_schedule_id INT NOT NULL,
+        version INT NOT NULL DEFAULT 1,
+        action ENUM('create_initial', 'update_overwrite') NOT NULL DEFAULT 'create_initial',
+        created_by INT NULL,
+        created_by_name VARCHAR(100) NOT NULL DEFAULT 'Ban Quản Lý',
+        task_count INT NOT NULL DEFAULT 0,
+        project_duration DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+        reason VARCHAR(255) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_bh_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        CONSTRAINT fk_bh_baseline FOREIGN KEY (baseline_schedule_id) REFERENCES baseline_schedules(id) ON DELETE CASCADE,
+        INDEX idx_bh_project (project_id, created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
 
     // Seed 7 vai trò thi công xây dựng
     for (const r of SEED_ROLES) {

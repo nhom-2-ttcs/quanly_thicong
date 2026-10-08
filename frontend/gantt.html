@@ -3,13 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sơ đồ tiến độ thi công</title>
+  <title>Sơ đồ tiến độ thi công (Gantt & Baseline CPM)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --primary: #2563eb;
+<<<<<<< HEAD
+      --primary-hover: #1d4ed8;
+      --primary-soft: #eff6ff;
+      --critical: #dc2626;
+      --critical-border: #991b1b;
+      --critical-soft: #fef2f2;
+      --baseline-dim: #64748b;
+      --baseline-bg: #94a3b8;
+      --baseline-border: #475569;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --border-dark: #cbd5e1;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --task-col-w: 280px;
+      --row-h: 46px;
+      --row-h-baseline: 58px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: var(--bg); color: var(--text-main); padding: 20px; min-height: 100vh; }
+=======
       --critical: #ef4444;
       --critical-border: #991b1b;
       --new-critical: #f59e0b;
@@ -26,11 +49,48 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; }
     body { background-color: var(--bg); color: var(--text-main); padding: 24px; }
+>>>>>>> origin/main
 
     .top-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
+<<<<<<< HEAD
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left h1 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-meta {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .meta-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f1f5f9;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    .meta-tag.tag-baseline {
+      background: #e0e7ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+=======
       margin-bottom: 20px;
     }
     .top-left { display: flex; align-items: center; gap: 12px; }
@@ -47,12 +107,24 @@
       color: var(--text-muted);
       text-decoration: none;
       transition: all 0.15s ease;
+>>>>>>> origin/main
     }
     .back-btn:hover { background: #f1f5f9; color: var(--text-main); }
     .top-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
 
+<<<<<<< HEAD
+    /* Actions & Toolbar */
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .segmented-control {
+=======
     .top-actions { display: flex; align-items: center; gap: 12px; }
     .filter-chip {
+>>>>>>> origin/main
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -74,10 +146,17 @@
       padding: 3px;
       border-radius: 8px;
     }
+<<<<<<< HEAD
+    .segmented-control button {
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 700;
+=======
     .segmented-tabs button {
       padding: 5px 14px;
       font-size: 12px;
       font-weight: 600;
+>>>>>>> origin/main
       border: none;
       background: transparent;
       color: var(--text-muted);
@@ -89,6 +168,91 @@
       color: var(--primary);
       box-shadow: 0 1px 2px rgba(0,0,0,0.06);
     }
+<<<<<<< HEAD
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--text-main);
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn-action:hover { background: #f8fafc; border-color: var(--primary); color: var(--primary); }
+    .btn-action.active {
+      background: var(--critical-soft);
+      border-color: #fca5a5;
+      color: var(--critical);
+    }
+    .btn-action.btn-baseline {
+      background: #4f46e5;
+      color: #ffffff;
+      border-color: #4338ca;
+    }
+    .btn-action.btn-baseline:hover {
+      background: #4338ca;
+      color: #ffffff;
+    }
+
+    /* GỢI Ý CHƯA CHỐT KẾ HOẠCH GỐC (AC 4) */
+    .baseline-alert-banner {
+      background: linear-gradient(135deg, #eff6ff 0%, #fef3c7 100%);
+      border: 1.5px solid #fde68a;
+      border-radius: 10px;
+      padding: 12px 18px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08);
+      animation: fadeIn 0.3s ease;
+    }
+    .banner-text-group { display: flex; align-items: center; gap: 12px; }
+    .banner-icon { font-size: 22px; flex-shrink: 0; }
+    .banner-title { font-size: 13.5px; font-weight: 800; color: #92400e; }
+    .banner-desc { font-size: 12.5px; color: #78350f; margin-top: 2px; }
+    .btn-banner-lock {
+      background: #d97706;
+      color: #ffffff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(217, 119, 6, 0.25);
+    }
+    .btn-banner-lock:hover { background: #b45309; }
+
+    /* Legend Box */
+    .legend-bar {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      padding: 0 4px;
+      flex-wrap: wrap;
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+    .legend-dot { width: 14px; height: 14px; border-radius: 3px; }
+    .legend-dot.normal { background: var(--primary); }
+    .legend-dot.critical { background: var(--critical); border: 1.5px dashed var(--critical-border); }
+    .legend-dot.baseline {
+      background: #cbd5e1;
+      border: 1.5px dashed #475569;
+    }
+=======
 
     /* Summary Bar hiển thị chênh lệch ngày hoàn thành  */
     .summary-card {
@@ -119,6 +283,7 @@
     }
     .badge-status.ontime { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
     .badge-status.delayed { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+>>>>>>> origin/main
 
     .legend-box { display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--text-muted); }
     .legend-item { display: flex; align-items: center; gap: 6px; font-weight: 500; }
@@ -149,8 +314,13 @@
       height: 48px;
       background: #f8fafc;
       border-bottom: 1px solid var(--border);
+<<<<<<< HEAD
+      font-size: 12px;
+      font-weight: 800;
+=======
       font-size: 11px;
       font-weight: 700;
+>>>>>>> origin/main
       color: var(--text-muted);
       text-transform: uppercase;
       display: flex;
@@ -158,14 +328,29 @@
       padding: 0 16px;
     }
     .task-row {
+<<<<<<< HEAD
+      border-bottom: 1px solid #f1f5f9;
+=======
       height: var(--row-h);
       border-bottom: 1px solid var(--border-subtle);
+>>>>>>> origin/main
       display: flex;
       align-items: center;
       padding: 0 16px;
       gap: 8px;
       font-size: 13px;
     }
+<<<<<<< HEAD
+    .task-row:hover { background: #f8fafc; }
+    .badge-code {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      color: #334155;
+      font-family: 'JetBrains Mono', monospace;
+=======
     .code-badge {
       font-size: 10px;
       font-weight: 700;
@@ -174,12 +359,13 @@
       background: #eff6ff;
       color: #1d4ed8;
       border: 1px solid #dbeafe;
+>>>>>>> origin/main
     }
     .task-title {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-weight: 500;
+      font-weight: 600;
     }
 
     .timeline-col {
@@ -215,28 +401,234 @@
     }
     .grid-line.major { border-left-color: var(--border); }
 
+<<<<<<< HEAD
+    /* Task Bar Styling (Thanh hiện tại) */
+    .gantt-bar {
+      position: absolute;
+=======
     .gantt-bar {
       position: absolute;
       height: 26px;
+>>>>>>> origin/main
       border-radius: 6px;
       display: flex;
       align-items: center;
       padding: 0 10px;
       font-size: 11.5px;
       color: #ffffff;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
+<<<<<<< HEAD
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: transform 0.15s ease, filter 0.15s ease;
+      will-change: transform;
+      z-index: 8;
+    }
+    .gantt-bar:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+      z-index: 12;
+    }
+    .bar-normal {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    }
+=======
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
       transition: transform 0.12s ease;
     }
     .gantt-bar:hover { transform: translateY(-1px); }
     .bar-normal { background: linear-gradient(135deg, #3b82f6, #2563eb); border: 1px solid #1d4ed8; }
     
+>>>>>>> origin/main
     .bar-critical {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      border: 2px dashed var(--critical-border) !important;
-      font-weight: 600;
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
     }
+<<<<<<< HEAD
+    .critical-badge {
+      display: inline-block;
+      margin-right: 5px;
+      font-size: 10px;
+      color: #fef08a;
+    }
+
+    /* THANH MỜ KẾ HOẠCH GỐC BÊN DƯỚI THANH HIỆN TẠI (AC 2) */
+    .gantt-bar-baseline {
+      position: absolute;
+      height: 16px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      padding: 0 6px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #334155;
+      background: #cbd5e1;
+      border: 1.5px dashed #475569;
+      opacity: 0.70;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      transition: opacity 0.2s, background 0.2s;
+      z-index: 5;
+    }
+    .gantt-bar-baseline:hover {
+      opacity: 1;
+      background: #94a3b8;
+      color: #0f172a;
+      z-index: 11;
+    }
+
+    /* Tooltip */
+    #ganttTooltip {
+      position: fixed;
+      display: none;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      pointer-events: none;
+      z-index: 999;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+      max-width: 320px;
+      border: 1px solid #334155;
+    }
+    .tt-header {
+      font-weight: 700;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .tt-status {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .tt-status.crit { background: #ef4444; color: #fff; }
+    .tt-status.norm { background: #3b82f6; color: #fff; }
+    .tt-status.base { background: #64748b; color: #fff; }
+    .tt-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 12px;
+      font-size: 11px;
+      color: #cbd5e1;
+    }
+    .tt-grid span { font-weight: 700; color: #ffffff; font-family: 'JetBrains Mono', monospace; }
+    .tt-footer {
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px dashed #334155;
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .tt-footer.base { color: #94a3b8; }
+
+    /* MODAL CHỐT KẾ HOẠCH GỐC (AC 1 & AC 3) */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .modal-box {
+      background: #ffffff;
+      border-radius: 12px;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+      overflow: hidden;
+      animation: modalSlide 0.25s ease-out;
+    }
+    .modal-box-large { max-width: 780px; }
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+    }
+    .modal-header h3 { font-size: 16px; font-weight: 800; color: var(--text-main); }
+    .btn-close {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .modal-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background: #f8fafc;
+    }
+    .notice-card {
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .notice-info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+    .notice-warning { background: #fffbeb; border: 1.5px solid #fde68a; color: #92400e; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 13px; font-weight: 700; color: var(--text-main); }
+    .form-input {
+      padding: 9px 12px;
+      border: 1.5px solid var(--border-dark);
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-family: inherit;
+    }
+    .form-input:focus { outline: none; border-color: var(--primary); }
+    .btn-submit-lock {
+      background: #4f46e5;
+      color: #ffffff;
+      border: none;
+      padding: 9px 20px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-submit-lock:hover { background: #4338ca; }
+    .btn-cancel {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1.5px solid var(--border);
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* History Table */
+    .history-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .history-table th { background: #f8fafc; padding: 10px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 800; }
+    .history-table td { padding: 10px; border-bottom: 1px solid var(--border); }
+    .badge-ver { background: #e0e7ff; color: #3730a3; padding: 2px 7px; border-radius: 4px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    .badge-action { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    .badge-action.init { background: #ecfdf5; color: #065f46; }
+    .badge-action.update { background: #fef3c7; color: #92400e; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes modalSlide { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+=======
     
     /* Việc mới trở thành găng  */
     .bar-new-critical {
@@ -277,10 +669,29 @@
       .bar-critical { background: repeating-linear-gradient(45deg, #000, #000 4px, #fff 4px, #fff 8px) !important; border: 2px solid #000 !important; color: #000 !important; }
       .bar-new-critical { background: repeating-linear-gradient(-45deg, #444, #444 4px, #fff 4px, #fff 8px) !important; border: 2px dashed #000 !important; color: #000 !important; }
     }
+>>>>>>> origin/main
   </style>
 </head>
 <body>
 
+<<<<<<< HEAD
+  <!-- Dashboard Header -->
+  <header class="dashboard-header">
+    <div class="header-left">
+      <h1>📊 Sơ đồ tiến độ thi công & Kế hoạch gốc (S-18)</h1>
+      <div class="header-meta">
+        <span class="meta-tag" id="metaProject">📍 Dự án: Đang tải...</span>
+        <span class="meta-tag" id="metaDuration">⏱ Thời lượng: —</span>
+        <span class="meta-tag" id="summaryTasks">📋 0 công việc</span>
+        <span class="meta-tag tag-baseline" id="metaBaselineStatus" style="display: none;">📌 Kế hoạch gốc: V1</span>
+      </div>
+    </div>
+    <div class="toolbar-actions">
+      <a href="schedule.html" class="btn-action" title="Bảng chi tiết tiến độ CPM">
+        📋 Bảng CPM
+      </a>
+      <button class="btn-action" id="btnFilterCrit" onclick="toggleCriticalFilter()">
+=======
   <div class="top-bar">
     <div class="top-left">
       <a href="/schedule.html" class="back-btn">⬅ Bảng tiến độ</a>
@@ -291,15 +702,50 @@
     </div>
     <div class="top-actions">
       <button class="filter-chip" id="btnFilterCrit" onclick="toggleCriticalFilter()">
+>>>>>>> origin/main
         <span>◆</span> Chỉ xem việc găng
       </button>
       <div class="segmented-tabs">
         <button id="btnDay" class="active" onclick="setView('day')">Ngày</button>
         <button id="btnWeek" onclick="setView('week')">Tuần</button>
       </div>
+      <button class="btn-action btn-baseline" id="btnLockBaseline" onclick="openLockBaselineModal()" title="Chốt kế hoạch gốc (AC 1 & AC 3)">
+        📌 Chốt kế hoạch gốc
+      </button>
+      <button class="btn-action" id="btnHistoryBaseline" onclick="openHistoryModal()" title="Xem lịch sử chốt kế hoạch gốc (AC 3)">
+        📜 Lịch sử chốt
+      </button>
     </div>
   </div>
 
+<<<<<<< HEAD
+  <!-- GỢI Ý KHI CHƯA CHỐT KẾ HOẠCH GỐC (AC 4) -->
+  <div class="baseline-alert-banner" id="baselineSuggestion" style="display: none;">
+    <div class="banner-text-group">
+      <div class="banner-icon">💡</div>
+      <div>
+        <div class="banner-title">Gợi ý chốt kế hoạch gốc (S-18 / AC 4)</div>
+        <div class="banner-desc">Dự án này chưa lưu kế hoạch gốc lúc khởi công. Bạn hãy bấm chốt để lưu giữ bản cam kết ban đầu làm mốc đối chiếu.</div>
+      </div>
+    </div>
+    <button class="btn-banner-lock" onclick="openLockBaselineModal()">📌 Chốt kế hoạch gốc ngay</button>
+  </div>
+
+  <!-- Chú thích quy chuẩn -->
+  <div class="legend-bar">
+    <span>Chú thích:</span>
+    <div class="legend-item">
+      <div class="legend-dot critical"></div>
+      <span>Đường găng (Critical Path - Không được trễ)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot normal"></div>
+      <span>Công việc hiện tại</span>
+    </div>
+    <div class="legend-item" id="legendBaselineItem" style="display: none;">
+      <div class="legend-dot baseline"></div>
+      <span>Kế hoạch gốc (Thanh mờ bên dưới - AC 2)</span>
+=======
   <!-- Summary Dashboard Bar với thông số tính lại  -->
   <div class="summary-card">
     <div class="metrics">
@@ -328,6 +774,7 @@
         <div class="legend-mark norm"></div>
         <span>Việc thông thường</span>
       </div>
+>>>>>>> origin/main
     </div>
   </div>
 
@@ -342,11 +789,93 @@
     </div>
   </div>
 
+<<<<<<< HEAD
+  <!-- Modern Tooltip -->
+=======
+>>>>>>> origin/main
   <div id="ganttTooltip"></div>
+
+  <!-- MODAL CHỐT KẾ HOẠCH GỐC (AC 1, AC 3) -->
+  <div class="modal-backdrop" id="modalLockBaseline">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modalLockTitle">📌 Chốt kế hoạch gốc (Baseline)</h3>
+        <button class="btn-close" onclick="closeLockBaselineModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="notice-card" id="modalLockNotice">
+          Đang chuẩn bị thông tin chốt...
+        </div>
+        <div class="form-group">
+          <label>Người chốt / Chức vụ:</label>
+          <input type="text" class="form-input" id="inputAuthorName" placeholder="Ví dụ: Nguyễn Văn Trường Giang - Ban QLDA">
+        </div>
+        <div class="form-group">
+          <label>Ghi chú / Lý do chốt:</label>
+          <input type="text" class="form-input" id="inputReason" placeholder="Ví dụ: Phê duyệt kế hoạch khởi công đợt 1">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeLockBaselineModal()">Hủy bỏ</button>
+        <button class="btn-submit-lock" id="btnSubmitLock" onclick="submitLockBaseline()">Xác nhận chốt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL XEM LỊCH SỬ CHỐT KẾ HOẠCH GỐC (AC 3) -->
+  <div class="modal-backdrop" id="modalHistory">
+    <div class="modal-box modal-box-large">
+      <div class="modal-header">
+        <h3>📜 Lịch sử các lần chốt kế hoạch gốc (S-18 / AC 3)</h3>
+        <button class="btn-close" onclick="closeHistoryModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="overflow-x: auto;">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">Phiên bản</th>
+                <th style="width: 120px;">Hành động</th>
+                <th>Người chốt</th>
+                <th style="width: 150px;">Thời điểm chốt</th>
+                <th style="width: 90px; text-align: center;">Số việc</th>
+                <th>Lý do / Ghi chú</th>
+              </tr>
+            </thead>
+            <tbody id="historyTbody">
+              <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">Đang tải lịch sử chốt...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeHistoryModal()">Đóng</button>
+      </div>
+    </div>
+  </div>
 
   <script src="js/timelineScale.js"></script>
   <script src="js/recalculateSchedule.js"></script>
   <script>
+<<<<<<< HEAD
+    // === Cấu hình và dữ liệu toàn cục ===
+    const urlParams = new URLSearchParams(window.location.search);
+    const PROJECT_ID = Number(urlParams.get('projectId')) || 1;
+
+    let scheduleData = {
+      projectStartDate: "2026-10-01",
+      projectEndDate: "2026-11-15",
+      tasks: [
+        { id: "1", taskId: 1, code: "CV01", name: "Đào đất móng", earlyStart: "2026-10-01", earlyFinish: "2026-10-06", duration: 5, totalFloat: 0, isCritical: true },
+        { id: "2", taskId: 2, code: "CV02", name: "Đổ bê tông lót", earlyStart: "2026-10-06", earlyFinish: "2026-10-10", duration: 4, totalFloat: 0, isCritical: true },
+        { id: "3", taskId: 3, code: "CV03", name: "Gia công cốt thép móng", earlyStart: "2026-10-08", earlyFinish: "2026-10-16", duration: 8, totalFloat: 2, isCritical: false },
+        { id: "4", taskId: 4, code: "CV04", name: "Đổ bê tông đài móng", earlyStart: "2026-10-16", earlyFinish: "2026-10-24", duration: 8, totalFloat: 0, isCritical: true }
+      ]
+    };
+
+    // Dữ liệu baseline (kế hoạch gốc - S-18)
+    let currentBaseline = null; // { hasBaseline: false, baseline: null, tasks: [] }
+=======
     // Dữ liệu mẫu kiểm thử các tiêu chí AC của S-16:
     // CV-03 vốn không găng (độ trễ 2 ngày), nhưng bị trễ 5 ngày (> 2) -> Trở thành việc găng mới (AC 3, T-37)
     // Toàn dự án lùi tương ứng 3 ngày (AC 1 & T-37)
@@ -362,9 +891,113 @@
     };
 
     const scheduleCalc = recalculateProjectSchedule(baseProjectData, "2026-10-25");
+>>>>>>> origin/main
     let currentUnit = 'day';
     let filterCriticalOnly = false;
 
+    // Helper tính ngày cộng thêm
+    function addDaysToDate(baseDateStr, days) {
+      const d = new Date(baseDateStr);
+      d.setDate(d.getDate() + Number(days));
+      return d.toISOString().split('T')[0];
+    }
+
+    function formatDateVN(isoStr) {
+      if (!isoStr) return '—';
+      try {
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return isoStr;
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      } catch {
+        return isoStr;
+      }
+    }
+
+    // === Tải dữ liệu từ API hoặc mock fallback ===
+    async function loadData() {
+      const token = localStorage.getItem('quanly_token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+      // 1. Tải tiến độ hiện tại
+      try {
+        const res = await fetch(`/api/projects/${PROJECT_ID}/scheduling/results`, { headers });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.tasks && json.tasks.length > 0) {
+            const baseDate = "2026-10-01";
+            scheduleData.tasks = json.tasks.map(t => ({
+              id: String(t.taskId || t.id),
+              taskId: t.taskId || t.id,
+              code: t.code || `CV-${t.taskId}`,
+              name: t.name,
+              duration: t.duration,
+              earlyStart: addDaysToDate(baseDate, t.earlyStart),
+              earlyFinish: addDaysToDate(baseDate, t.earlyFinish),
+              lateStart: addDaysToDate(baseDate, t.lateStart),
+              lateFinish: addDaysToDate(baseDate, t.lateFinish),
+              totalFloat: t.totalFloat,
+              isCritical: t.isCritical
+            }));
+            const maxDuration = json.projectDuration || Math.max(...scheduleData.tasks.map(t => t.duration));
+            scheduleData.projectEndDate = addDaysToDate(baseDate, maxDuration + 10);
+            document.getElementById('metaDuration').textContent = `⏱ Thời lượng: ${json.projectDuration} ngày`;
+          }
+        }
+      } catch (err) {
+        console.warn('Dùng dữ liệu mẫu cho tiến độ hiện tại.');
+      }
+
+      // 2. Tải kế hoạch gốc (S-18 / AC 2, AC 4)
+      try {
+        const bRes = await fetch(`/api/projects/${PROJECT_ID}/scheduling/baseline`, { headers });
+        if (bRes.ok) {
+          const bJson = await bRes.json();
+          currentBaseline = bJson;
+        } else {
+          checkLocalFallbackBaseline();
+        }
+      } catch (err) {
+        checkLocalFallbackBaseline();
+      }
+
+      updateBaselineUI();
+      renderGantt();
+    }
+
+    function checkLocalFallbackBaseline() {
+      const local = localStorage.getItem(`quanly_baseline_${PROJECT_ID}`);
+      if (local) {
+        try { currentBaseline = JSON.parse(local); } catch { currentBaseline = { hasBaseline: false, tasks: [] }; }
+      } else {
+        currentBaseline = { hasBaseline: false, tasks: [] };
+      }
+    }
+
+    // === Cập nhật giao diện theo trạng thái Baseline (AC 2 & AC 4) ===
+    function updateBaselineUI() {
+      const suggestionBanner = document.getElementById('baselineSuggestion');
+      const baselineStatusTag = document.getElementById('metaBaselineStatus');
+      const legendBaseline = document.getElementById('legendBaselineItem');
+
+      document.getElementById('metaProject').textContent = `📍 Dự án ID #${PROJECT_ID}`;
+      document.getElementById('summaryTasks').textContent = `📋 ${scheduleData.tasks.length} công việc`;
+
+      if (!currentBaseline || !currentBaseline.hasBaseline) {
+        // AC 4: Chưa chốt kế hoạch gốc -> không hiện thanh mờ, có gợi ý chốt
+        suggestionBanner.style.display = 'flex';
+        baselineStatusTag.style.display = 'none';
+        legendBaseline.style.display = 'none';
+      } else {
+        // AC 2: Đã có kế hoạch gốc -> hiện thanh mờ bên dưới và trạng thái
+        suggestionBanner.style.display = 'none';
+        baselineStatusTag.style.display = 'inline-flex';
+        baselineStatusTag.textContent = `📌 Kế hoạch gốc: V${currentBaseline.baseline.version} (Chốt bởi: ${currentBaseline.baseline.createdByName})`;
+        legendBaseline.style.display = 'flex';
+      }
+    }
+
+    // === Render Gantt Chart (AC 2) ===
     function renderGantt() {
       document.getElementById('valPlanEnd').innerText = scheduleCalc.originalEndDate;
       document.getElementById('valCurrentEnd').innerText = scheduleCalc.currentEndDate;
@@ -377,19 +1010,33 @@
         statusBadge.innerText = '✓ Đúng tiến độ';
       }
 
+<<<<<<< HEAD
+      const hasBase = Boolean(currentBaseline && currentBaseline.hasBaseline);
+      const rowHeight = hasBase ? 58 : 46;
+
+      const totalDays = getDiffDays(scheduleData.projectStartDate, scheduleData.projectEndDate) + 5;
+=======
       const tasksToRender = filterCriticalOnly 
         ? scheduleCalc.tasks.filter(t => t.isCriticalNow || t.isCritical)
         : scheduleCalc.tasks;
 
       const totalDays = getDiffDays(baseProjectData.projectStartDate, scheduleCalc.currentEndDate) + 5;
+>>>>>>> origin/main
       const dayW = 42, weekW = 110;
       const totalWidth = currentUnit === 'day' ? totalDays * dayW : Math.ceil(totalDays / 7) * weekW;
 
       const taskList = document.getElementById('taskList');
+<<<<<<< HEAD
+      taskList.innerHTML = filteredTasks.map(t => `
+        <div class="task-row" style="height:${rowHeight}px;" title="${t.name}">
+          <span class="badge-code">${t.code}</span>
+          <span class="task-name-text">${t.name}</span>
+=======
       taskList.innerHTML = tasksToRender.map(t => `
         <div class="task-row" title="${t.name}">
           <span class="code-badge">${t.code}</span>
           <span class="task-title">${t.name}</span>
+>>>>>>> origin/main
         </div>
       `).join('');
 
@@ -402,6 +1049,77 @@
 
       const body = document.getElementById('chartBody');
       body.style.width = totalWidth + 'px';
+<<<<<<< HEAD
+      body.style.height = (filteredTasks.length * rowHeight) + 'px';
+
+      let html = ticks.map(t => `<div class="grid-line ${t.isMajor ? 'major' : ''}" style="left:${t.x}px"></div>`).join('');
+
+      const baseTasksMap = new Map();
+      if (hasBase && Array.isArray(currentBaseline.tasks)) {
+        currentBaseline.tasks.forEach(bt => {
+          baseTasksMap.set(String(bt.taskId || bt.id), bt);
+          if (bt.taskCode) baseTasksMap.set(bt.taskCode, bt);
+        });
+      }
+
+      filteredTasks.forEach((t, i) => {
+        const x = dateToCoordinateX(t.earlyStart, scheduleData.projectStartDate, currentUnit, dayW, weekW);
+        const w = calculateBarWidth(t.earlyStart, t.earlyFinish, currentUnit, dayW, weekW);
+        const isCrit = t.isCritical || t.totalFloat === 0;
+        const marker = isCrit ? '<span class="critical-badge">◆</span>' : '';
+
+        if (hasBase) {
+          // Khi có baseline: thanh hiện tại nằm phía trên (height 22px), thanh mờ bên dưới (height 16px) (AC 2)
+          const topCurrent = i * rowHeight + 5;
+          html += `
+            <div class="gantt-bar ${isCrit ? 'bar-critical' : 'bar-normal'}"
+                 data-id="${t.id}"
+                 style="left:${x}px; top:${topCurrent}px; width:${w}px; height:22px;"
+            >
+              <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                ${marker}${t.name}
+              </span>
+            </div>
+          `;
+
+          const bt = baseTasksMap.get(String(t.taskId || t.id)) || baseTasksMap.get(t.code);
+          if (bt) {
+            const baseStartDate = addDaysToDate("2026-10-01", bt.earlyStart);
+            const baseEndDate = addDaysToDate("2026-10-01", bt.earlyFinish);
+            const bx = dateToCoordinateX(baseStartDate, scheduleData.projectStartDate, currentUnit, dayW, weekW);
+            const bw = calculateBarWidth(baseStartDate, baseEndDate, currentUnit, dayW, weekW);
+            const topBase = i * rowHeight + 31;
+
+            html += `
+              <div class="gantt-bar-baseline"
+                   data-id="${t.id}"
+                   data-base-es="${baseStartDate}"
+                   data-base-ef="${baseEndDate}"
+                   data-base-dur="${bt.duration}"
+                   style="left:${bx}px; top:${topBase}px; width:${bw}px;"
+                   title="Kế hoạch gốc (Baseline): ${baseStartDate} → ${baseEndDate}"
+              >
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                  📌 Gốc: ${bt.duration}d
+                </span>
+              </div>
+            `;
+          }
+        } else {
+          // AC 4: Chưa có baseline -> chỉ hiện thanh hiện tại
+          const topCurrent = i * rowHeight + 9;
+          html += `
+            <div class="gantt-bar ${isCrit ? 'bar-critical' : 'bar-normal'}"
+                 data-id="${t.id}"
+                 style="left:${x}px; top:${topCurrent}px; width:${w}px; height:28px;"
+            >
+              <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                ${marker}${t.name}
+              </span>
+            </div>
+          `;
+        }
+=======
       body.style.height = (tasksToRender.length * 44) + 'px';
 
       let html = ticks.map(t => `<div class="grid-line ${t.isMajor ? 'major' : ''}" style="left:${t.x}px"></div>`).join('');
@@ -428,12 +1146,99 @@
             </span>
           </div>
         `;
+>>>>>>> origin/main
       });
       body.innerHTML = html;
 
       setupTooltip();
     }
 
+<<<<<<< HEAD
+    // === Tooltip chi tiết cho thanh hiện tại & thanh kế hoạch gốc ===
+    function setupGanttTooltip() {
+      const tooltip = document.getElementById('ganttTooltip');
+
+      function show(task, e, isBaseline = false, baseInfo = null) {
+        const isCrit = task.isCritical || task.totalFloat === 0;
+
+        if (isBaseline && baseInfo) {
+          tooltip.innerHTML = `
+            <div class="tt-header">
+              <span class="tt-title">[${task.code}] ${task.name}</span>
+              <span class="tt-status base">Kế hoạch gốc V${currentBaseline?.baseline?.version || 1}</span>
+            </div>
+            <div class="tt-grid">
+              <div>Khởi sớm gốc (ES): <span>${baseInfo.es}</span></div>
+              <div>Kết sớm gốc (EF): <span>${baseInfo.ef}</span></div>
+              <div>Thời lượng gốc: <span>${baseInfo.dur} ngày</span></div>
+              <div>Mốc cam kết: <span>Khởi công</span></div>
+            </div>
+            <div class="tt-footer base">
+              <span>Chốt bởi:</span>
+              <span>${currentBaseline?.baseline?.createdByName || 'Ban Quản Lý'}</span>
+            </div>
+          `;
+        } else {
+          tooltip.innerHTML = `
+            <div class="tt-header">
+              <span class="tt-title">[${task.code}] ${task.name}</span>
+              <span class="tt-status ${isCrit ? 'crit' : 'norm'}">${isCrit ? 'Đường găng' : 'Bình thường'}</span>
+            </div>
+            <div class="tt-grid">
+              <div>Khởi sớm (ES): <span>${task.earlyStart}</span></div>
+              <div>Kết sớm (EF): <span>${task.earlyFinish}</span></div>
+              <div>Khởi muộn (LS): <span>${task.lateStart || task.earlyStart}</span></div>
+              <div>Kết muộn (LF): <span>${task.lateFinish || task.earlyFinish}</span></div>
+            </div>
+            <div class="tt-footer ${isCrit ? 'crit' : 'norm'}">
+              <span>Độ trễ cho phép (Total Float):</span>
+              <span>${isCrit ? '0 ngày (Cố định)' : task.totalFloat + ' ngày'}</span>
+            </div>
+          `;
+        }
+        tooltip.style.display = 'block';
+
+        const clientX = e.clientX || 0;
+        const clientY = e.clientY || 0;
+        tooltip.style.left = (clientX + 16) + 'px';
+        tooltip.style.top = (clientY - 85) + 'px';
+      }
+
+      function hide() { tooltip.style.display = 'none'; }
+
+      // Gắn sự kiện cho thanh hiện tại
+      document.querySelectorAll('.gantt-bar').forEach(bar => {
+        const taskId = bar.getAttribute('data-id');
+        const task = scheduleData.tasks.find(x => x.id === taskId);
+        if (!task) return;
+
+        bar.addEventListener('mouseenter', (e) => show(task, e, false));
+        bar.addEventListener('mousemove', (e) => {
+          tooltip.style.left = (e.clientX + 16) + 'px';
+          tooltip.style.top = (e.clientY - 85) + 'px';
+        });
+        bar.addEventListener('mouseleave', hide);
+      });
+
+      // Gắn sự kiện cho thanh mờ baseline (AC 2)
+      document.querySelectorAll('.gantt-bar-baseline').forEach(bar => {
+        const taskId = bar.getAttribute('data-id');
+        const task = scheduleData.tasks.find(x => x.id === taskId);
+        if (!task) return;
+
+        const baseInfo = {
+          es: bar.getAttribute('data-base-es'),
+          ef: bar.getAttribute('data-base-ef'),
+          dur: bar.getAttribute('data-base-dur')
+        };
+
+        bar.addEventListener('mouseenter', (e) => show(task, e, true, baseInfo));
+        bar.addEventListener('mousemove', (e) => {
+          tooltip.style.left = (e.clientX + 16) + 'px';
+          tooltip.style.top = (e.clientY - 85) + 'px';
+        });
+        bar.addEventListener('mouseleave', hide);
+=======
     function setupTooltip() {
       const tooltip = document.getElementById('ganttTooltip');
       document.querySelectorAll('.gantt-bar').forEach(bar => {
@@ -457,7 +1262,189 @@
           tooltip.style.top = (e.clientY - 75) + 'px';
         });
         bar.addEventListener('mouseleave', () => tooltip.style.display = 'none');
+>>>>>>> origin/main
       });
+    }
+
+    // === Modal Chốt kế hoạch gốc (AC 1 & AC 3) ===
+    function openLockBaselineModal() {
+      const modal = document.getElementById('modalLockBaseline');
+      const title = document.getElementById('modalLockTitle');
+      const notice = document.getElementById('modalLockNotice');
+      const authorInput = document.getElementById('inputAuthorName');
+      const reasonInput = document.getElementById('inputReason');
+
+      const savedUser = localStorage.getItem('quanly_user');
+      let defaultName = 'Nguyễn Văn Trường Giang (Ban QLDA)';
+      if (savedUser) {
+        try {
+          const u = JSON.parse(savedUser);
+          defaultName = u.full_name || u.email || defaultName;
+        } catch {}
+      }
+      authorInput.value = defaultName;
+
+      if (!currentBaseline || !currentBaseline.hasBaseline) {
+        // Chốt lần đầu (AC 1)
+        title.textContent = '📌 Chốt kế hoạch gốc ban đầu (Phiên bản V1)';
+        notice.className = 'notice-card notice-info';
+        notice.innerHTML = `
+          <strong>📋 Xác nhận chốt kế hoạch gốc lần đầu:</strong><br>
+          Bản kế hoạch gốc này sẽ được lưu riêng vào cơ sở dữ liệu và giữ nguyên cố định khi tính toán lại tiến độ sau này (AC 1).
+        `;
+        reasonInput.value = 'Khởi công chốt kế hoạch gốc ban đầu';
+      } else {
+        // Chốt lần thứ hai (AC 3)
+        const nextVer = (currentBaseline.baseline?.version || 1) + 1;
+        title.textContent = `🔄 Chốt cập nhật kế hoạch gốc (Phiên bản V${nextVer})`;
+        notice.className = 'notice-card notice-warning';
+        notice.innerHTML = `
+          <strong>⚠️ Chốt lại lần thứ hai (AC 3):</strong><br>
+          Dự án đã có kế hoạch gốc (V${currentBaseline.baseline?.version}). Bản mới sẽ thay thế bản cũ làm kế hoạch gốc hiện hành, nhưng lịch sử hệ thống sẽ ghi nhận đầy đủ ai chốt và chốt vào lúc nào!
+        `;
+        reasonInput.value = `Điều chỉnh kế hoạch gốc lần ${nextVer}`;
+      }
+
+      modal.style.display = 'flex';
+    }
+
+    function closeLockBaselineModal() {
+      document.getElementById('modalLockBaseline').style.display = 'none';
+    }
+
+    async function submitLockBaseline() {
+      const authorName = document.getElementById('inputAuthorName').value.trim() || 'Ban Quản Lý Dự Án';
+      const reason = document.getElementById('inputReason').value.trim() || 'Chốt kế hoạch gốc';
+      const btn = document.getElementById('btnSubmitLock');
+
+      btn.disabled = true;
+      btn.textContent = 'Đang lưu...';
+
+      const token = localStorage.getItem('quanly_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
+
+      try {
+        const res = await fetch(`/api/projects/${PROJECT_ID}/scheduling/baseline`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ authorName, reason })
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          alert(`✅ ${result.message || 'Chốt kế hoạch gốc thành công!'}`);
+          closeLockBaselineModal();
+          await loadData();
+          return;
+        } else {
+          const errData = await res.json();
+          alert(`⚠️ Lưu ý: ${errData.message || 'Không thể chốt qua API server'}`);
+        }
+      } catch (err) {
+        // Fallback local simulation khi chạy HTML file trực tiếp
+        simulateLocalLock(authorName, reason);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Xác nhận chốt';
+      }
+    }
+
+    function simulateLocalLock(authorName, reason) {
+      const prevVer = currentBaseline?.baseline?.version || 0;
+      const nextVer = prevVer + 1;
+
+      const newBase = {
+        hasBaseline: true,
+        baseline: {
+          id: Date.now(),
+          version: nextVer,
+          createdByName: authorName,
+          reason,
+          createdAt: new Date().toISOString()
+        },
+        tasks: scheduleData.tasks.map((t, i) => ({
+          taskId: t.id,
+          taskCode: t.code,
+          taskName: t.name,
+          duration: t.duration,
+          earlyStart: i * 4,
+          earlyFinish: i * 4 + t.duration,
+          isCritical: t.isCritical
+        }))
+      };
+
+      currentBaseline = newBase;
+      localStorage.setItem(`quanly_baseline_${PROJECT_ID}`, JSON.stringify(newBase));
+
+      // Lưu lịch sử local
+      const histKey = `quanly_baseline_history_${PROJECT_ID}`;
+      const hist = JSON.parse(localStorage.getItem(histKey) || '[]');
+      hist.unshift({
+        version: nextVer,
+        action: nextVer === 1 ? 'create_initial' : 'update_overwrite',
+        createdByName: authorName,
+        createdAt: new Date().toISOString(),
+        taskCount: scheduleData.tasks.length,
+        reason
+      });
+      localStorage.setItem(histKey, JSON.stringify(hist));
+
+      alert(`✅ Chốt kế hoạch gốc phiên bản V${nextVer} thành công!`);
+      closeLockBaselineModal();
+      updateBaselineUI();
+      renderGantt();
+    }
+
+    // === Modal Lịch sử chốt kế hoạch gốc (AC 3) ===
+    async function openHistoryModal() {
+      const modal = document.getElementById('modalHistory');
+      const tbody = document.getElementById('historyTbody');
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">Đang tải lịch sử...</td></tr>`;
+      modal.style.display = 'flex';
+
+      const token = localStorage.getItem('quanly_token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+      let history = [];
+      try {
+        const res = await fetch(`/api/projects/${PROJECT_ID}/scheduling/baseline/history`, { headers });
+        if (res.ok) {
+          const json = await res.json();
+          history = json.history || [];
+        } else {
+          history = JSON.parse(localStorage.getItem(`quanly_baseline_history_${PROJECT_ID}`) || '[]');
+        }
+      } catch {
+        history = JSON.parse(localStorage.getItem(`quanly_baseline_history_${PROJECT_ID}`) || '[]');
+      }
+
+      if (history.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">Chưa có lịch sử chốt kế hoạch gốc nào.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = history.map(h => {
+        const isInit = h.action === 'create_initial';
+        const actionLabel = isInit ? 'Khởi công ban đầu' : 'Thay thế cập nhật';
+        const actionClass = isInit ? 'init' : 'update';
+        return `
+          <tr>
+            <td><span class="badge-ver">V${h.version}</span></td>
+            <td><span class="badge-action ${actionClass}">${actionLabel}</span></td>
+            <td style="font-weight: 700;">${h.createdByName || 'Ban Quản Lý'}</td>
+            <td style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px;">${formatDateVN(h.createdAt)}</td>
+            <td style="text-align: center; font-weight: 700;">${h.taskCount || '—'}</td>
+            <td>${h.reason || '—'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function closeHistoryModal() {
+      document.getElementById('modalHistory').style.display = 'none';
     }
 
     function setView(unit) {
@@ -469,11 +1456,15 @@
 
     function toggleCriticalFilter() {
       filterCriticalOnly = !filterCriticalOnly;
-      document.getElementById('btnFilterCrit').className = filterCriticalOnly ? 'filter-chip active' : 'filter-chip';
+      const btn = document.getElementById('btnFilterCrit');
+      if (btn) {
+        btn.className = filterCriticalOnly ? 'btn-action active' : 'btn-action';
+      }
       renderGantt();
     }
 
-    renderGantt();
+    // Khởi chạy
+    loadData();
   </script>
 </body>
 </html>

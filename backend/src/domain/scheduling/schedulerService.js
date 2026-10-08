@@ -4,12 +4,14 @@ const { validateDependencyContract } = require('./contracts');
 const { calculateForwardPass } = require('../../algorithms/forwardPass');
 const { calculateBackwardPass, normalizeId } = require('../../algorithms/backwardPass');
 const { ScheduleResultRepository } = require('../../repositories/scheduleResultRepository');
+const { BaselineRepository } = require('../../repositories/baselineRepository');
 const { MilestoneAlertService } = require('../../services/milestoneAlertService');
 
 class SchedulerService {
   constructor(db) {
     this.pool = db?.pool || db;
     this.resultRepo = new ScheduleResultRepository(db);
+    this.baselineRepo = new BaselineRepository(db);
     this.milestoneAlertService = new MilestoneAlertService(db);
   }
 
@@ -237,6 +239,57 @@ class SchedulerService {
       })
     };
   }
+
+  /**
+   * S-18 / SCRUM-91: Lấy kế hoạch gốc hiện hành của dự án (AC 2 & AC 4)
+   */
+  async getProjectBaseline(projectId) {
+    const pId = Number(projectId);
+    if (!Number.isInteger(pId) || pId <= 0) {
+      throw new Error('projectId không hợp lệ');
+    }
+    return this.baselineRepo.getCurrentBaseline(pId);
+  }
+
+  /**
+   * S-18 / SCRUM-91: Chốt kế hoạch gốc (AC 1 & AC 3)
+   * Lấy kết quả tính toán tiến độ hiện tại để lưu thành baseline độc lập
+   */
+  async lockProjectBaseline(projectId, { userId = null, userName = 'Ban Quản Lý', reason = null } = {}) {
+    const pId = Number(projectId);
+    if (!Number.isInteger(pId) || pId <= 0) {
+      throw new Error('projectId không hợp lệ');
+    }
+
+    // Đảm bảo tiến độ đã được tính toán đầy đủ
+    const scheduleResults = await this.getProjectScheduleResults(pId, { forceRecalculate: false });
+    if (scheduleResults.hasCycle) {
+      throw new Error('Không thể chốt kế hoạch gốc vì dự án đang có vòng lặp phụ thuộc (chu trình)');
+    }
+    if (!scheduleResults.tasks || scheduleResults.tasks.length === 0) {
+      throw new Error('Dự án chưa có công việc nào để chốt kế hoạch gốc');
+    }
+
+    return this.baselineRepo.lockBaseline(pId, {
+      tasks: scheduleResults.tasks,
+      projectDuration: scheduleResults.projectDuration,
+      userId,
+      userName,
+      reason
+    });
+  }
+
+  /**
+   * S-18 / SCRUM-91: Lấy lịch sử các lần chốt kế hoạch gốc (AC 3)
+   */
+  async getProjectBaselineHistory(projectId) {
+    const pId = Number(projectId);
+    if (!Number.isInteger(pId) || pId <= 0) {
+      throw new Error('projectId không hợp lệ');
+    }
+    return this.baselineRepo.getHistory(pId);
+  }
 }
 
 module.exports = { SchedulerService };
+
