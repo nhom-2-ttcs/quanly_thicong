@@ -15,7 +15,7 @@ class DependencyRepository {
   }
 
   getExecutor(conn) {
-    if (this.db && !this.db.isConnected) return null;
+    if (this.db && this.db.isConnected === false) return null;
     return conn || this.pool;
   }
 

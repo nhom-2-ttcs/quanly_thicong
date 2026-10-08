@@ -31,7 +31,7 @@ module.exports = (db) => {
 
     const { work_item_id } = req.query;
 
-    if (!db?.isConnected) {
+    if (db && db.isConnected === false) {
       return res.json({ success: true, data: getTasks(projectId, work_item_id) });
     }
 
@@ -130,7 +130,7 @@ module.exports = (db) => {
       }
     }
 
-    if (!db?.isConnected) {
+    if (db && db.isConnected === false) {
       let taskStatus = status || 'pending';
       if (taskStatus === 'pending' && actStart) taskStatus = 'in_progress';
       if (pctNum === 100 && actEnd) taskStatus = 'completed';
@@ -268,7 +268,7 @@ module.exports = (db) => {
     const taskId = Number(req.params.id);
     const { name, code, duration, work_item_id, status, actual_start, actual_end, percent_complete } = req.body;
 
-    if (!db?.isConnected) {
+    if (db && db.isConnected === false) {
       const updated = updateTaskData(taskId, {
         name: name ? String(name).trim() : undefined,
         code: code ? String(code).trim() : undefined,
@@ -433,7 +433,7 @@ module.exports = (db) => {
 
     const { actual_start, actual_end, percent_complete, confirm_reopen } = req.body;
 
-    if (!db?.isConnected) {
+    if (db && db.isConnected === false) {
       let pct = percent_complete !== undefined ? Number(percent_complete) : undefined;
       const updated = updateTaskData(taskId, {
         actual_start: actual_start !== undefined ? (actual_start ? String(actual_start).trim() : null) : undefined,
@@ -558,7 +558,7 @@ module.exports = (db) => {
 
     const taskId = Number(req.params.id);
 
-    if (!db?.isConnected) {
+    if (db && db.isConnected === false) {
       deleteTaskData(taskId);
       return res.json({
         success: true,

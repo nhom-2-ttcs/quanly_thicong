@@ -53,7 +53,7 @@ module.exports = (db) => {
       if (parseInt(currentParent) === parseInt(itemId)) {
         return true;
       }
-      if (db?.isConnected && pool && pool.query) {
+      if (pool && pool.query) {
         try {
           const [rows] = await pool.query('SELECT parent_id FROM work_items WHERE id = ?', [currentParent]);
           if (!rows || rows.length === 0) break;
@@ -72,7 +72,7 @@ module.exports = (db) => {
   router.get('/projects/:projectId/work-items', async (req, res) => {
     if (checkProjectReadAccess(req, res, req.params.projectId)) return;
 
-    if (!db?.isConnected) {
+    if (db && db.isConnected === false) {
       return res.json({ success: true, data: inMemoryWorkItems });
     }
 
@@ -105,7 +105,7 @@ module.exports = (db) => {
       return res.status(400).json({ success: false, message: 'Thiếu tên hạng mục hoặc project_id' });
     }
 
-    if (!db?.isConnected) {
+    if (db && db.isConnected === false) {
       const newId = inMemoryWorkItems.length > 0 ? Math.max(...inMemoryWorkItems.map(w => w.id)) + 1 : 1;
       const newItem = {
         id: newId,
@@ -215,7 +215,7 @@ module.exports = (db) => {
 
     const itemId = parseInt(req.params.id, 10);
 
-    if (!db?.isConnected) {
+    if (db && db.isConnected === false) {
       const hasChildren = inMemoryWorkItems.some(w => w.parent_id === itemId);
       if (hasChildren) {
         return res.status(400).json({ 

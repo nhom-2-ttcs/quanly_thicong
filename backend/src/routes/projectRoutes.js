@@ -8,7 +8,7 @@ module.exports = (db) => {
 
   // 1. Lấy danh sách dự án (Viewer chỉ thấy dự án được phân quyền)
   router.get('/projects', async (req, res) => {
-    if (!db?.isConnected) {
+    if (db && db.isConnected === false) {
       let rows = inMemoryProjects;
       if (req.user && (req.user.role_name === 'viewer' || req.user.role_id === 7)) {
         rows = rows.filter(p => canUserAccessProject(req.user, p.id));

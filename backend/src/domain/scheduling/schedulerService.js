@@ -75,16 +75,11 @@ class SchedulerService {
     const sourceById = new Map(tasks.map(task => [normalizeId(task.id, 'task.id'), task]));
     const scheduledTasks = schedule.map(item => {
       const source = sourceById.get(normalizeId(item.taskId, 'taskId'));
-      return {
-        ...item,
-        id: item.taskId,
-        name: source?.name,
-        code: source?.code,
-        status: source?.status,
-        actual_start: source?.actual_start,
-        actual_end: source?.actual_end,
-        percent_complete: source?.percent_complete !== undefined ? Number(source.percent_complete) : 0
-      };
+      const resTask = { ...item, name: source?.name, code: source?.code, status: source?.status };
+      if (source?.actual_start !== undefined) resTask.actual_start = source.actual_start;
+      if (source?.actual_end !== undefined) resTask.actual_end = source.actual_end;
+      if (source?.percent_complete !== undefined) resTask.percent_complete = Number(source.percent_complete);
+      return resTask;
     });
     const projectDuration = Math.max(...scheduledTasks.map(task => task.earlyFinish));
 
@@ -102,7 +97,7 @@ class SchedulerService {
     let dependencies = [];
     let integrationStatus = 'INTEGRATED WITH S-06';
 
-    if (this.db?.isConnected && this.pool?.query) {
+    if (this.pool && typeof this.pool.query === 'function' && this.db?.isConnected !== false) {
       const [tRows] = await this.pool.query(
         'SELECT id, project_id, work_item_id, name, code, duration, status FROM tasks WHERE project_id = ? ORDER BY id ASC',
         [projectId]
@@ -163,7 +158,7 @@ class SchedulerService {
       throw new Error('projectId không hợp lệ');
     }
 
-    if (!this.db?.isConnected) {
+    if (this.db && this.db.isConnected === false) {
       const { inMemoryTasks } = require('../../models/store');
       const schedule = await this.getProjectSchedule(pId);
       const sortedTasks = [...schedule.tasks].sort((a, b) => a.earlyStart - b.earlyStart);
@@ -211,6 +206,8 @@ class SchedulerService {
         })
       };
     }
+
+    const isStale = forceRecalculate || (await this.resultRepo.isStale(pId));
     if (!isStale) {
       const saved = await this.resultRepo.getSavedResults(pId, { criticalOnly });
       if (!saved.error && (saved.totalTasks > 0 || (saved.tasks && saved.tasks.length === 0 && saved.totalTasks === 0))) {

@@ -117,47 +117,143 @@
       padding: 3px 8px; border-radius: 6px; font-family: 'JetBrains Mono', monospace;
     }
 
+    /* Metric Cards - Thiết kế sắc nét, gradient cao cấp */
     .metrics-summary-bar {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
     }
     .metric-card {
-      background: #f8fafc; border: 1.5px solid #e2e8f0;
-      border-radius: 10px; padding: 12px 16px;
-      display: flex; flex-direction: column; gap: 4px;
+      background: #ffffff; border: 1.5px solid #e2e8f0;
+      border-radius: 12px; padding: 16px 18px;
+      display: flex; justify-content: space-between; align-items: center;
+      transition: all 0.25s ease; position: relative; overflow: hidden;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
     }
-    .metric-label { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
-    .metric-value { font-size: 20px; font-weight: 800; color: var(--text-title); font-family: 'JetBrains Mono', monospace; }
-    .metric-value.highlight-critical { color: var(--critical-red); }
-    .metric-value.highlight-duration { color: var(--brand-blue); }
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+    }
+    .metric-card-inner { display: flex; flex-direction: column; gap: 4px; }
+    .metric-icon-box {
+      width: 44px; height: 44px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .metric-label { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .metric-value { font-size: 22px; font-weight: 800; color: var(--text-title); font-family: 'JetBrains Mono', monospace; line-height: 1.2; }
+    
+    /* Phối màu 4 thẻ Metric */
+    .metric-card.card-duration {
+      background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+      border-color: #bfdbfe;
+    }
+    .metric-card.card-duration .metric-icon-box { background: #dbeafe; color: #1d4ed8; }
+    .metric-card.card-duration .metric-value { color: #1d4ed8; }
 
-    /* Control Toolbar */
+    .metric-card.card-tasks {
+      background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+      border-color: #ddd6fe;
+    }
+    .metric-card.card-tasks .metric-icon-box { background: #ede9fe; color: #6d28d9; }
+    .metric-card.card-tasks .metric-value { color: #6d28d9; }
+
+    .metric-card.card-critical {
+      background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+      border-color: #fecaca;
+    }
+    .metric-card.card-critical .metric-icon-box { background: #fee2e2; color: #dc2626; }
+    .metric-card.card-critical .metric-value { color: #dc2626; }
+
+    .metric-card.card-time {
+      background: linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%);
+      border-color: #a7f3d0;
+    }
+    .metric-card.card-time .metric-icon-box { background: #d1fae5; color: #059669; }
+    .metric-card.card-time .metric-value { color: #059669; font-size: 13.5px; font-weight: 700; }
+
+    /* Control Toolbar: Gộp chức năng & làm đẹp */
     .toolbar-card {
       background: #ffffff; border: 1.5px solid var(--border-card);
-      border-radius: 10px; padding: 14px 20px;
+      border-radius: 12px; padding: 12px 18px;
       display: flex; justify-content: space-between; align-items: center;
       flex-wrap: wrap; gap: 14px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
     }
-    .toolbar-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-    .toolbar-right { display: flex; align-items: center; gap: 12px; }
+    .toolbar-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .toolbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
-    /* Switch toggle styling */
-    .toggle-wrapper {
-      display: flex; align-items: center; gap: 10px; cursor: pointer;
-      user-select: none; font-size: 13.5px; font-weight: 700; color: var(--text-title);
+    /* Segmented Control Filter Tabs */
+    .filter-segmented-group {
+      display: inline-flex; background: #f1f5f9; padding: 3px;
+      border-radius: 9px; border: 1px solid #cbd5e1;
+      gap: 2px;
     }
-    .switch-input {
-      appearance: none; width: 44px; height: 24px; background: #cbd5e1;
-      border-radius: 9999px; position: relative; cursor: pointer; outline: none;
-      transition: background-color 0.2s ease;
+    .filter-segment-btn {
+      border: none; background: transparent; padding: 6px 13px;
+      border-radius: 7px; font-size: 12.5px; font-weight: 700;
+      color: #64748b; cursor: pointer; transition: all 0.2s ease;
+      display: inline-flex; align-items: center; gap: 6px; user-select: none;
     }
-    .switch-input::before {
-      content: ''; position: absolute; width: 18px; height: 18px;
-      border-radius: 50%; background: #ffffff; top: 3px; left: 3px;
-      transition: transform 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    .filter-segment-btn:hover { color: #1e293b; }
+    .filter-segment-btn.active {
+      background: #ffffff; color: #1e40af;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08); font-weight: 800;
     }
-    .switch-input:checked { background: var(--critical-red); }
-    .switch-input:checked::before { transform: translateX(20px); }
+    .filter-segment-btn.active.is-critical {
+      color: #dc2626; background: #ffffff;
+    }
+
+    /* Search input box */
+    .search-input-box {
+      position: relative; display: inline-flex; align-items: center;
+    }
+    .search-input-box svg {
+      position: absolute; left: 11px; width: 15px; height: 15px; fill: none;
+      stroke: #94a3b8; stroke-width: 2.2; pointer-events: none;
+    }
+    .search-input-field {
+      padding: 7px 12px 7px 32px; border: 1.5px solid var(--border-card);
+      border-radius: 8px; font-size: 13px; width: 240px; outline: none;
+      transition: all 0.2s ease; background: #ffffff; color: var(--text-title);
+    }
+    .search-input-field:focus {
+      border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+      width: 270px;
+    }
+
+    /* Unified Button Action Group */
+    .action-button-group {
+      display: inline-flex; align-items: center;
+      background: #ffffff; border: 1.5px solid var(--border-card);
+      border-radius: 9px; overflow: hidden;
+      box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04);
+    }
+    .action-btn-item {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border: none; background: #ffffff;
+      color: #334155; font-size: 12.5px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s ease; text-decoration: none;
+      border-right: 1px solid #e2e8f0; line-height: 1.4;
+    }
+    .action-btn-item:last-child { border-right: none; }
+    .action-btn-item:hover {
+      background: #f8fafc; color: #1d4ed8;
+    }
+    .action-btn-item.btn-gantt-special {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      color: #1e40af; font-weight: 800;
+    }
+    .action-btn-item.btn-gantt-special:hover {
+      background: #bfdbfe; color: #1e3a8a;
+    }
+    .action-btn-item.btn-calc-special {
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+      color: #ffffff; font-weight: 800;
+    }
+    .action-btn-item.btn-calc-special:hover {
+      background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+    }
 
     .cache-indicator {
       font-size: 12px; font-weight: 700; padding: 4px 10px;
@@ -165,16 +261,6 @@
     }
     .cache-cached { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
     .cache-fresh { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
-
-    .btn-action {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 14px; border-radius: 7px; font-size: 13px; font-weight: 700;
-      border: 1.5px solid var(--border-outer); background: #ffffff; color: var(--text-title);
-      cursor: pointer; transition: all 0.2s;
-    }
-    .btn-action:hover { background: #f1f5f9; border-color: var(--brand-blue); }
-    .btn-primary { background: var(--brand-blue); border-color: var(--brand-blue); color: #ffffff; }
-    .btn-primary:hover { background: var(--brand-blue-hover); }
 
     /* Alert Banner */
     .alert-banner {
@@ -193,14 +279,14 @@
       box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
     }
     .table-responsive {
-      max-height: 600px; overflow: auto;
+      max-height: 620px; overflow: auto;
     }
     .schedule-table {
       width: 100%; border-collapse: collapse; text-align: left;
       min-width: 980px; font-size: 13px;
     }
     .schedule-table th {
-      background: #f1f5f9; color: #334155; font-size: 12px;
+      background: #f8fafc; color: #334155; font-size: 11.5px;
       font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
       padding: 12px 14px; border-bottom: 2px solid var(--border-card);
       position: sticky; top: 0; z-index: 10;
@@ -224,15 +310,16 @@
     .task-code {
       display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
       font-weight: 700; color: #1e3a8a; background: #e0e7ff; padding: 2px 7px;
-      border-radius: 4px; border: 1px solid #c7d2fe;
+      border-radius: 5px; border: 1px solid #c7d2fe;
     }
     .status-badge {
       display: inline-flex; align-items: center; gap: 5px;
-      padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700;
+      padding: 3px 9px; border-radius: 6px; font-size: 11.5px; font-weight: 800;
     }
     .status-critical {
-      background: var(--critical-bg); color: var(--critical-red);
-      border: 1.5px solid var(--critical-border);
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      color: #b91c1c; border: 1.5px solid #f87171;
+      box-shadow: 0 1px 3px rgba(220, 38, 38, 0.15);
     }
     .status-normal {
       background: #f1f5f9; color: #475569;
@@ -244,27 +331,47 @@
       font-size: 14px; font-weight: 600;
     }
 
-    /* Tiến độ thực tế ( / SCRUM-88 / SCRUM-100 / T-35) */
-    .task-progress-badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 11.5px; font-weight: 800; padding: 2px 7px; border-radius: 4px;
-      background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
+    /* Tiến độ thực tế Mini Progress Bar & Badges */
+    .progress-cell-box {
+      display: flex; flex-direction: column; gap: 5px; min-width: 120px;
     }
-    .task-progress-badge.progres {
-      background: #ecfdf5; color: #065f46; border-color: #a7f3d0;
+    .progress-bar-track {
+      width: 100%; height: 7px; background: #e2e8f0;
+      border-radius: 9999px; overflow: hidden; position: relative;
     }
-    .task-actual-dates {
-      font-size: 11px; color: var(--text-muted); font-weight: 600;
-      display: inline-flex; align-items: center; gap: 4px;
-      background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;
-      margin-top: 3px;
+    .progress-bar-fill {
+      height: 100%; border-radius: 9999px; transition: width 0.3s ease;
     }
-    .btn-progress-action {
-      background: #eff6ff; color: #1d4ed8; border: 1.5px solid #bfdbfe;
-      padding: 4px 9px; border-radius: 6px; font-size: 11.5px; font-weight: 800;
-      cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;
+    .progress-bar-fill.fill-done {
+      background: linear-gradient(90deg, #10b981 0%, #059669 100%);
     }
-    .btn-progress-action:hover { background: #dbeafe; border-color: #1d4ed8; transform: translateY(-1px); }
+    .progress-bar-fill.fill-active {
+      background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+    }
+    .progress-bar-fill.fill-zero {
+      background: #cbd5e1; width: 0%;
+    }
+    .progress-meta-row {
+      display: flex; justify-content: space-between; align-items: center; font-size: 11px;
+    }
+    .progress-meta-pct {
+      font-weight: 800; font-family: 'JetBrains Mono', monospace; color: #1e293b;
+    }
+    .progress-meta-pct.pct-complete { color: #059669; }
+    .progress-meta-dates {
+      color: #64748b; font-size: 10.5px; font-weight: 600; white-space: nowrap;
+    }
+
+    .btn-table-action {
+      background: #ffffff; color: #2563eb; border: 1.5px solid #bfdbfe;
+      padding: 5px 10px; border-radius: 7px; font-size: 12px; font-weight: 800;
+      cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 4px;
+      box-shadow: 0 1px 2px rgba(37, 99, 235, 0.05);
+    }
+    .btn-table-action:hover {
+      background: #eff6ff; border-color: #2563eb; color: #1d4ed8;
+      transform: translateY(-1px); box-shadow: 0 2px 5px rgba(37, 99, 235, 0.15);
+    }
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
       display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
@@ -365,21 +472,36 @@
       </div>
 
       <div class="metrics-summary-bar">
-        <div class="metric-card">
-          <span class="metric-label">Tổng thời gian dự án</span>
-          <span class="metric-value highlight-duration" id="metric-duration">—</span>
+        <div class="metric-card card-duration">
+          <div class="metric-card-inner">
+            <span class="metric-label">Tổng thời gian dự án</span>
+            <span class="metric-value" id="metric-duration">—</span>
+          </div>
+          <div class="metric-icon-box">⏱️</div>
         </div>
-        <div class="metric-card">
-          <span class="metric-label">Tổng số công việc</span>
-          <span class="metric-value" id="metric-total-tasks">—</span>
+
+        <div class="metric-card card-tasks">
+          <div class="metric-card-inner">
+            <span class="metric-label">Tổng số công việc</span>
+            <span class="metric-value" id="metric-total-tasks">—</span>
+          </div>
+          <div class="metric-icon-box">📋</div>
         </div>
-        <div class="metric-card">
-          <span class="metric-label">Công việc găng (Critical)</span>
-          <span class="metric-value highlight-critical" id="metric-critical-tasks">—</span>
+
+        <div class="metric-card card-critical">
+          <div class="metric-card-inner">
+            <span class="metric-label">Công việc găng (Critical)</span>
+            <span class="metric-value" id="metric-critical-tasks">—</span>
+          </div>
+          <div class="metric-icon-box">🔥</div>
         </div>
-        <div class="metric-card">
-          <span class="metric-label">Thời điểm tính toán</span>
-          <span class="metric-value" style="font-size: 14px; font-weight: 700;" id="metric-calculated-at">—</span>
+
+        <div class="metric-card card-time">
+          <div class="metric-card-inner">
+            <span class="metric-label">Thời điểm tính toán</span>
+            <span class="metric-value" id="metric-calculated-at">—</span>
+          </div>
+          <div class="metric-icon-box">⚡</div>
         </div>
       </div>
     </div>
@@ -387,27 +509,47 @@
     <!-- Cycle Warning Alert (nếu có chu trình) -->
     <div id="cycle-alert-area" style="display: none;"></div>
 
-    <!-- Toolbar: Filter & Actions -->
+    <!-- Toolbar: Filter & Actions Gộp Nhóm Gọn Gàng -->
     <div class="toolbar-card">
       <div class="toolbar-left">
-        <label class="toggle-wrapper" for="critical-only-toggle" title="Lọc hiển thị chỉ các công việc nằm trên đường găng (Total Float = 0)">
-          <input type="checkbox" id="critical-only-toggle" class="switch-input" onchange="handleFilterToggle(this.checked)">
-          <span>🔥 Chỉ xem việc găng (Critical path only)</span>
-        </label>
-        <span style="color: var(--border-outer); font-size: 18px;">|</span>
-        <input type="text" id="task-search-input" placeholder="🔍 Tìm kiếm mã hoặc tên công việc..." 
-               style="padding: 7px 12px; border: 1.5px solid var(--border-card); border-radius: 7px; font-size: 13px; width: 260px;"
-               oninput="handleSearch(this.value)">
+        <!-- Segmented Control Filter Tabs -->
+        <div class="filter-segmented-group" id="filter-segmented-group" role="tablist">
+          <button class="filter-segment-btn active" id="btn-filter-all" onclick="setFilterSegment('all')">
+            📑 Tất cả (<span id="count-all-badge">0</span>)
+          </button>
+          <button class="filter-segment-btn is-critical" id="btn-filter-critical" onclick="setFilterSegment('critical')">
+            🔥 Việc găng (<span id="count-critical-badge">0</span>)
+          </button>
+          <button class="filter-segment-btn" id="btn-filter-pending" onclick="setFilterSegment('pending')">
+            ⏳ Đang làm / Chưa xong
+          </button>
+        </div>
+
+        <!-- Ô Tìm Kiếm Công Việc -->
+        <div class="search-input-box">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="task-search-input" class="search-input-field" 
+                 placeholder="Tìm mã hoặc tên công việc..." 
+                 oninput="handleSearch(this.value)">
+        </div>
       </div>
 
       <div class="toolbar-right">
-        <button class="btn-action" id="btn-refresh" onclick="loadSchedule(false)" title="Tải lại từ bộ nhớ đệm đã lưu">
-<a href="/gantt.html" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:13px;margin-right:8px;box-shadow:0 1px 2px rgba(0,0,0,0.1);">📊 Sơ đồ Gantt</a>
-          🔄 Làm mới
-        </button>
-        <button class="btn-action btn-primary" id="btn-recalculate" onclick="loadSchedule(true)" title="Buộc giải thuật CPM tính toán lại và cập nhật bộ nhớ đệm">
-          ⚡ Tính toán lại
-        </button>
+        <!-- Unified Action Button Group -->
+        <div class="action-button-group">
+          <a href="/gantt.html" class="action-btn-item btn-gantt-special" id="btn-action-gantt" title="Xem biểu đồ thanh ngang Gantt và đường găng">
+            📊 Sơ đồ Gantt
+          </a>
+          <button class="action-btn-item" id="btn-refresh" onclick="loadSchedule(false)" title="Tải lại từ bộ nhớ đệm (Cache)">
+            🔄 Làm mới
+          </button>
+          <button class="action-btn-item btn-calc-special" id="btn-recalculate" onclick="loadSchedule(true)" title="Buộc giải thuật CPM tính toán lại ngay">
+            ⚡ Tính lại CPM
+          </button>
+          <a href="/wbs.html" class="action-btn-item" id="btn-action-wbs" title="Chuyển đến màn hình phân rã cấu trúc WBS">
+            🌳 Xem WBS
+          </a>
+        </div>
       </div>
     </div>
 
@@ -553,6 +695,8 @@
     let currentUser = null;
     let allTasksData = [];
     let currentFilteredTasks = [];
+    let currentFilterSegment = 'all';
+    let currentSearchQuery = '';
 
     // Parse URL param
     const urlParams = new URLSearchParams(window.location.search);
@@ -626,16 +770,14 @@
     // === Load Schedule Results API (T-27) ===
     async function loadSchedule(forceRecalculate = false) {
       const tbody = document.getElementById('schedule-tbody');
-      const criticalOnly = document.getElementById('critical-only-toggle').checked;
       const cycleAlertArea = document.getElementById('cycle-alert-area');
       cycleAlertArea.style.display = 'none';
       cycleAlertArea.innerHTML = '';
 
-      tbody.innerHTML = '<tr><td colspan="10" class="loading-state">⏳ Đang tải dữ liệu tiến độ...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="12" class="loading-state">⏳ Đang tải dữ liệu tiến độ...</td></tr>';
 
       try {
         let url = `/api/projects/${CURRENT_PROJECT_ID}/scheduling/results?`;
-        if (criticalOnly) url += 'critical=true&';
         if (forceRecalculate) url += 'recalculate=true&';
 
         const token = localStorage.getItem('quanly_token');
@@ -645,7 +787,6 @@
         const data = await res.json();
 
         if (res.status === 422 || data.hasCycle) {
-          // Hiển thị thông báo chu trình vòng lặp phụ thuộc tiếng Việt rõ ràng (T-28 AC 7)
           cycleAlertArea.style.display = 'block';
           cycleAlertArea.innerHTML = `
             <div class="alert-banner alert-danger">
@@ -655,7 +796,7 @@
               <div>Vui lòng mở trang <strong>WBS</strong> để gỡ bỏ quan hệ phụ thuộc gây chu trình trước khi tính lại.</div>
             </div>
           `;
-          tbody.innerHTML = '<tr><td colspan="10" class="loading-state" style="color: var(--danger);">Không thể lập tiến độ do mạng công việc có chu trình. Vui lòng khắc phục chu trình trước.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="12" class="loading-state" style="color: var(--danger);">Không thể lập tiến độ do mạng công việc có chu trình. Vui lòng khắc phục chu trình trước.</td></tr>';
           return;
         }
 
@@ -684,9 +825,8 @@
         document.getElementById('metric-calculated-at').textContent = formatDateVN(data.calculatedAt);
 
         allTasksData = Array.isArray(data.tasks) ? data.tasks : [];
-        currentFilteredTasks = [...allTasksData];
-
-        renderTable(currentFilteredTasks);
+        updateFilterCounts();
+        applyFiltersAndRender();
       } catch (err) {
         console.warn('Kết nối lỗi, chuyển sang dữ liệu mẫu thuyết trình:', err);
         loadFallbackScheduleData();
@@ -716,7 +856,50 @@
       document.getElementById('metric-calculated-at').textContent = formatDateVN(new Date().toISOString());
 
       allTasksData = fallbackTasks;
-      currentFilteredTasks = [...allTasksData];
+      updateFilterCounts();
+      applyFiltersAndRender();
+    }
+
+    function updateFilterCounts() {
+      const total = allTasksData.length;
+      const crit = allTasksData.filter(t => Boolean(t.isCritical)).length;
+      const allBadge = document.getElementById('count-all-badge');
+      const critBadge = document.getElementById('count-critical-badge');
+      if (allBadge) allBadge.textContent = total;
+      if (critBadge) critBadge.textContent = crit;
+    }
+
+    function setFilterSegment(mode) {
+      currentFilterSegment = mode;
+      const btnAll = document.getElementById('btn-filter-all');
+      const btnCrit = document.getElementById('btn-filter-critical');
+      const btnPend = document.getElementById('btn-filter-pending');
+
+      if (btnAll) btnAll.classList.toggle('active', mode === 'all');
+      if (btnCrit) btnCrit.classList.toggle('active', mode === 'critical');
+      if (btnPend) btnPend.classList.toggle('active', mode === 'pending');
+
+      applyFiltersAndRender();
+    }
+
+    function applyFiltersAndRender() {
+      let filtered = [...allTasksData];
+
+      if (currentFilterSegment === 'critical') {
+        filtered = filtered.filter(t => Boolean(t.isCritical));
+      } else if (currentFilterSegment === 'pending') {
+        filtered = filtered.filter(t => Number(t.percentComplete || t.percent_complete || 0) < 100);
+      }
+
+      if (currentSearchQuery) {
+        filtered = filtered.filter(t => 
+          (t.name && t.name.toLowerCase().includes(currentSearchQuery)) ||
+          (t.code && t.code.toLowerCase().includes(currentSearchQuery)) ||
+          String(t.taskId || t.id).includes(currentSearchQuery)
+        );
+      }
+
+      currentFilteredTasks = filtered;
       renderTable(currentFilteredTasks);
     }
 
@@ -752,29 +935,37 @@
           ? '<span class="status-badge status-critical">🔥 Việc găng</span>' 
           : `<span class="status-badge status-normal">Bình thường (${formatNumberVN(t.totalFloat)}d)</span>`;
 
-        const percent = Number(t.percentComplete || 0);
+        const percent = Math.min(100, Math.max(0, Math.round(Number(t.percentComplete !== undefined ? t.percentComplete : (t.percent_complete || 0)))));
         const hasDates = Boolean(t.actualStart || t.actualEnd);
         const startStr = t.actualStart ? formatDateVNShort(t.actualStart) : '—';
         const endStr = t.actualEnd ? formatDateVNShort(t.actualEnd) : '—';
 
+        const fillClass = percent >= 100 ? 'fill-done' : (percent > 0 ? 'fill-active' : 'fill-zero');
+        const pctClass = percent >= 100 ? 'pct-complete' : '';
+
         const progressHtml = `
-          <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
-            <span class="task-progress-badge ${percent >= 100 ? 'progres' : ''}">📊 ${Math.round(percent)}%</span>
-            ${hasDates ? `<span class="task-actual-dates">📅 ${startStr} → ${endStr}</span>` : ''}
+          <div class="progress-cell-box">
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill ${fillClass}" style="width: ${percent}%;"></div>
+            </div>
+            <div class="progress-meta-row">
+              <span class="progress-meta-pct ${pctClass}">📊 ${percent}%</span>
+              ${hasDates ? `<span class="progress-meta-dates" title="Ngày thực tế: ${startStr} đến ${endStr}">📅 ${startStr} → ${endStr}</span>` : ''}
+            </div>
           </div>
         `;
 
         const actionHtml = `
-          <button class="btn-progress-action" onclick="openProgressModal(${t.taskId})" title="Cập nhật tiến độ thực tế">
-            📊 Tiến độ
+          <button class="btn-table-action" onclick="openProgressModal(${t.taskId ?? t.id})" title="Cập nhật tiến độ thực tế">
+            ✏️ Tiến độ
           </button>
         `;
 
         rows.push(`
           <tr class="${rowClass}">
             <td class="cell-center">${i + 1}</td>
-            <td><span class="task-code">${escapeHtml(t.code || `CV-${t.taskId}`)}</span></td>
-            <td><strong>${escapeHtml(t.name || `Công việc #${t.taskId}`)}</strong></td>
+            <td><span class="task-code">${escapeHtml(t.code || `CV-${t.taskId ?? t.id}`)}</span></td>
+            <td><strong>${escapeHtml(t.name || `Công việc #${t.taskId ?? t.id}`)}</strong></td>
             <td class="cell-center cell-mono">${formatNumberVN(t.duration)}</td>
             <td class="cell-center cell-mono">${formatNumberVN(t.earlyStart)}</td>
             <td class="cell-center cell-mono">${formatNumberVN(t.earlyFinish)}</td>
@@ -975,22 +1166,9 @@
     }
 
     // === Filter Handlers ===
-    function handleFilterToggle(checked) {
-      loadSchedule(false);
-    }
-
     function handleSearch(query) {
-      const q = (query || '').trim().toLowerCase();
-      if (!q) {
-        renderTable(allTasksData);
-        return;
-      }
-      const filtered = allTasksData.filter(t => 
-        (t.name && t.name.toLowerCase().includes(q)) ||
-        (t.code && t.code.toLowerCase().includes(q)) ||
-        String(t.taskId).includes(q)
-      );
-      renderTable(filtered);
+      currentSearchQuery = (query || '').trim().toLowerCase();
+      applyFiltersAndRender();
     }
 
     // === Load Project Details ===
