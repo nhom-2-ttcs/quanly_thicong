@@ -17,45 +17,45 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
     :root {
-      --bg-surface: #f1f5f9;
+      --bg-surface: #f8fafc;
       --card-bg: #ffffff;
       
-      /* Hệ viền khung sắc nét, đanh thép */
-      --border-outer: #94a3b8;
-      --border-card: #cbd5e1;
+      --border-outer: #cbd5e1;
+      --border-card: #e2e8f0;
       --border-subtle: #e2e8f0;
       
-      /* Màu sắc thương hiệu điều hành thi công */
-      --brand-blue: #1d4ed8;
-      --brand-blue-hover: #1e40af;
+      --brand-blue: #2563eb;
+      --brand-blue-hover: #1d4ed8;
       --brand-blue-soft: #eff6ff;
       --brand-blue-border: #93c5fd;
 
       --text-title: #0f172a;
-      --text-body: #1e293b;
-      --text-muted: #475569;
+      --text-body: #334155;
+      --text-muted: #64748b;
       --text-dim: #64748b;
 
       --success: #059669;
-      --success-bg: #ecfdf5;
-      --success-border: #a7f3d0;
+      --success-bg: #f0fdf4;
+      --success-border: #bbf7d0;
       
-      --danger: #dc2626;
-      --danger-bg: #fee2e2;
-      --danger-border: #f87171;
+      --danger: #b91c1c;
+      --danger-bg: #fef2f2;
+      --danger-border: #fecaca;
 
-      --shadow-card: 0 4px 16px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.05);
+      --primary: #0f172a;
+      --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
 
     body {
@@ -90,13 +90,12 @@
     .brand-icon {
       width: 40px;
       height: 40px;
-      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+      background: var(--primary);
       border-radius: 9px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 10px rgba(29, 78, 216, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.25);
+      flex-shrink: 0;
     }
 
     .brand-icon svg {
