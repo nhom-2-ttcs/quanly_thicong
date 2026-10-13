@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lịch Làm Việc & Ngày Nghỉ Lễ | Quản Lý Thi Công</title>
+  <title>Lịch Thi Công & Ngày Nghỉ Lễ | Quản Lý Thi Công</title>
   <!-- PWA & Hiện trường Mobile (S-27 / SCRUM-119) -->
   <meta name="theme-color" content="#1d4ed8">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,7 +16,7 @@
   <script src="/js/app-navbar.js" defer></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <style>
     :root {
@@ -80,6 +80,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
+      text-decoration: none;
     }
 
     .brand-icon {
@@ -90,6 +91,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
     }
 
     .brand-icon svg {
@@ -205,19 +207,19 @@
       max-width: 1220px;
       width: 100%;
       margin: 0 auto;
-      padding: 32px 24px 64px;
+      padding: 28px 24px 64px;
       display: flex;
       flex-direction: column;
       gap: 20px;
     }
 
-    /* HERO BANNER - Clean Minimalist Flat Card */
-    .hero-banner {
+    /* PAGE HEADER - Modern Flat Enterprise Header */
+    .page-header {
       background: #ffffff;
       border: 1px solid var(--border);
-      border-left: 3px solid var(--primary);
+      border-left: 4px solid var(--primary);
       border-radius: 8px;
-      padding: 22px 26px;
+      padding: 22px 28px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -225,30 +227,57 @@
       gap: 16px;
     }
 
-    .hero-text h2 {
-      font-size: 17px;
-      font-weight: 600;
-      color: var(--text-title);
-      letter-spacing: -0.01em;
+    .page-header-info {
+      max-width: 820px;
+    }
+
+    .page-category {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
       margin-bottom: 4px;
     }
 
-    .hero-text p {
+    .page-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-title);
+      letter-spacing: -0.01em;
+      margin-bottom: 6px;
+    }
+
+    .page-subtitle {
       font-size: 13px;
       color: var(--text-muted);
-      max-width: 800px;
       line-height: 1.55;
     }
 
-    .hero-badge {
+    .page-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .project-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
       background: #f1f5f9;
       border: 1px solid var(--border-dark);
-      padding: 6px 12px;
+      padding: 6px 14px;
       border-radius: 6px;
-      font-size: 11.5px;
+      font-size: 12px;
       font-weight: 600;
       color: var(--text-body);
-      font-family: inherit;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--emerald);
     }
 
     /* STATS STRIP */
@@ -262,10 +291,15 @@
       background: #ffffff;
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 16px 20px;
+      padding: 18px 20px;
       display: flex;
       flex-direction: column;
       gap: 4px;
+      transition: border-color 0.15s;
+    }
+
+    .stat-card:hover {
+      border-color: var(--border-dark);
     }
 
     .stat-card .label {
@@ -277,10 +311,9 @@
     }
 
     .stat-card .value {
-      font-size: 18px;
-      font-weight: 600;
+      font-size: 19px;
+      font-weight: 700;
       color: var(--text-title);
-      font-family: 'Inter', sans-serif;
       letter-spacing: -0.01em;
     }
 
@@ -290,49 +323,148 @@
       margin-top: 2px;
     }
 
-    /* DEMO SCENARIO BAR */
-    .demo-bar {
+    /* SIMULATION DRAWER / ACCORDION - Professional Simulation Tool */
+    .simulation-accordion {
       background: #ffffff;
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 16px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      overflow: hidden;
+      transition: border-color 0.15s;
     }
 
-    .demo-title {
+    .simulation-accordion:hover {
+      border-color: var(--border-dark);
+    }
+
+    .simulation-summary {
+      list-style: none;
+      padding: 14px 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      background: #ffffff;
+      transition: background 0.15s;
+    }
+
+    .simulation-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .simulation-summary:hover {
+      background: #f8fafc;
+    }
+
+    .summary-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .summary-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 7px;
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-title);
+    }
+
+    .summary-icon svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .summary-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .summary-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-title);
+    }
+
+    .summary-subtitle {
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    .summary-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .chevron-icon {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.2s ease;
+    }
+
+    .simulation-accordion[open] .chevron-icon {
+      transform: rotate(180deg);
+    }
+
+    .simulation-content {
+      padding: 16px 20px 20px;
+      border-top: 1px solid var(--border);
+      background: #fafbfc;
+    }
+
+    .simulation-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+    }
+
+    .btn-scenario {
+      background: #ffffff;
+      border: 1px solid var(--border-dark);
+      border-radius: 7px;
+      padding: 12px 14px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-scenario:hover {
+      border-color: var(--primary);
+      background: #f8fafc;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+    }
+
+    .scenario-tag {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--brand-blue);
+    }
+
+    .scenario-name {
       font-size: 12.5px;
       font-weight: 600;
       color: var(--text-title);
+      line-height: 1.35;
     }
 
-    .demo-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .btn-demo {
-      background: #ffffff;
-      border: 1px solid var(--border-dark);
-      padding: 7px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text-body);
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
-    }
-
-    .btn-demo strong {
-      font-weight: 600;
-      color: var(--text-title);
-    }
-
-    .btn-demo:hover {
-      background: #f8fafc;
-      border-color: var(--primary);
+    .scenario-desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      line-height: 1.4;
     }
 
     /* LAYOUT COLUMNS */
@@ -363,6 +495,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     .panel-title {
@@ -375,11 +509,17 @@
     }
 
     .panel-title svg {
-      width: 16px;
-      height: 16px;
+      width: 17px;
+      height: 17px;
       stroke: var(--primary);
       fill: none;
       stroke-width: 2;
+    }
+
+    .panel-subtitle {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 500;
     }
 
     .panel-body {
@@ -394,13 +534,14 @@
     .form-label {
       display: block;
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 600;
       color: var(--text-title);
       margin-bottom: 6px;
     }
 
     .form-control {
       width: 100%;
+      height: 38px;
       padding: 8px 12px;
       border: 1px solid var(--border-dark);
       border-radius: 6px;
@@ -413,6 +554,7 @@
 
     .form-control:focus {
       border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.08);
     }
 
     /* CALENDAR MODE SELECTOR */
@@ -425,14 +567,15 @@
 
     .mode-card {
       border: 1px solid var(--border-dark);
-      border-radius: 6px;
+      border-radius: 7px;
       padding: 14px 16px;
       cursor: pointer;
       transition: all 0.15s;
       background: #ffffff;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 5px;
+      position: relative;
     }
 
     .mode-card:hover {
@@ -447,7 +590,7 @@
 
     .mode-card-title {
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--text-title);
       display: flex;
       align-items: center;
@@ -463,7 +606,7 @@
     .mode-badge {
       display: inline-block;
       font-size: 10px;
-      font-weight: 600;
+      font-weight: 700;
       padding: 1px 6px;
       border-radius: 4px;
     }
@@ -479,13 +622,14 @@
       background: var(--primary);
       color: #ffffff;
       border: 1px solid var(--primary);
-      padding: 8px 16px;
+      padding: 9px 18px;
       border-radius: 6px;
       font-size: 12.5px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
       transition: background 0.15s;
     }
@@ -503,28 +647,61 @@
       background: #ffffff;
       color: var(--danger);
       border: 1px solid var(--danger-border);
-      padding: 4px 8px;
-      border-radius: 4px;
+      padding: 4px 9px;
+      border-radius: 5px;
       font-size: 11px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
-      transition: background 0.15s;
+      transition: all 0.15s;
     }
 
     .btn-delete:hover {
       background: var(--danger-soft);
+      border-color: var(--danger);
+    }
+
+    .btn-refresh {
+      background: #ffffff;
+      border: 1px solid var(--border-dark);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-body);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn-refresh:hover {
+      background: #f8fafc;
+      border-color: var(--primary);
+    }
+
+    .btn-refresh svg {
+      width: 13px;
+      height: 13px;
     }
 
     /* ALERT / NOTICE BOX - Clean Flat Tint */
     .alert-box {
       border-radius: 6px;
-      padding: 11px 14px;
+      padding: 12px 14px;
       font-size: 12px;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
       display: flex;
       align-items: flex-start;
-      gap: 8px;
+      gap: 10px;
       line-height: 1.5;
+    }
+
+    .alert-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      margin-top: 1px;
     }
 
     .alert-info {
@@ -537,6 +714,21 @@
       background: var(--amber-soft);
       border: 1px solid var(--amber-border);
       color: var(--amber);
+    }
+
+    /* HOLIDAY FORM ROW */
+    .holiday-form-row {
+      display: grid;
+      grid-template-columns: 1fr 160px auto;
+      gap: 12px;
+      align-items: flex-end;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 640px) {
+      .holiday-form-row {
+        grid-template-columns: 1fr;
+      }
     }
 
     /* TABLES - Crisp & Bordered */
@@ -561,6 +753,7 @@
       letter-spacing: 0.04em;
       padding: 11px 16px;
       border-bottom: 1px solid var(--border);
+      white-space: nowrap;
     }
 
     td {
@@ -623,7 +816,7 @@
       right: 24px;
       background: var(--primary);
       color: #ffffff;
-      padding: 10px 18px;
+      padding: 11px 18px;
       border-radius: 6px;
       font-size: 12.5px;
       font-weight: 500;
@@ -631,6 +824,7 @@
       display: none;
       align-items: center;
       gap: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
   </style>
 
@@ -639,15 +833,15 @@
 
   <!-- TOPBAR -->
   <header class="topbar">
-    <div class="brand-group">
+    <a href="/index.html" class="brand-group">
       <div class="brand-icon">
-        <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
       </div>
       <div class="brand-info">
-        <h1>Hệ Thống Điều Hành Thi Công</h1>
-        <span>PHÂN HỆ LỊCH LÀM VIỆC & NGHỈ LỄ</span>
+        <h1>Hệ Thống Quản Lý Thi Công</h1>
+        <span>LỊCH THI CÔNG & NGÀY NGHỈ LỄ</span>
       </div>
-    </div>
+    </a>
 
     <div class="topbar-actions">
       <nav class="nav-dock" aria-label="Điều hướng phân hệ">
@@ -695,13 +889,18 @@
   <!-- MAIN -->
   <main class="main-content">
 
-    <!-- HERO BANNER -->
-    <section class="hero-banner">
-      <div class="hero-text">
-        <h2>Quản Trị Lịch Công Trường & Tính Tiến Độ Theo Ngày Làm Việc</h2>
-        <p>Tính toán thời lượng thi công chính xác theo ngày làm việc thật của công trường. Tự động bỏ qua ngày Chủ Nhật (hoặc Thứ 7 & CN) và các ngày nghỉ lễ, xử lý không trừ lặp khi lễ trùng cuối tuần và hỗ trợ độ trễ làm việc.</p>
+    <!-- PAGE HEADER -->
+    <section class="page-header">
+      <div class="page-header-info">
+        <div class="page-category">Quản lý dự án · Thiết lập thời gian biểu</div>
+        <h2 class="page-title">Lịch Thi Công & Danh Mục Ngày Nghỉ Lễ Công Trường</h2>
+        <p class="page-subtitle">Cấu hình chế độ ngày làm việc tiêu chuẩn (6 ngày hoặc 5 ngày/tuần) và danh mục ngày nghỉ lễ công trường. Thuật toán CPM tự động tính toán thời lượng thực tế, loại trừ trùng lặp và bảo lưu độ trễ kỹ thuật.</p>
       </div>
-      <div class="hero-badge">HỆ THỐNG ĐIỀU HÀNH THI CÔNG</div>
+      <div class="page-header-actions">
+        <div class="project-tag">
+          <span class="status-dot"></span> Dự Án #1 · Đang Hoạt Động
+        </div>
+      </div>
     </section>
 
     <!-- STATS STRIP -->
@@ -713,9 +912,9 @@
       </div>
 
       <div class="stat-card">
-        <span class="label">Ngày Khởi Công Dự Án</span>
+        <span class="label">Ngày Khởi Công Kế Hoạch</span>
         <div class="value" id="stat-start-date">2026-10-08</div>
-        <span class="desc">Thứ Năm (Bắt đầu theo kịch bản AC 1)</span>
+        <span class="desc">Thứ Năm · Mốc khởi công phê duyệt</span>
       </div>
 
       <div class="stat-card">
@@ -727,89 +926,121 @@
       <div class="stat-card">
         <span class="label">Số Ngày Nghỉ Lễ Đã Khai</span>
         <div class="value" id="stat-holiday-count">0 Ngày</div>
-        <span class="desc">Áp dụng trừ tự động vào tiến độ</span>
+        <span class="desc">Áp dụng khấu trừ tự động vào tiến độ</span>
       </div>
     </section>
 
-    <!-- DEMO AC SCENARIO QUICK TEST -->
-    <section class="demo-bar">
-      <div class="demo-title">
-        <span>⚡ Thử nghiệm nhanh các tiêu chí chấp nhận (Acceptance Criteria):</span>
+    <!-- SIMULATION / TESTING TOOL (Clean Collapsible Accordion) -->
+    <details class="simulation-accordion">
+      <summary class="simulation-summary">
+        <div class="summary-left">
+          <div class="summary-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <div class="summary-text">
+            <span class="summary-title">Mô phỏng & Thử nghiệm kịch bản lịch công trường</span>
+            <span class="summary-subtitle">Kiểm tra tự động các trường hợp: lễ xen kẽ, lễ trùng cuối tuần, độ trễ thi công, đổi chu kỳ tuần</span>
+          </div>
+        </div>
+        <div class="summary-badge">
+          <span>5 kịch bản mẫu</span>
+          <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </summary>
+      <div class="simulation-content">
+        <div class="simulation-grid">
+          <button type="button" class="btn-scenario" onclick="applyScenarioAC1()">
+            <span class="scenario-tag">Kịch bản 1</span>
+            <span class="scenario-name">Chu kỳ 6 ngày (Khởi công T5)</span>
+            <span class="scenario-desc">Việc 6 ngày, tự động bỏ qua CN, kết thúc Thứ Tư kế tiếp</span>
+          </button>
+          <button type="button" class="btn-scenario" onclick="applyScenarioAC2()">
+            <span class="scenario-tag">Kịch bản 2</span>
+            <span class="scenario-name">Nghỉ lễ giữa chu kỳ</span>
+            <span class="scenario-desc">Thêm lễ 09/10, việc dài thêm và các công việc sau tự lùi</span>
+          </button>
+          <button type="button" class="btn-scenario" onclick="applyScenarioAC3()">
+            <span class="scenario-tag">Kịch bản 3</span>
+            <span class="scenario-name">Chuyển sang 5 ngày/tuần</span>
+            <span class="scenario-desc">Nghỉ Thứ 7 & CN, tính lại toàn bộ mốc kết thúc CPM</span>
+          </button>
+          <button type="button" class="btn-scenario" onclick="applyScenarioAC4()">
+            <span class="scenario-tag">Kịch bản 4</span>
+            <span class="scenario-name">Ngày lễ trùng Chủ Nhật</span>
+            <span class="scenario-desc">Đảm bảo khấu trừ chính xác, không tính trùng lặp</span>
+          </button>
+          <button type="button" class="btn-scenario" onclick="applyScenarioAC5()">
+            <span class="scenario-tag">Kịch bản 5</span>
+            <span class="scenario-name">Độ trễ kế tiếp (Lag = 2 ngày)</span>
+            <span class="scenario-desc">Tính đúng 2 ngày làm việc thực tế qua kỳ nghỉ cuối tuần</span>
+          </button>
+        </div>
       </div>
-      <div class="demo-buttons">
-        <button class="btn-demo" onclick="applyScenarioAC1()">
-          <strong>AC 1:</strong> Việc 6 ngày từ Thứ Năm (Lịch 6 ngày) ➔ Kết thúc Thứ Tư tuần sau
-        </button>
-        <button class="btn-demo" onclick="applyScenarioAC2()">
-          <strong>AC 2:</strong> Khai ngày lễ rơi vào giữa việc ➔ Việc dài thêm & việc sau lùi theo
-        </button>
-        <button class="btn-demo" onclick="applyScenarioAC3()">
-          <strong>AC 3:</strong> Chuyển sang lịch 5 ngày/tuần ➔ Tiến độ đổi ngày hoàn thành
-        </button>
-        <button class="btn-demo" onclick="applyScenarioAC4()">
-          <strong>AC 4:</strong> Khai ngày lễ trùng Chủ Nhật ➔ Không trừ hai lần
-        </button>
-        <button class="btn-demo" onclick="applyScenarioAC5()">
-          <strong>AC 5:</strong> Độ trễ trong quan hệ là 2 ngày ➔ Tính theo 2 ngày làm việc
-        </button>
-      </div>
-    </section>
+    </details>
 
     <!-- 2 COLUMNS: CONFIG & HOLIDAYS -->
     <div class="layout-columns">
       
-      <!-- CẤU HÌNH LỊCH (T-38 & AC 3) -->
+      <!-- CẤU HÌNH LỊCH -->
       <section class="panel">
         <div class="panel-header">
-          <div class="panel-title">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Cấu Hình Lịch Làm Việc Dự Án (NFR)
+          <div>
+            <div class="panel-title">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Cấu Hình Chế Độ Làm Việc
+            </div>
+            <div class="panel-subtitle">Quy định số ngày làm việc tiêu chuẩn trong tuần của công trường</div>
           </div>
         </div>
         <div class="panel-body">
           <div class="form-group">
-            <label class="form-label">Chọn chế độ ngày làm việc trong tuần:</label>
+            <label class="form-label">Chọn chế độ ngày làm việc:</label>
             <div class="mode-cards">
               <div class="mode-card selected" id="card-mode-6" onclick="selectCalendarMode(6)">
                 <div class="mode-card-title">
                   <span>6 Ngày / Tuần</span>
-                  <span class="mode-badge mode-badge-default">Mặc định</span>
+                  <span class="mode-badge mode-badge-default">Tiêu chuẩn</span>
                 </div>
-                <div class="mode-card-desc">Làm việc Thứ Hai đến Thứ Bảy. Nghỉ duy nhất ngày Chủ Nhật.</div>
+                <div class="mode-card-desc">Làm việc Thứ Hai đến Thứ Bảy. Nghỉ định kỳ ngày Chủ Nhật.</div>
               </div>
 
               <div class="mode-card" id="card-mode-5" onclick="selectCalendarMode(5)">
                 <div class="mode-card-title">
                   <span>5 Ngày / Tuần</span>
+                  <span class="mode-badge mode-badge-default">Hành chính</span>
                 </div>
-                <div class="mode-card-desc">Làm việc Thứ Hai đến Thứ Sáu. Nghỉ Thứ Bảy và Chủ Nhật.</div>
+                <div class="mode-card-desc">Làm việc Thứ Hai đến Thứ Sáu. Nghỉ cả Thứ Bảy và Chủ Nhật.</div>
               </div>
             </div>
           </div>
 
           <div class="alert-box alert-info">
-            <span>ℹ️</span>
+            <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
             <div>
-              <strong>Quy tắc tính toán:</strong> Lịch làm việc mặc định công trường là 6 ngày/tuần. Khi thay đổi sang 5 ngày/tuần và lưu, toàn bộ tiến độ sẽ được tính lại theo thuật toán CPM và ngày hoàn thành sẽ thay đổi (AC 3).
+              <strong>Nguyên tắc tính toán:</strong> Chế độ chuẩn công trường là 6 ngày/tuần. Khi chuyển sang 5 ngày/tuần và lưu, toàn bộ các mốc ES, EF, LS, LF trong mạng CPM sẽ tự động được tính lại theo ngày làm việc thực tế.
             </div>
           </div>
 
           <button class="btn-primary" id="btn-save-calendar" onclick="saveCalendarConfig()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
             Lưu Cấu Hình & Tính Lại Tiến Độ
           </button>
         </div>
       </section>
 
-      <!-- KHAI BÁO NGÀY LỄ (T-38, T-40 & AC 2, AC 4) -->
+      <!-- KHAI BÁO NGÀY LỄ -->
       <section class="panel">
         <div class="panel-header">
-          <div class="panel-title">
-            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            Khai Báo Ngày Nghỉ Lễ Công Trường
+          <div>
+            <div class="panel-title">
+              <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              Danh Mục Ngày Nghỉ Lễ Công Trường
+            </div>
+            <div class="panel-subtitle">Khai báo các ngày nghỉ lễ, Tết áp dụng cho công trường</div>
           </div>
         </div>
         <div class="panel-body">
-          <div style="display: grid; grid-template-columns: 1fr 150px auto; gap: 10px; align-items: flex-end; margin-bottom: 14px;">
+          <div class="holiday-form-row">
             <div class="form-group" style="margin-bottom: 0;">
               <label class="form-label">Tên ngày nghỉ lễ:</label>
               <input type="text" id="input-holiday-name" class="form-control" placeholder="Ví dụ: Nghỉ Quốc Khánh, Giỗ Tổ...">
@@ -818,14 +1049,15 @@
               <label class="form-label">Ngày nghỉ:</label>
               <input type="date" id="input-holiday-date" class="form-control" onchange="checkHolidayDateSunday(this.value)">
             </div>
-            <button class="btn-primary" onclick="addHolidayFromForm()" style="height: 42px;">
+            <button class="btn-primary" onclick="addHolidayFromForm()" style="height: 38px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               Thêm Lễ
             </button>
           </div>
 
-          <!-- Alert thông minh nhận diện trùng Chủ Nhật (AC 4) -->
+          <!-- Alert thông minh nhận diện trùng cuối tuần -->
           <div id="sunday-warning" class="alert-box alert-amber" style="display: none;">
-            <span>⚠️</span>
+            <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             <div id="sunday-warning-text"></div>
           </div>
 
@@ -834,14 +1066,14 @@
               <thead>
                 <tr>
                   <th>Tên Ngày Nghỉ Lễ</th>
-                  <th>Ngày</th>
+                  <th>Ngày Áp Dụng</th>
                   <th>Thứ</th>
-                  <th>Ghi Chú</th>
+                  <th>Quy Tắc Áp Dụng</th>
                   <th style="text-align: right;">Thao Tác</th>
                 </tr>
               </thead>
               <tbody id="holidays-table-body">
-                <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Đang tải danh sách ngày lễ...</td></tr>
+                <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 18px;">Đang tải danh sách ngày lễ...</td></tr>
               </tbody>
             </table>
           </div>
@@ -850,15 +1082,24 @@
 
     </div>
 
-    <!-- BẢNG CPM TIẾN ĐỘ THI CÔNG (T-40) -->
+    <!-- BẢNG CPM TIẾN ĐỘ THI CÔNG -->
     <section class="panel">
       <div class="panel-header">
-        <div class="panel-title">
-          <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-          Bảng Tiến Độ CPM Theo Lịch Làm Việc Thực Tế & Ngày Nghỉ Lễ
+        <div>
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            Bảng Tính Tiến Độ & Đường Găng CPM Theo Lịch Thi Công
+          </div>
+          <div class="panel-subtitle">Kiểm tra tự động các mốc tiến độ theo ngày làm việc thực tế và ngày nghỉ lễ</div>
         </div>
-        <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">
-          Mốc hoàn thành: <strong id="cpm-finish-badge" style="color: var(--brand-blue);">...</strong>
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">
+            Mốc hoàn thành: <strong id="cpm-finish-badge" style="color: var(--brand-blue); font-size: 13px;">...</strong>
+          </div>
+          <button class="btn-refresh" onclick="loadData()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Làm mới
+          </button>
         </div>
       </div>
       <div class="panel-body" style="padding: 0;">
@@ -896,11 +1137,21 @@
     let currentHolidays = [];
     let currentSchedule = null;
 
-    function handleLogout() {
+    async function handleLogout() {
       if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi phiên làm việc?')) {
-        localStorage.removeItem('quanly_token');
-        localStorage.removeItem('quanly_user');
-        window.location.replace('/login.html');
+        try {
+          const token = localStorage.getItem('quanly_token');
+          if (token) {
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+          }
+        } finally {
+          localStorage.removeItem('quanly_token');
+          localStorage.removeItem('quanly_user');
+          window.location.replace('/login.html');
+        }
       }
     }
 
@@ -932,10 +1183,10 @@
 
       if (day === 0) {
         warnBox.style.display = 'flex';
-        warnText.innerHTML = `<strong>Tiêu chí AC 4:</strong> Ngày <code>${dateStr}</code> rơi vào <strong>Chủ Nhật</strong> (vốn là ngày nghỉ cuối tuần). Khi tính toán, hệ thống sẽ tự động <strong>không trừ 2 lần</strong>!`;
+        warnText.innerHTML = `<strong>Lưu ý:</strong> Ngày <code>${dateStr}</code> rơi vào <strong>Chủ Nhật</strong> (ngày nghỉ cuối tuần định kỳ). Hệ thống sẽ tự động ghi nhận và <strong>không khấu trừ hai lần</strong>.`;
       } else if (day === 6 && currentWorkDaysPerWeek === 5) {
         warnBox.style.display = 'flex';
-        warnText.innerHTML = `<strong>Tiêu chí AC 4:</strong> Ngày <code>${dateStr}</code> rơi vào <strong>Thứ Bảy</strong> trong chế độ 5 ngày/tuần. Hệ thống tự động không trừ 2 lần!`;
+        warnText.innerHTML = `<strong>Lưu ý:</strong> Ngày <code>${dateStr}</code> rơi vào <strong>Thứ Bảy</strong> trong chế độ 5 ngày/tuần. Hệ thống sẽ tự động ghi nhận và <strong>không khấu trừ hai lần</strong>.`;
       } else {
         warnBox.style.display = 'none';
       }
@@ -972,11 +1223,11 @@
         const isSun = (dayOfWeek === 0);
         const isSat = (dayOfWeek === 6);
 
-        let noteBadge = '<span style="color: #64748b;">Ngày thường</span>';
+        let noteBadge = '<span style="color: #64748b;">Ngày làm việc được nghỉ</span>';
         if (isSun) {
-          noteBadge = '<span class="badge badge-weekend">Trùng Chủ Nhật (AC 4)</span>';
+          noteBadge = '<span class="badge badge-weekend">Trùng Chủ Nhật (Tự động trừ 1 lần)</span>';
         } else if (isSat && currentWorkDaysPerWeek === 5) {
-          noteBadge = '<span class="badge badge-weekend">Trùng Thứ Bảy (AC 4)</span>';
+          noteBadge = '<span class="badge badge-weekend">Trùng Thứ Bảy (Tự động trừ 1 lần)</span>';
         }
 
         return `
@@ -1106,8 +1357,8 @@
           : '<span style="color:#94a3b8;">(Bắt đầu)</span>';
 
         const criticalBadge = t.isCritical
-          ? '<span class="badge badge-critical">Găng (Critical)</span>'
-          : '<span class="badge badge-normal">Không găng</span>';
+          ? '<span class="badge badge-critical">Đường găng</span>'
+          : '<span class="badge badge-normal">Bình thường</span>';
 
         return `
           <tr style="${t.isCritical ? 'background-color: #fffbfb;' : ''}">
@@ -1119,51 +1370,51 @@
             <td><code style="font-weight:700;">${t.earlyFinishDate}</code></td>
             <td><code>${t.lateStartDate}</code></td>
             <td><code>${t.lateFinishDate}</code></td>
-            <td style="text-align: center; font-weight: 800;">${t.totalFloat}d</td>
+            <td style="text-align: center; font-weight: 700;">${t.totalFloat}d</td>
             <td style="text-align: center;">${criticalBadge}</td>
           </tr>
         `;
       }).join('');
     }
 
-    /* === CÁC KỊCH BẢN THỬ NGHIỆM AC (1 -> 5) === */
+    /* === CÁC KỊCH BẢN THỬ NGHIỆM MÔ PHỎNG === */
     function applyScenarioAC1() {
-      // AC 1: Việc 6 ngày bắt đầu Thứ Năm (2026-10-08) -> kết thúc Thứ Tư tuần sau (2026-10-14)
+      // Kịch bản 1: Việc 6 ngày bắt đầu Thứ Năm (2026-10-08) -> kết thúc Thứ Tư tuần sau (2026-10-14)
       selectCalendarMode(6);
       const tasks = [
-        { id: 'AC1-01', name: 'Công việc kiểm thử AC 1 (Bắt đầu Thứ Năm)', duration: 6, predecessors: [] }
+        { id: 'KB1-01', name: 'Công tác thi công mẫu (Bắt đầu Thứ Năm)', duration: 6, predecessors: [] }
       ];
       calculateSchedule(tasks, '2026-10-08');
-      showToast('Đang áp dụng kịch bản AC 1: Việc 6 ngày bắt đầu Thứ Năm ➔ Kết thúc Thứ Tư (2026-10-14)!');
+      showToast('Kịch bản 1: Chu kỳ 6 ngày bắt đầu Thứ Năm ➔ Hoàn thành Thứ Tư (2026-10-14)');
     }
 
     async function applyScenarioAC2() {
-      // AC 2: Khai ngày lễ rơi vào giữa việc -> Việc dài thêm và việc sau lùi theo
+      // Kịch bản 2: Khai ngày lễ rơi vào giữa việc -> Việc dài thêm và việc sau lùi theo
       selectCalendarMode(6);
-      const testHoliday = { name: 'Ngày Nghỉ Lễ Kịch Bản AC 2', holiday_date: '2026-10-09' };
+      const testHoliday = { name: 'Nghỉ Lễ Kịch Bản Thử Nghiệm', holiday_date: '2026-10-09' };
       await fetch(`/api/projects/${PROJECT_ID}/holidays`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(testHoliday)
       });
       const tasks = [
-        { id: 'AC2-A', name: 'Công việc A (Bị ảnh hưởng bởi lễ 09/10)', duration: 6, predecessors: [] },
-        { id: 'AC2-B', name: 'Công việc B (Nối tiếp A, lùi theo)', duration: 3, predecessors: [{ id: 'AC2-A', type: 'FS', lag: 0 }] }
+        { id: 'KB2-A', name: 'Công việc A (Bị ảnh hưởng bởi ngày lễ 09/10)', duration: 6, predecessors: [] },
+        { id: 'KB2-B', name: 'Công việc B (Nối tiếp A, tự động dời lùi theo)', duration: 3, predecessors: [{ id: 'KB2-A', type: 'FS', lag: 0 }] }
       ];
       await loadData();
       calculateSchedule(tasks, '2026-10-08');
-      showToast('Đang áp dụng kịch bản AC 2: Thêm lễ 09/10 làm việc A dài thêm và việc B lùi theo!');
+      showToast('Kịch bản 2: Thêm ngày lễ xen kẽ 09/10 ➔ Công việc tự động kéo dài & dời việc kế tiếp');
     }
 
     function applyScenarioAC3() {
-      // AC 3: Đổi sang 5 ngày/tuần -> toàn bộ tiến độ tính lại và ngày hoàn thành đổi
+      // Kịch bản 3: Đổi sang 5 ngày/tuần -> toàn bộ tiến độ tính lại và ngày hoàn thành đổi
       selectCalendarMode(5);
       saveCalendarConfig();
-      showToast('Đang chuyển sang 5 ngày/tuần: Tiến độ CPM được tính lại và ngày hoàn thành thay đổi!');
+      showToast('Kịch bản 3: Chuyển sang 5 ngày/tuần ➔ Tiến độ CPM tự động cập nhật mốc hoàn thành mới');
     }
 
     async function applyScenarioAC4() {
-      // AC 4: Khai lễ trùng Chủ Nhật -> không trừ 2 lần
+      // Kịch bản 4: Khai lễ trùng Chủ Nhật -> không trừ 2 lần
       selectCalendarMode(6);
       const sundayHoliday = { name: 'Lễ Trùng Chủ Nhật 2026-10-11', holiday_date: '2026-10-11' };
       await fetch(`/api/projects/${PROJECT_ID}/holidays`, {
@@ -1172,22 +1423,22 @@
         body: JSON.stringify(sundayHoliday)
       });
       const tasks = [
-        { id: 'AC4-01', name: 'Việc 6 ngày trải qua Chủ Nhật trùng lễ', duration: 6, predecessors: [] }
+        { id: 'KB4-01', name: 'Công tác 6 ngày trải qua Chủ Nhật trùng ngày lễ', duration: 6, predecessors: [] }
       ];
       await loadData();
       calculateSchedule(tasks, '2026-10-08');
-      showToast('Đã thêm lễ 2026-10-11 (trùng Chủ Nhật): Kiểm tra không trừ 2 lần!');
+      showToast('Kịch bản 4: Lễ trùng Chủ Nhật ➔ Hệ thống bảo đảm không khấu trừ trùng lặp');
     }
 
     function applyScenarioAC5() {
-      // AC 5: Độ trễ trong quan hệ phụ thuộc là 2 ngày làm việc
+      // Kịch bản 5: Độ trễ trong quan hệ phụ thuộc là 2 ngày làm việc
       selectCalendarMode(6);
       const tasks = [
-        { id: 'AC5-A', name: 'Công việc trước A (Kết thúc Thứ Năm 08/10)', duration: 1, predecessors: [] },
-        { id: 'AC5-B', name: 'Công việc sau B (Lag = 2 ngày làm việc: T6, T7, CN nghỉ ➔ Bắt đầu Thứ Hai)', duration: 3, predecessors: [{ id: 'AC5-A', type: 'FS', lag: 2 }] }
+        { id: 'KB5-A', name: 'Công việc trước A (Kết thúc Thứ Năm 08/10)', duration: 1, predecessors: [] },
+        { id: 'KB5-B', name: 'Công việc sau B (Lag = 2 ngày làm việc: T6, T7, CN nghỉ ➔ Bắt đầu Thứ Hai)', duration: 3, predecessors: [{ id: 'KB5-A', type: 'FS', lag: 2 }] }
       ];
       calculateSchedule(tasks, '2026-10-08');
-      showToast('Đang áp dụng kịch bản AC 5: Lag 2 ngày làm việc trải qua cuối tuần!');
+      showToast('Kịch bản 5: Độ trễ kỹ thuật (Lag = 2 ngày làm việc) vượt qua kỳ nghỉ cuối tuần');
     }
 
     function escapeHtml(str) {
