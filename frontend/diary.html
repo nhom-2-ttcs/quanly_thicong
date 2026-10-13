@@ -1542,7 +1542,12 @@
 
     function showErrorToast(msg) {
       const el = document.getElementById('toast-error');
-      document.getElementById('toast-error-text').innerText = msg;
+      const textEl = document.getElementById('toast-error-text');
+      if (typeof msg === 'string' && msg.includes('Phiên đăng nhập')) {
+        textEl.innerHTML = `${msg} <a href="/login.html" style="color: #1d4ed8; text-decoration: underline; font-weight: 800; margin-left: 6px;">[👉 Đăng nhập ngay]</a>`;
+      } else {
+        textEl.innerText = msg;
+      }
       el.style.display = 'flex';
     }
 
