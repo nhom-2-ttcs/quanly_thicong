@@ -13,6 +13,7 @@
   <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
   <script src="/js/pwa-register.js" defer></script>
+  <script src="/js/app-navbar.js" defer></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -747,19 +748,19 @@
     </a>
 
     <nav class="nav-dock">
-      <a href="index.html" class="nav-item">📊 Tổng quan</a>
-      <a href="wbs.html" class="nav-item">🌳 WBS</a>
-      <a href="schedule.html" class="nav-item">⚡ CPM</a>
-      <a href="gantt.html" class="nav-item">📈 Gantt</a>
-      <a href="calendar.html" class="nav-item">📅 Lịch</a>
-      <a href="diary.html" class="nav-item">📖 Nhật ký</a>
-      <a href="teams.html" class="nav-item active">👷‍♂️ Đội & Giao việc</a>
+      <a href="/index.html" class="nav-item">📊 Tổng quan</a>
+      <a href="/wbs.html" class="nav-item">🌳 WBS</a>
+      <a href="/schedule.html" class="nav-item">⚡ CPM</a>
+      <a href="/gantt.html" class="nav-item">📈 Gantt</a>
+      <a href="/calendar.html" class="nav-item">📅 Lịch thi công</a>
+      <a href="/diary.html" class="nav-item">🌧️ Nhật ký</a>
+      <a href="/teams.html" class="nav-item active">👷‍♂️ Đội & Giao việc</a>
     </nav>
 
     <div class="user-profile">
       <div class="user-info-text">
-        <div class="user-name" id="user-display-name">Trần Mạnh Dũng</div>
-        <div class="user-role" id="user-display-role">Chỉ huy trưởng công trình</div>
+        <div class="user-name" id="display-user-name">Đang tải...</div>
+        <div class="user-role" id="display-user-role">Người dùng</div>
       </div>
       <button class="btn-logout" onclick="handleLogout()">Đăng xuất</button>
     </div>

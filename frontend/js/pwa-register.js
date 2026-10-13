@@ -139,11 +139,11 @@
 
       document.getElementById('pwa-btn-dismiss').addEventListener('click', () => {
         hideInstallPromptUI();
-        sessionStorage.setItem('pwa_install_dismissed', 'true');
+        localStorage.setItem('pwa_install_dismissed', 'true');
       });
     }
 
-    if (sessionStorage.getItem('pwa_install_dismissed') !== 'true') {
+    if (localStorage.getItem('pwa_install_dismissed') !== 'true') {
       banner.style.display = 'flex';
     }
 
@@ -248,11 +248,12 @@
   style.textContent = `
     .pwa-install-banner {
       position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: calc(100% - 32px);
-      max-width: 480px;
+      bottom: 24px;
+      right: 24px;
+      left: auto;
+      transform: none;
+      width: calc(100% - 48px);
+      max-width: 420px;
       background: #0f172a;
       color: #ffffff;
       padding: 12px 16px;
@@ -263,11 +264,11 @@
       justify-content: space-between;
       gap: 12px;
       z-index: 99999;
-      animation: pwaSlideUp 0.3s ease-out;
+      animation: pwaSlideToast 0.3s ease-out;
     }
-    @keyframes pwaSlideUp {
-      from { transform: translate(-50%, 20px); opacity: 0; }
-      to { transform: translate(-50%, 0); opacity: 1; }
+    @keyframes pwaSlideToast {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
     .pwa-banner-content {
       display: flex;

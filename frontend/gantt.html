@@ -13,6 +13,7 @@
   <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
   <script src="/js/pwa-register.js" defer></script>
+  <script src="/js/app-navbar.js" defer></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,6 +47,58 @@
     body { background-color: var(--bg); color: var(--text-main); padding: 20px; min-height: 100vh; }
 
     /* Top Navigation Bar */
+    .topbar {
+      height: 68px;
+      background: #ffffff;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 36px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+    .brand-group { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+    .brand-icon {
+      width: 40px; height: 40px; background: var(--primary);
+      border-radius: 9px; display: flex; align-items: center; justify-content: center;
+    }
+    .brand-icon svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 2.2; }
+    .brand-info h1 { font-size: 16.5px; font-weight: 800; color: var(--text-main); }
+    .brand-info span { font-size: 10.5px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+    .topbar-actions { display: flex; align-items: center; gap: 12px; }
+    .nav-dock {
+      display: inline-flex; align-items: center; background: #f1f5f9;
+      border: 1.5px solid var(--border); border-radius: 10px; padding: 3px; gap: 2px;
+    }
+    .nav-dock-item {
+      display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px;
+      border-radius: 7px; color: #475569; font-size: 12.5px; font-weight: 700;
+      text-decoration: none; transition: all 0.15s ease; white-space: nowrap;
+    }
+    .nav-dock-item:hover { color: #1e293b; background: rgba(255, 255, 255, 0.6); }
+    .nav-dock-item.active { background: #ffffff; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.06); font-weight: 800; }
+    .nav-dock-item svg { width: 15px; height: 15px; stroke: currentColor; }
+    .user-pill {
+      display: flex; align-items: center; gap: 12px; padding: 4px 6px 4px 12px;
+      border-radius: 9999px; background: #f8fafc; border: 1.5px solid var(--border);
+    }
+    .user-avatar {
+      width: 32px; height: 32px; background: #eff6ff; border: 1.5px solid #93c5fd;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 12.5px; font-weight: 800; color: #1d4ed8;
+    }
+    .user-meta { text-align: right; }
+    .user-name { font-size: 13px; font-weight: 700; color: var(--text-main); line-height: 1.2; }
+    .user-role-badge { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+    .btn-logout {
+      padding: 7px 14px; border-radius: 8px; background: #fee2e2; border: 1.5px solid #f87171;
+      color: #991b1b; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s ease;
+    }
+    .btn-logout:hover { background: #fecaca; }
+
     .top-bar {
       display: flex;
       justify-content: space-between;
@@ -407,15 +460,65 @@
 </head>
 <body>
 
-  <!-- Top Navigation Bar -->
+  <!-- TOPBAR -->
+  <header class="topbar" style="margin: -20px -20px 20px -20px;">
+    <div class="brand-group">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      </div>
+      <div class="brand-info">
+        <h1>Hệ Thống Quản Lý Thi Công</h1>
+        <span>SƠ ĐỒ TIẾN ĐỘ THI CÔNG GANTT</span>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <nav class="nav-dock" aria-label="Điều hướng phân hệ">
+        <a href="/index.html" class="nav-dock-item" title="Bảng điều khiển trung tâm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Tổng quan
+        </a>
+        <a href="/wbs.html" class="nav-dock-item" title="Cơ cấu công việc (WBS)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          WBS
+        </a>
+        <a href="/schedule.html" class="nav-dock-item" title="Bảng tiến độ và đường găng (CPM)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          Tiến độ CPM
+        </a>
+        <a href="/gantt.html" class="nav-dock-item active" title="Sơ đồ Gantt tiến độ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M7 8h5M7 12h8M7 16h3"></path></svg>
+          Gantt
+        </a>
+        <a href="/calendar.html" class="nav-dock-item" title="Lịch thi công & Nghỉ lễ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          Lịch thi công
+        </a>
+        <a href="/diary.html" class="nav-dock-item" title="Nhật ký thi công & Ngày mưa (T51)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 16.2A4.5 4.5 0 0 0 16 9h-.7A7 7 0 1 0 4 15.6"></path><path d="M8 19v2M8 13v2M12 21v2M12 15v2M16 19v2M16 13v2"></path></svg>
+          Nhật ký
+        </a>
+        <a href="/teams.html" class="nav-dock-item" title="Đội thi công & Giao việc (S-25)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Đội & Giao việc
+        </a>
+      </nav>
+
+      <div class="user-pill">
+        <div class="user-avatar" id="avatar-letter">U</div>
+        <div class="user-meta">
+          <span class="user-name" id="display-user-name">Đang tải...</span>
+          <span class="user-role-badge" id="display-user-role">Người dùng</span>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">Đăng xuất</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Secondary Toolbar for Gantt View & Actions -->
   <div class="top-bar">
     <div class="top-left">
-      <a href="/schedule.html" class="back-btn">⬅ Bảng CPM</a>
-      <a href="/calendar.html" class="back-btn">📅 Lịch làm việc</a>
-      <a href="/teams.html" class="back-btn">👷‍♂️ Đội & Giao việc</a>
-      <a href="/wbs.html" class="back-btn">🌳 WBS</a>
-      <a href="/index.html" class="back-btn">🏠 Trang chủ</a>
-      <h1 class="top-title">Sơ đồ tiến độ thi công & Đường găng</h1>
+      <h2 class="top-title" style="margin: 0; font-size: 16px;">Sơ đồ tiến độ thi công & Đường găng</h2>
     </div>
     <div class="top-actions">
       <button class="btn-action" id="btnFilterCrit" onclick="toggleCriticalFilter()">

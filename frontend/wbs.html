@@ -13,6 +13,7 @@
   <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
   <script src="/js/pwa-register.js" defer></script>
+  <script src="/js/app-navbar.js" defer></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -561,15 +562,6 @@
     </div>
 
     <div class="topbar-actions">
-      <!-- Thông tin tài khoản đăng nhập -->
-      <div class="user-pill" id="user-pill" style="display: none;">
-        <div class="user-avatar" id="user-avatar">U</div>
-        <div class="user-meta">
-          <span class="user-name" id="user-name">Đang tải...</span>
-          <span class="user-role-badge" id="user-role">Người dùng</span>
-        </div>
-      </div>
-
       <!-- Gộp các chức năng điều hướng thành Navigation Dock chuyên nghiệp -->
       <nav class="nav-dock" aria-label="Điều hướng phân hệ">
         <a href="/index.html" class="nav-dock-item" title="Bảng điều khiển trung tâm">
@@ -601,7 +593,16 @@
           Đội & Giao việc
         </a>
       </nav>
-      <button class="btn-logout" title="Đăng xuất khỏi hệ thống" onclick="handleLogout()">Đăng xuất</button>
+
+      <!-- Thông tin tài khoản đăng nhập -->
+      <div class="user-pill" id="user-pill">
+        <div class="user-avatar" id="avatar-letter">U</div>
+        <div class="user-meta">
+          <span class="user-name" id="display-user-name">Đang tải...</span>
+          <span class="user-role-badge" id="display-user-role">Người dùng</span>
+        </div>
+        <button class="btn-logout" title="Đăng xuất khỏi hệ thống" onclick="handleLogout()">Đăng xuất</button>
+      </div>
     </div>
   </header>
 

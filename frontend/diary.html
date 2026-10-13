@@ -13,6 +13,7 @@
   <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
   <script src="/js/pwa-register.js" defer></script>
+  <script src="/js/app-navbar.js" defer></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -91,6 +92,18 @@
     .user-meta { display: flex; flex-direction: column; text-align: left; }
     .user-name { font-size: 12px; font-weight: 700; color: var(--text-title); line-height: 1.2; }
     .user-role { font-size: 10px; color: var(--text-muted); font-weight: 600; }
+    .btn-logout {
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: var(--danger-bg);
+      border: 1.5px solid var(--danger-border);
+      color: var(--danger-text);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-logout:hover { background: #fecaca; }
 
     /* Main Container */
     .main-container {
@@ -391,27 +404,28 @@
     <!-- Navigation Dock -->
     <nav class="nav-dock">
       <a href="/index.html" class="nav-item">📊 Tổng quan</a>
-      <a href="/wbs.html" class="nav-item">🌲 WBS & Mốc</a>
-      <a href="/schedule.html" class="nav-item">📅 Bảng tiến độ</a>
-      <a href="/gantt.html" class="nav-item">📈 Sơ đồ Gantt</a>
-      <a href="/diary.html" class="nav-item active">🌧️ Nhật ký & Ngày mưa</a>
-      <a href="/calendar.html" class="nav-item">⚙️ Lịch làm việc</a>
+      <a href="/wbs.html" class="nav-item">🌳 WBS</a>
+      <a href="/schedule.html" class="nav-item">⚡ CPM</a>
+      <a href="/gantt.html" class="nav-item">📈 Gantt</a>
+      <a href="/calendar.html" class="nav-item">📅 Lịch thi công</a>
+      <a href="/diary.html" class="nav-item active">🌧️ Nhật ký</a>
       <a href="/teams.html" class="nav-item">👷‍♂️ Đội & Giao việc</a>
     </nav>
 
-    <!-- PWA Install Button (S-27) -->
+    <!-- PWA Install Button & User Profile -->
     <div style="display: flex; align-items: center; gap: 10px;">
       <button id="btn-install-app" class="btn-install-app" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #1d4ed8, #0284c7); color: #fff; border: none; padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);" title="Cài đặt ứng dụng hiện trường vào điện thoại / máy tính">
-        📲 Cài App PWA
+        📲 Cài PWA
       </button>
 
       <!-- User Information -->
       <div class="user-pill">
-        <div class="user-avatar" id="avatar-letter">D</div>
+        <div class="user-avatar" id="avatar-letter">U</div>
         <div class="user-meta">
-          <span class="user-name" id="display-user-name">Trần Mạnh Dũng</span>
-          <span class="user-role" id="display-user-role">Chỉ huy trưởng công trình</span>
+          <span class="user-name" id="display-user-name">Đang tải...</span>
+          <span class="user-role" id="display-user-role">Người dùng</span>
         </div>
+        <button class="btn-logout" title="Đăng xuất khỏi hệ thống" onclick="handleLogout()">Đăng xuất</button>
       </div>
     </div>
   </header>
