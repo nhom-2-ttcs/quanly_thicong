@@ -508,10 +508,10 @@
       </nav>
 
       <div class="user-pill" id="user-info-pill">
-        <div class="user-avatar" id="avatar-letter">U</div>
+        <div class="user-avatar" id="user-avatar">U</div>
         <div class="user-meta">
-          <span class="user-name" id="display-user-name">Đang tải...</span>
-          <span class="user-role-badge" id="display-user-role">Người dùng</span>
+          <span class="user-name" id="user-name">Đang tải...</span>
+          <span class="user-role-badge" id="user-role">Người dùng</span>
         </div>
         <button class="btn-logout" id="btn-logout" onclick="handleLogout()">Đăng xuất</button>
       </div>
@@ -792,29 +792,41 @@
         currentUser = data.user;
         renderUserInfo();
       } catch (err) {
-        window.location.href = '/login.html';
+        console.warn('Lỗi tải thông tin người dùng tại schedule.html:', err);
+        if (!localStorage.getItem('quanly_token')) {
+          window.location.href = '/login.html';
+        }
       }
     }
 
     function renderUserInfo() {
       if (!currentUser) return;
-      document.getElementById('user-name').textContent = currentUser.full_name || currentUser.email;
-      const roleElem = document.getElementById('user-role');
-      roleElem.textContent = currentUser.role_display_name || currentUser.role_name || 'Người dùng';
-      if (currentUser.role_id === 7 || currentUser.role_name === 'viewer') {
-        roleElem.classList.add('role-viewer');
-        // Viewer không được bấm tính toán lại
-        const btnRecalc = document.getElementById('btn-recalculate');
-        if (btnRecalc) {
-          btnRecalc.disabled = true;
-          btnRecalc.style.opacity = '0.6';
-          btnRecalc.style.cursor = 'not-allowed';
-          btnRecalc.title = 'Người xem dự án (Viewer) ở chế độ chỉ đọc';
+      const nameElem = document.getElementById('user-name') || document.getElementById('display-user-name');
+      if (nameElem) {
+        nameElem.textContent = currentUser.full_name || currentUser.email;
+      }
+
+      const roleElem = document.getElementById('user-role') || document.getElementById('display-user-role');
+      if (roleElem) {
+        roleElem.textContent = currentUser.role_display_name || currentUser.role_name || 'Người dùng';
+        if (currentUser.role_id === 7 || currentUser.role_name === 'viewer') {
+          roleElem.classList.add('role-viewer');
+          // Viewer không được bấm tính toán lại
+          const btnRecalc = document.getElementById('btn-recalculate');
+          if (btnRecalc) {
+            btnRecalc.disabled = true;
+            btnRecalc.style.opacity = '0.6';
+            btnRecalc.style.cursor = 'not-allowed';
+            btnRecalc.title = 'Người xem dự án (Viewer) ở chế độ chỉ đọc';
+          }
         }
       }
-      const avatarElem = document.getElementById('user-avatar');
-      const initials = (currentUser.full_name || currentUser.email).substring(0, 1).toUpperCase();
-      avatarElem.textContent = initials;
+
+      const avatarElem = document.getElementById('user-avatar') || document.getElementById('avatar-letter');
+      if (avatarElem) {
+        const initials = (currentUser.full_name || currentUser.email || 'U').substring(0, 1).toUpperCase();
+        avatarElem.textContent = initials;
+      }
     }
 
     async function handleLogout() {

@@ -759,8 +759,8 @@
 
     <div class="user-profile">
       <div class="user-info-text">
-        <div class="user-name" id="display-user-name">Đang tải...</div>
-        <div class="user-role" id="display-user-role">Người dùng</div>
+        <div class="user-name" id="user-display-name">Đang tải...</div>
+        <div class="user-role" id="user-display-role">Người dùng</div>
       </div>
       <button class="btn-logout" onclick="handleLogout()">Đăng xuất</button>
     </div>
@@ -1035,8 +1035,11 @@
         };
       }
 
-      document.getElementById('user-display-name').textContent = currentUser.full_name || currentUser.email;
-      document.getElementById('user-display-role').textContent = currentUser.role_display_name || currentUser.role_name || 'Chỉ huy trưởng';
+      const nameEl = document.getElementById('user-display-name') || document.getElementById('display-user-name');
+      if (nameEl) nameEl.textContent = currentUser.full_name || currentUser.email;
+
+      const roleEl = document.getElementById('user-display-role') || document.getElementById('display-user-role');
+      if (roleEl) roleEl.textContent = currentUser.role_display_name || currentUser.role_name || 'Chỉ huy trưởng';
 
       // Phân quyền: Viewer
       if (currentUser.role_id === 7 || currentUser.role_name === 'viewer') {

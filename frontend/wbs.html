@@ -596,10 +596,10 @@
 
       <!-- Thông tin tài khoản đăng nhập -->
       <div class="user-pill" id="user-pill">
-        <div class="user-avatar" id="avatar-letter">U</div>
+        <div class="user-avatar" id="user-avatar">U</div>
         <div class="user-meta">
-          <span class="user-name" id="display-user-name">Đang tải...</span>
-          <span class="user-role-badge" id="display-user-role">Người dùng</span>
+          <span class="user-name" id="user-name">Đang tải...</span>
+          <span class="user-role-badge" id="user-role">Người dùng</span>
         </div>
         <button class="btn-logout" title="Đăng xuất khỏi hệ thống" onclick="handleLogout()">Đăng xuất</button>
       </div>
@@ -1236,15 +1236,15 @@
 
       // Hiển thị thông tin người dùng trên topbar
       const userPill = document.getElementById('user-pill');
-      const userAvatar = document.getElementById('user-avatar');
-      const userName = document.getElementById('user-name');
-      const userRole = document.getElementById('user-role');
+      const userAvatar = document.getElementById('user-avatar') || document.getElementById('avatar-letter');
+      const userName = document.getElementById('user-name') || document.getElementById('display-user-name');
+      const userRole = document.getElementById('user-role') || document.getElementById('display-user-role');
 
-      userPill.style.display = 'flex';
+      if (userPill) userPill.style.display = 'flex';
       const initial = (currentUser.full_name || currentUser.username || 'U').charAt(0).toUpperCase();
-      userAvatar.innerText = initial;
-      userName.innerText = currentUser.full_name || currentUser.username;
-      userRole.innerText = currentUser.role_display_name || currentUser.role_name || 'Người dùng';
+      if (userAvatar) userAvatar.innerText = initial;
+      if (userName) userName.innerText = currentUser.full_name || currentUser.username;
+      if (userRole) userRole.innerText = currentUser.role_display_name || currentUser.role_name || 'Người dùng';
 
       // Nếu là Người xem dự án (viewer - role_id 7)
       const isViewer = currentUser.role_id === 7 || currentUser.role === 'viewer';
@@ -2560,9 +2560,9 @@
         } catch (e) {}
       }
 
-      const nameEl = document.getElementById('display-user-name');
-      const roleEl = document.getElementById('display-user-role');
-      const avatarEl = document.getElementById('avatar-letter');
+      const nameEl = document.getElementById('user-name') || document.getElementById('display-user-name');
+      const roleEl = document.getElementById('user-role') || document.getElementById('display-user-role');
+      const avatarEl = document.getElementById('user-avatar') || document.getElementById('avatar-letter');
 
       if (nameEl) nameEl.innerText = userName;
       if (roleEl) roleEl.innerText = String(userRole);
