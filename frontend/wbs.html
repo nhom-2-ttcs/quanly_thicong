@@ -4,79 +4,92 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cơ cấu công việc (WBS) | Hệ thống quản lý thi công</title>
+  <!-- PWA & Hiện trường Mobile (S-27 / SCRUM-119) -->
+  <meta name="theme-color" content="#1d4ed8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="QL Thi Công">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <script src="/js/pwa-register.js" defer></script>
+  <script src="/js/app-navbar.js" defer></script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
     :root {
-      --bg-canvas: #f1f5f9;
+      --bg-canvas: #f8fafc;
       --card-bg: #ffffff;
-      --card-hover: #f8fafc;
-      --border-outer: #94a3b8;
-      --border-card: #cbd5e1;
+      --card-hover: #f1f5f9;
+      --border: #e2e8f0;
+      --border-dark: #cbd5e1;
+      --border-card: #e2e8f0;
+      --border-outer: #cbd5e1;
       --tree-line: #94a3b8;
-      --brand-blue: #1d4ed8;
-      --brand-blue-hover: #1e40af;
+      --brand-blue: #2563eb;
+      --brand-blue-hover: #1d4ed8;
       --brand-blue-soft: #eff6ff;
-      --amber-bg: #fef3c7;
-      --amber-border: #f59e0b;
-      --amber-text: #92400e;
-      --emerald-bg: #ecfdf5;
-      --emerald-border: #a7f3d0;
-      --emerald-text: #065f46;
+      --amber-bg: #fffbeb;
+      --amber-border: #fde68a;
+      --amber-text: #b45309;
+      --emerald-bg: #f0fdf4;
+      --emerald-border: #bbf7d0;
+      --emerald-text: #059669;
       --text-title: #0f172a;
-      --text-body: #1e293b;
-      --text-muted: #475569;
-      --danger: #dc2626;
-      --danger-bg: #fee2e2;
-      --danger-border: #f87171;
-      --shadow-container: 0 4px 16px -2px rgba(15, 23, 42, 0.08);
-      --shadow-node: 0 1px 3px rgba(15, 23, 42, 0.06);
+      --text-body: #334155;
+      --text-muted: #64748b;
+      --danger: #b91c1c;
+      --danger-bg: #fef2f2;
+      --danger-border: #fecaca;
+      --primary: #0f172a;
+      --primary-hover: #1e293b;
+      --accent: #2563eb;
+      --shadow-container: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-node: 0 1px 2px rgba(15, 23, 42, 0.04);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body { background-color: var(--bg-canvas); color: var(--text-body); min-height: 100vh; display: flex; flex-direction: column; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    body { background-color: var(--bg-canvas); color: var(--text-body); min-height: 100vh; display: flex; flex-direction: column; line-height: 1.5; }
     
     /* === THANH TOPBAR DOANH NGHIỆP === */
     .topbar {
-      height: 68px; background: #ffffff; border-bottom: 2px solid var(--border-card);
+      height: 68px; background: #ffffff; border-bottom: 2px solid var(--border);
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 36px; position: sticky; top: 0; z-index: 50;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
     }
     .brand-group { display: flex; align-items: center; gap: 12px; }
     .brand-icon {
-      width: 40px; height: 40px; background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      width: 40px; height: 40px; background: var(--primary);
       border-radius: 9px; display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); border: 1px solid rgba(255,255,255,0.3);
       flex-shrink: 0;
     }
-    .brand-icon svg { width: 22px; height: 22px; fill: none; stroke: #ffffff; stroke-width: 2.2; }
-    .brand-info h1 { font-size: 16.5px; font-weight: 800; color: var(--text-title); line-height: 1.2; }
-    .brand-info span { font-size: 10.5px; font-weight: 800; color: #059669; letter-spacing: 0.6px; text-transform: uppercase; }
+    .brand-icon svg { width: 22px; height: 22px; stroke: #ffffff; fill: none; stroke-width: 2.2; }
+    .brand-info h1 { font-size: 16.5px; font-weight: 800; color: var(--text-title); letter-spacing: -0.01em; }
+    .brand-info span { font-size: 10.5px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase; }
 
     .topbar-actions { display: flex; align-items: center; gap: 12px; }
 
     .user-pill {
-      display: flex; align-items: center; gap: 10px;
-      padding: 5px 12px 5px 6px; background: #f8fafc;
-      border: 1.5px solid var(--border-card); border-radius: 9999px;
+      display: flex; align-items: center; gap: 12px;
+      padding: 4px 6px 4px 12px; background: #f8fafc;
+      border: 1.5px solid var(--border); border-radius: 9999px;
     }
     .user-avatar {
       width: 32px; height: 32px; border-radius: 50%;
-      background: linear-gradient(135deg, #1d4ed8, #3b82f6);
-      color: #ffffff; font-weight: 800; font-size: 13px;
+      background: #eff6ff; border: 1.5px solid #93c5fd;
+      color: #1d4ed8; font-weight: 800; font-size: 12.5px;
       display: flex; align-items: center; justify-content: center;
     }
-    .user-meta { display: flex; flex-direction: column; text-align: left; }
-    .user-name { font-size: 12.5px; font-weight: 800; color: var(--text-title); line-height: 1.2; }
+    .user-meta { text-align: right; }
+    .user-name { font-size: 13px; font-weight: 700; color: var(--text-title); line-height: 1.2; }
     .user-role-badge {
-      display: inline-block; font-size: 10px; font-weight: 700;
-      color: #1e40af; background: #dbeafe; padding: 1px 6px;
-      border-radius: 4px; line-height: 1.3; align-self: flex-start;
+      display: block; font-size: 11px; font-weight: 600;
+      color: var(--text-muted);
     }
-    .user-role-badge.role-viewer { color: #065f46; background: #d1fae5; }
+    .user-role-badge.role-viewer { color: #059669; }
 
     /* Gộp các nút điều hướng trên topbar thành thanh Nav Dock liền mạch */
     .nav-dock {
@@ -551,15 +564,6 @@
     </div>
 
     <div class="topbar-actions">
-      <!-- Thông tin tài khoản đăng nhập -->
-      <div class="user-pill" id="user-pill" style="display: none;">
-        <div class="user-avatar" id="user-avatar">U</div>
-        <div class="user-meta">
-          <span class="user-name" id="user-name">Đang tải...</span>
-          <span class="user-role-badge" id="user-role">Người dùng</span>
-        </div>
-      </div>
-
       <!-- Gộp các chức năng điều hướng thành Navigation Dock chuyên nghiệp -->
       <nav class="nav-dock" aria-label="Điều hướng phân hệ">
         <a href="/index.html" class="nav-dock-item" title="Bảng điều khiển trung tâm">
@@ -591,7 +595,16 @@
           Đội & Giao việc
         </a>
       </nav>
-      <button class="btn-logout" title="Đăng xuất khỏi hệ thống" onclick="handleLogout()">Đăng xuất</button>
+
+      <!-- Thông tin tài khoản đăng nhập -->
+      <div class="user-pill" id="user-pill">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <div class="user-meta">
+          <span class="user-name" id="user-name">Đang tải...</span>
+          <span class="user-role-badge" id="user-role">Người dùng</span>
+        </div>
+        <button class="btn-logout" title="Đăng xuất khỏi hệ thống" onclick="handleLogout()">Đăng xuất</button>
+      </div>
     </div>
   </header>
 
@@ -1225,15 +1238,15 @@
 
       // Hiển thị thông tin người dùng trên topbar
       const userPill = document.getElementById('user-pill');
-      const userAvatar = document.getElementById('user-avatar');
-      const userName = document.getElementById('user-name');
-      const userRole = document.getElementById('user-role');
+      const userAvatar = document.getElementById('user-avatar') || document.getElementById('avatar-letter');
+      const userName = document.getElementById('user-name') || document.getElementById('display-user-name');
+      const userRole = document.getElementById('user-role') || document.getElementById('display-user-role');
 
-      userPill.style.display = 'flex';
+      if (userPill) userPill.style.display = 'flex';
       const initial = (currentUser.full_name || currentUser.username || 'U').charAt(0).toUpperCase();
-      userAvatar.innerText = initial;
-      userName.innerText = currentUser.full_name || currentUser.username;
-      userRole.innerText = currentUser.role_display_name || currentUser.role_name || 'Người dùng';
+      if (userAvatar) userAvatar.innerText = initial;
+      if (userName) userName.innerText = currentUser.full_name || currentUser.username;
+      if (userRole) userRole.innerText = currentUser.role_display_name || currentUser.role_name || 'Người dùng';
 
       // Nếu là Người xem dự án (viewer - role_id 7)
       const isViewer = currentUser.role_id === 7 || currentUser.role === 'viewer';
@@ -2549,9 +2562,9 @@
         } catch (e) {}
       }
 
-      const nameEl = document.getElementById('display-user-name');
-      const roleEl = document.getElementById('display-user-role');
-      const avatarEl = document.getElementById('avatar-letter');
+      const nameEl = document.getElementById('user-name') || document.getElementById('display-user-name');
+      const roleEl = document.getElementById('user-role') || document.getElementById('display-user-role');
+      const avatarEl = document.getElementById('user-avatar') || document.getElementById('avatar-letter');
 
       if (nameEl) nameEl.innerText = userName;
       if (roleEl) roleEl.innerText = String(userRole);

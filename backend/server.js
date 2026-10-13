@@ -27,6 +27,19 @@ app.use((req, res, next) => {
   next();
 });
 
+// Phục vụ file Service Worker và Manifest với MIME Type và Header chuẩn (S-27 / PWA)
+app.get('/sw.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(path.join(__dirname, '../frontend/sw.js'));
+});
+
+app.get('/manifest.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+  res.sendFile(path.join(__dirname, '../frontend/manifest.json'));
+});
+
 // Phục vụ giao diện người dùng frontend và file uploads
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -96,6 +109,10 @@ app.get('/schedule', (req, res) => {
 
 app.get('/diary', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/diary.html'));
+});
+
+app.get('/offline', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/offline.html'));
 });
 
 app.get('/teams', (req, res) => {

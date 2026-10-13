@@ -1,412 +1,1096 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nhật Ký Thi Công & Đánh Dấu Ngày Mưa (T51) | Quản Lý Thi Công</title>
+  <title>Nhật Ký Thi Công & Đánh Dấu Ngày Mưa | Quản Lý Thi Công</title>
+  <!-- PWA & Hiện trường Mobile (S-27 / SCRUM-119) -->
+  <meta name="theme-color" content="#1d4ed8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="QL Thi Công">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <script src="/js/pwa-register.js" defer></script>
+  <script src="/js/app-navbar.js" defer></script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
     :root {
       --bg-canvas: #f8fafc;
       --card-bg: #ffffff;
-      --border-card: #e2e8f0;
-      --border-outer: #94a3b8;
-      --brand-blue: #1d4ed8;
-      --brand-blue-hover: #1e40af;
-      --brand-blue-soft: #eff6ff;
-      --emerald-bg: #ecfdf5;
-      --emerald-border: #a7f3d0;
-      --emerald-text: #065f46;
-      --amber-bg: #fef3c7;
-      --amber-border: #f59e0b;
-      --amber-text: #92400e;
-      --danger: #dc2626;
-      --danger-bg: #fee2e2;
-      --danger-border: #f87171;
-      --danger-text: #991b1b;
-      --rain-blue: #0284c7;
-      --rain-bg: #e0f2fe;
-      --rain-border: #7dd3fc;
+      --card-hover: #f1f5f9;
+      --border: #e2e8f0;
+      --border-dark: #cbd5e1;
       --text-title: #0f172a;
-      --text-body: #1e293b;
+      --text-body: #334155;
       --text-muted: #64748b;
+      --primary: #0f172a;
+      --primary-hover: #1e293b;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --accent-border: #bfdbfe;
+      --emerald: #059669;
+      --emerald-soft: #f0fdf4;
+      --emerald-border: #bbf7d0;
+      --amber: #b45309;
+      --amber-soft: #fffbeb;
+      --amber-border: #fde68a;
+      --danger: #b91c1c;
+      --danger-soft: #fef2f2;
+      --danger-border: #fecaca;
+      --brand-blue: #2563eb;
+      --rain-blue: #0284c7;
+      --rain-soft: #e0f2fe;
+      --rain-border: #7dd3fc;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body { background-color: var(--bg-canvas); color: var(--text-body); min-height: 100vh; display: flex; flex-direction: column; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
 
-    /* Topbar */
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* TOPBAR - Unified System Header */
     .topbar {
-      height: 68px; background: #ffffff; border-bottom: 2px solid var(--border-card);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 24px; position: sticky; top: 0; z-index: 50;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      height: 68px;
+      background: #ffffff;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 36px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
     }
-    .brand-group { display: flex; align-items: center; gap: 12px; }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
     .brand-icon {
-      width: 40px; height: 40px; background: linear-gradient(135deg, #0284c7 0%, #1d4ed8 100%);
-      border-radius: 9px; display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3); border: 1px solid rgba(255,255,255,0.3);
-      flex-shrink: 0; font-size: 20px;
+      width: 40px;
+      height: 40px;
+      background: var(--primary);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
-    .brand-info h1 { font-size: 16px; font-weight: 800; color: var(--text-title); line-height: 1.2; }
-    .brand-info span { font-size: 10px; font-weight: 800; color: var(--rain-blue); letter-spacing: 0.6px; text-transform: uppercase; }
+
+    .brand-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: #ffffff;
+      fill: none;
+      stroke-width: 2.2;
+    }
+
+    .brand-info h1 {
+      font-size: 16.5px;
+      font-weight: 800;
+      color: var(--text-title);
+      letter-spacing: -0.01em;
+    }
+
+    .brand-info span {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
     .nav-dock {
-      display: flex; align-items: center; gap: 4px; background: #f1f5f9;
-      padding: 4px; border-radius: 10px; border: 1px solid var(--border-card);
+      display: inline-flex;
+      align-items: center;
+      background: #f1f5f9;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
     }
-    .nav-item {
-      padding: 7px 14px; font-size: 13px; font-weight: 700; color: var(--text-muted);
-      text-decoration: none; border-radius: 7px; transition: all 0.15s ease;
-      display: flex; align-items: center; gap: 6px;
+
+    .nav-dock-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 13px;
+      border-radius: 7px;
+      color: #475569;
+      font-size: 12.5px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
     }
-    .nav-item:hover { color: var(--text-title); background: #ffffff; }
-    .nav-item.active { background: #ffffff; color: var(--brand-blue); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+    .nav-dock-item:hover {
+      color: #1e293b;
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    .nav-dock-item.active {
+      background: #ffffff;
+      color: var(--accent);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+      font-weight: 800;
+    }
+
+    .nav-dock-item svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+    }
 
     .user-pill {
-      display: flex; align-items: center; gap: 10px;
-      padding: 5px 12px 5px 6px; background: #f8fafc;
-      border: 1.5px solid var(--border-card); border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 6px 4px 12px;
+      border-radius: 9999px;
+      background: #f8fafc;
+      border: 1.5px solid var(--border);
     }
+
     .user-avatar {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: linear-gradient(135deg, #0284c7, #1d4ed8);
-      color: #ffffff; font-weight: 800; font-size: 13px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .user-meta { display: flex; flex-direction: column; text-align: left; }
-    .user-name { font-size: 12px; font-weight: 700; color: var(--text-title); line-height: 1.2; }
-    .user-role { font-size: 10px; color: var(--text-muted); font-weight: 600; }
-
-    /* Main Container */
-    .main-container {
-      max-width: 1400px; width: 100%; margin: 0 auto;
-      padding: 24px; display: flex; flex-direction: column; gap: 24px;
+      width: 32px;
+      height: 32px;
+      background: #eff6ff;
+      border: 1.5px solid #93c5fd;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #1d4ed8;
     }
 
-    /* Page Header */
-    .page-header {
-      background: #ffffff; border: 1px solid var(--border-card); border-radius: 14px;
-      padding: 20px 24px; display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-    }
-    .header-titles h2 { font-size: 20px; font-weight: 800; color: var(--text-title); display: flex; align-items: center; gap: 8px; }
-    .header-titles p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
-    
-    .week-navigator {
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-    }
-    .btn-nav {
-      background: #f8fafc; border: 1.5px solid var(--border-card); color: var(--text-title);
-      padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 700;
-      cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px;
-    }
-    .btn-nav:hover { background: #e2e8f0; border-color: #cbd5e1; }
-    .input-date-nav {
-      padding: 8px 12px; border: 1.5px solid var(--border-card); border-radius: 8px;
-      font-size: 13px; font-weight: 600; color: var(--text-title); outline: none;
-    }
-    .input-date-nav:focus { border-color: var(--brand-blue); }
-
-    /* Metrics Grid */
-    .metrics-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;
-    }
-    .metric-card {
-      background: #ffffff; border: 1px solid var(--border-card); border-radius: 12px;
-      padding: 18px 20px; display: flex; flex-direction: column; gap: 6px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02); position: relative; overflow: hidden;
-    }
-    .metric-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: var(--brand-blue);
-    }
-    .metric-card.rain::before { background: #0284c7; }
-    .metric-card.warning::before { background: #f59e0b; }
-    .metric-card.danger::before { background: #dc2626; }
-    .metric-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .metric-value { font-size: 26px; font-weight: 800; color: var(--text-title); display: flex; align-items: baseline; gap: 6px; }
-    .metric-sub { font-size: 12px; color: var(--text-muted); }
-
-    /* Alert Banner */
-    .impact-banner {
-      background: var(--rain-bg); border: 1.5px solid var(--rain-border); border-radius: 12px;
-      padding: 16px 20px; display: flex; align-items: flex-start; gap: 14px;
-    }
-    .impact-icon { font-size: 24px; flex-shrink: 0; }
-    .impact-content h3 { font-size: 15px; font-weight: 800; color: #0369a1; }
-    .impact-content p { font-size: 13px; color: #0c4a6e; margin-top: 4px; line-height: 1.5; }
-
-    /* Layout Split: Weekly Calendar & Day Form */
-    .content-grid {
-      display: grid; grid-template-columns: 1fr 420px; gap: 24px;
+    .user-meta {
+      text-align: right;
     }
 
-    /* Weekly Grid Cards */
-    .section-card {
-      background: #ffffff; border: 1px solid var(--border-card); border-radius: 14px;
-      padding: 20px; display: flex; flex-direction: column; gap: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-    }
-    .section-header {
-      display: flex; align-items: center; justify-content: space-between;
-      border-bottom: 1.5px solid #f1f5f9; padding-bottom: 12px;
-    }
-    .section-title { font-size: 16px; font-weight: 800; color: var(--text-title); display: flex; align-items: center; gap: 8px; }
-    .section-desc { font-size: 12.5px; color: var(--text-muted); }
-
-    .week-days-container {
-      display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
-      overflow-x: auto; padding-bottom: 6px;
-    }
-    .day-card {
-      background: #f8fafc; border: 1.5px solid var(--border-card); border-radius: 10px;
-      padding: 14px; display: flex; flex-direction: column; gap: 10px;
-      transition: all 0.15s ease; cursor: pointer; min-width: 140px; position: relative;
-    }
-    .day-card:hover {
-      border-color: var(--brand-blue); background: #ffffff;
-      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08); transform: translateY(-2px);
-    }
-    .day-card.active-selected {
-      border-color: var(--brand-blue); background: #ffffff;
-      outline: 2px solid var(--brand-blue);
-    }
-    .day-card.rain-day {
-      background: #f0f9ff; border-color: var(--rain-border);
-    }
-    .day-header {
-      display: flex; flex-direction: column; gap: 2px;
-    }
-    .day-title { font-size: 13.5px; font-weight: 800; color: var(--text-title); }
-    .day-date { font-size: 11.5px; font-weight: 600; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
-    
-    .badge-weather {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 800;
-      width: fit-content; text-transform: uppercase; letter-spacing: 0.3px;
-    }
-    .badge-weather.rain { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-    .badge-weather.rain-intermittent { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
-    .badge-weather.sunny { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
-    .badge-weather.cloudy { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
-    .badge-weather.empty { background: #f1f5f9; color: #94a3b8; border: 1px dashed #cbd5e1; }
-
-    .day-info-row {
-      font-size: 12px; color: var(--text-body); display: flex; align-items: center; gap: 6px;
+    .user-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-title);
+      line-height: 1.2;
     }
 
-    /* Weekend expansion section */
-    .weekend-container {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;
+    .user-role {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
     }
 
-    /* Form Styles */
-    .form-group {
-      display: flex; flex-direction: column; gap: 6px;
-    }
-    .form-label {
-      font-size: 13px; font-weight: 700; color: var(--text-title); display: flex; justify-content: space-between;
-    }
-    .form-label span.req { color: var(--danger); }
-    .form-input, .form-select, .form-textarea {
-      width: 100%; padding: 10px 14px; border: 1.5px solid var(--border-card);
-      border-radius: 8px; font-size: 13px; color: var(--text-title); outline: none;
-      background: #ffffff; transition: border-color 0.15s;
-    }
-    .form-input:focus, .form-select:focus, .form-textarea:focus {
-      border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
-    }
-    .form-textarea { resize: vertical; min-height: 70px; }
-
-    /* Weather condition radio cards */
-    .weather-options {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-    }
-    .weather-opt {
-      border: 1.5px solid var(--border-card); border-radius: 8px; padding: 10px;
-      display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.15s;
-      background: #f8fafc; font-size: 12.5px; font-weight: 700; color: var(--text-body);
-    }
-    .weather-opt:hover { background: #f1f5f9; }
-    .weather-opt input { cursor: pointer; }
-    .weather-opt.selected {
-      border-color: var(--rain-blue); background: #f0f9ff; color: #0369a1;
-    }
-
-    .checkbox-rain-mark {
-      background: #fff1f2; border: 1.5px solid #fecdd3; border-radius: 8px;
-      padding: 10px 14px; display: flex; align-items: center; gap: 10px;
+    .btn-logout {
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: var(--danger-soft);
+      border: 1.5px solid var(--danger-border);
+      color: var(--danger);
+      font-size: 12.5px;
+      font-weight: 800;
       cursor: pointer;
+      transition: background 0.15s;
     }
-    .checkbox-rain-mark input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--danger); }
-    .checkbox-rain-mark label { font-size: 13px; font-weight: 800; color: #9f1239; cursor: pointer; }
 
-    .form-actions {
-      display: flex; flex-direction: column; gap: 8px; margin-top: 10px;
+    .btn-logout:hover {
+      background: #fee2e2;
     }
-    .btn-save {
-      background: var(--brand-blue); color: #ffffff; border: none; border-radius: 9px;
-      padding: 12px 18px; font-size: 14px; font-weight: 800; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: background 0.15s, transform 0.05s;
-    }
-    .btn-save:hover { background: var(--brand-blue-hover); }
-    .btn-save:active { transform: translateY(1px); }
-    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    .btn-preset {
-      background: #f0fdf4; border: 1.5px solid #86efac; color: #166534;
-      border-radius: 8px; padding: 9px 14px; font-size: 12.5px; font-weight: 700;
-      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+    /* MAIN CONTAINER */
+    .main-container {
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 28px 24px 64px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* HERO BANNER - Clean Minimalist Flat Card (như calendar.html) */
+    .hero-banner {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--primary);
+      border-radius: 8px;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .hero-text h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-title);
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hero-text p {
+      font-size: 13px;
+      color: var(--text-muted);
+      max-width: 720px;
+      line-height: 1.55;
+    }
+
+    .week-navigator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-nav {
+      background: #ffffff;
+      border: 1px solid var(--border-dark);
+      color: var(--text-body);
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
       transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
-    .btn-preset:hover { background: #dcfce7; }
 
-    /* Alert Banner Messages */
-    .toast-msg {
-      padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
-      display: none; align-items: center; gap: 10px; margin-bottom: 12px;
+    .btn-nav:hover {
+      background: #f8fafc;
+      border-color: var(--primary);
+      color: var(--primary);
     }
-    .toast-success { background: var(--emerald-bg); border: 1.5px solid var(--emerald-border); color: var(--emerald-text); }
-    .toast-error { background: var(--danger-bg); border: 1.5px solid var(--danger-border); color: var(--danger-text); }
 
-    /* Photo Upload Dropzone & Previews (T52) */
-    .photo-dropzone {
-      border: 2px dashed #cbd5e1; border-radius: 10px; padding: 16px 12px;
-      background: #f8fafc; text-align: center; cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .photo-dropzone:hover, .photo-dropzone.dragover {
-      border-color: var(--brand-blue); background: #eff6ff;
-    }
-    .photo-preview-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 10px;
-      margin-top: 10px;
-    }
-    .photo-card {
-      border: 1px solid var(--border-card); border-radius: 8px; overflow: hidden;
-      background: #ffffff; display: flex; flex-direction: column; position: relative;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .photo-thumb-wrap {
-      width: 100%; height: 75px; position: relative; overflow: hidden; background: #f1f5f9;
-    }
-    .photo-thumb-wrap img {
-      width: 100%; height: 100%; object-fit: cover; cursor: pointer;
-    }
-    .photo-remove-btn {
-      position: absolute; top: 4px; right: 4px; background: rgba(220, 38, 38, 0.9);
-      color: #ffffff; border: none; width: 22px; height: 22px; border-radius: 50%;
-      font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: background 0.15s; line-height: 1;
-    }
-    .photo-remove-btn:hover { background: #dc2626; transform: scale(1.05); }
-    .photo-meta-info {
-      padding: 6px; display: flex; flex-direction: column; gap: 4px; font-size: 10.5px;
-    }
-    .photo-file-size { color: var(--text-muted); font-size: 10px; }
-    .photo-caption-input {
-      width: 100%; padding: 4px 6px; font-size: 11px; border: 1.5px solid var(--border-card);
-      border-radius: 4px; outline: none; transition: border-color 0.15s;
-    }
-    .photo-caption-input:focus { border-color: var(--brand-blue); }
-
-    /* Modal xem ảnh lớn */
-    .photo-lightbox {
-      display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85);
-      z-index: 999; align-items: center; justify-content: center; padding: 20px;
-    }
-    .photo-lightbox.active { display: flex; }
-    .photo-lightbox-content {
-      max-width: 90vw; max-height: 90vh; background: #ffffff; border-radius: 12px;
-      overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
-    }
-    .photo-lightbox-img {
-      max-width: 100%; max-height: 75vh; object-fit: contain; background: #0f172a;
-    }
-    .photo-lightbox-footer {
-      padding: 12px 18px; display: flex; align-items: center; justify-content: space-between;
+    .input-date-nav {
+      padding: 6px 10px;
+      border: 1px solid var(--border-dark);
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-title);
+      outline: none;
       background: #ffffff;
     }
 
-    /* Table of Delayed Tasks correlation */
+    .input-date-nav:focus {
+      border-color: var(--primary);
+    }
+
+    /* S24 DIARY LOCK BAR */
+    .diary-lock-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 20px;
+      gap: 12px;
+    }
+
+    .lock-badge-locked {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--danger-soft);
+      color: var(--danger);
+      border: 1px solid var(--danger-border);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12.5px;
+    }
+
+    .lock-badge-unlocked {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--emerald-soft);
+      color: var(--emerald);
+      border: 1px solid var(--emerald-border);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12.5px;
+    }
+
+    .btn-lock {
+      background: var(--danger);
+      color: white;
+      border: 1px solid var(--danger);
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12.5px;
+      transition: background 0.15s;
+    }
+
+    .btn-lock:hover {
+      background: #991b1b;
+    }
+
+    .btn-unlock {
+      background: var(--amber);
+      color: white;
+      border: 1px solid var(--amber);
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12.5px;
+      transition: background 0.15s;
+    }
+
+    .btn-unlock:hover {
+      background: #92400e;
+    }
+
+    /* STATS STRIP (như calendar.html) */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 14px;
+    }
+
+    .stat-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-card .label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-card .value {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text-title);
+      letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-card .desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ALERT / IMPACT BOX (như calendar.html) */
+    .alert-box {
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-size: 12.5px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      line-height: 1.5;
+    }
+
+    .alert-info {
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-border);
+      color: #1e3a8a;
+    }
+
+    /* LAYOUT COLUMNS */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 440px;
+      gap: 20px;
+    }
+
+    /* PANEL CARDS - Flat & Crisp (như calendar.html) */
+    .panel {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-title);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title svg {
+      width: 17px;
+      height: 17px;
+      stroke: var(--primary);
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .panel-body {
+      padding: 20px;
+    }
+
+    /* WEEK WORKDAYS GRID */
+    .week-days-container {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .day-card {
+      background: #ffffff;
+      border: 1px solid var(--border-dark);
+      border-radius: 7px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.15s ease;
+      cursor: pointer;
+      min-width: 130px;
+      position: relative;
+    }
+
+    .day-card:hover {
+      border-color: var(--primary);
+      background: #f8fafc;
+    }
+
+    .day-card.active-selected {
+      border: 2px solid var(--brand-blue);
+      background: #f8fafc;
+    }
+
+    .day-card.rain-day {
+      background: #fef2f2;
+      border-color: var(--danger-border);
+    }
+
+    .day-header {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .day-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-title);
+    }
+
+    .day-date {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .badge-weather {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      width: fit-content;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+
+    .badge-weather.rain {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border: 1px solid var(--danger-border);
+    }
+
+    .badge-weather.rain-intermittent {
+      background: var(--amber-soft);
+      color: var(--amber);
+      border: 1px solid var(--amber-border);
+    }
+
+    .badge-weather.sunny {
+      background: var(--emerald-soft);
+      color: var(--emerald);
+      border: 1px solid var(--emerald-border);
+    }
+
+    .badge-weather.cloudy {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+
+    .badge-weather.empty {
+      background: #f8fafc;
+      color: #94a3b8;
+      border: 1px dashed #cbd5e1;
+    }
+
+    .day-info-row {
+      font-size: 11.5px;
+      color: var(--text-body);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .weekend-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    /* FORM STYLES */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .form-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-title);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .form-label span.req {
+      color: var(--danger);
+    }
+
+    .form-control,
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border-dark);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text-title);
+      outline: none;
+      background: #ffffff;
+      transition: border-color 0.15s;
+    }
+
+    .form-control:focus,
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 65px;
+    }
+
+    .weather-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .weather-opt {
+      border: 1px solid var(--border-dark);
+      border-radius: 6px;
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: #ffffff;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-body);
+    }
+
+    .weather-opt:hover {
+      background: #f8fafc;
+      border-color: var(--primary);
+    }
+
+    .weather-opt.selected {
+      border: 1.5px solid var(--primary);
+      background: #f8fafc;
+      color: var(--text-title);
+    }
+
+    .checkbox-rain-mark {
+      background: var(--danger-soft);
+      border: 1px solid var(--danger-border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      margin-bottom: 14px;
+    }
+
+    .checkbox-rain-mark input {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--danger);
+    }
+
+    .checkbox-rain-mark label {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--danger);
+      cursor: pointer;
+    }
+
+    /* BUTTONS */
+    .btn-primary,
+    .btn-save {
+      background: var(--primary);
+      color: #ffffff;
+      border: 1px solid var(--primary);
+      border-radius: 6px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s;
+      width: 100%;
+    }
+
+    .btn-primary:hover,
+    .btn-save:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-preset {
+      background: #ffffff;
+      border: 1px solid var(--border-dark);
+      color: var(--text-body);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn-preset:hover {
+      background: #f8fafc;
+      border-color: var(--primary);
+    }
+
+    /* TOASTS */
+    .toast-msg {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .toast-success {
+      background: var(--emerald-soft);
+      border: 1px solid var(--emerald-border);
+      color: var(--emerald);
+    }
+
+    .toast-error {
+      background: var(--danger-soft);
+      border: 1px solid var(--danger-border);
+      color: var(--danger);
+    }
+
+    /* PHOTO UPLOAD (T52) */
+    .photo-dropzone {
+      border: 1.5px dashed var(--border-dark);
+      border-radius: 8px;
+      padding: 16px 12px;
+      background: #f8fafc;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .photo-dropzone:hover {
+      border-color: var(--primary);
+      background: #ffffff;
+    }
+
+    .photo-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .photo-card {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .photo-thumb-wrap {
+      width: 100%;
+      height: 70px;
+      position: relative;
+      overflow: hidden;
+      background: #f1f5f9;
+    }
+
+    .photo-thumb-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      cursor: pointer;
+    }
+
+    .photo-remove-btn {
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      background: rgba(185, 28, 28, 0.9);
+      color: #ffffff;
+      border: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .photo-meta-info {
+      padding: 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 10px;
+    }
+
+    .photo-file-size {
+      color: var(--text-muted);
+      font-size: 10px;
+    }
+
+    .photo-caption-input {
+      width: 100%;
+      padding: 3px 5px;
+      font-size: 11px;
+      border: 1px solid var(--border-dark);
+      border-radius: 4px;
+      outline: none;
+    }
+
+    .photo-caption-input:focus {
+      border-color: var(--primary);
+    }
+
+    /* LIGHTBOX MODAL */
+    .photo-lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(2px);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .photo-lightbox.active {
+      display: flex;
+    }
+
+    .photo-lightbox-content {
+      max-width: 85vw;
+      max-height: 85vh;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+    }
+
+    .photo-lightbox-img {
+      max-width: 100%;
+      max-height: 70vh;
+      object-fit: contain;
+      background: #0f172a;
+    }
+
+    .photo-lightbox-footer {
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+    }
+
+    /* TABLES (như calendar.html) */
     .table-responsive {
-      width: 100%; overflow-x: auto; border: 1px solid var(--border-card); border-radius: 8px;
+      width: 100%;
+      overflow-x: auto;
     }
+
+    table,
     .table-tasks {
-      width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left;
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 12.5px;
     }
-    .table-tasks th {
-      background: #f8fafc; padding: 10px 14px; font-weight: 800; color: var(--text-muted);
-      border-bottom: 1px solid var(--border-card); text-transform: uppercase; letter-spacing: 0.4px;
+
+    th {
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
     }
-    .table-tasks td {
-      padding: 10px 14px; border-bottom: 1px solid var(--border-card); color: var(--text-body);
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+      color: var(--text-body);
     }
-    .table-tasks tr:last-child td { border-bottom: none; }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: #f8fafc;
+    }
+
+    code {
+      font-family: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* MODAL S24 */
+    .modal-overlay-s24 {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-box-s24 {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 450px;
+      width: 100%;
+      border: 1px solid var(--border);
+    }
 
     /* RESPONSIVE CSS - NFR PHONE EXCELLENCE */
     @media (max-width: 1024px) {
-      .content-grid { grid-template-columns: 1fr; }
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
     }
+
     @media (max-width: 768px) {
-      .topbar { padding: 0 16px; height: auto; flex-direction: column; gap: 10px; padding-bottom: 12px; }
-      .nav-dock { width: 100%; overflow-x: auto; justify-content: flex-start; }
-      .main-container { padding: 14px; gap: 16px; }
-      .week-days-container { grid-template-columns: repeat(5, 160px); }
-      .weather-options { grid-template-columns: 1fr; }
-      .page-header { flex-direction: column; align-items: flex-start; }
-      .week-navigator { width: 100%; justify-content: space-between; }
-      .input-date-nav { flex-grow: 1; }
+      .topbar {
+        padding: 0 16px;
+        height: auto;
+        flex-direction: column;
+        gap: 10px;
+        padding-bottom: 12px;
+      }
+
+      .nav-dock {
+        width: 100%;
+        overflow-x: auto;
+        justify-content: flex-start;
+      }
+
+      .main-container {
+        padding: 16px;
+        gap: 16px;
+      }
+
+      .week-days-container {
+        grid-template-columns: repeat(5, 150px);
+      }
+
+      .weather-options {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-banner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .week-navigator {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .input-date-nav {
+        flex-grow: 1;
+      }
     }
   </style>
 </head>
+
 <body>
 
-  <!-- Topbar -->
+  <!-- TOPBAR -->
   <header class="topbar">
     <div class="brand-group">
-      <div class="brand-icon">🌧️</div>
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M20 16.2A4.5 4.5 0 0 0 16 9h-.7A7 7 0 1 0 4 15.6"></path><path d="M8 19v2M8 13v2M12 21v2M12 15v2M16 19v2M16 13v2"></path></svg>
+      </div>
       <div class="brand-info">
-        <h1>QUẢN LÝ THI CÔNG</h1>
-        <span>S-22 / TASK T51: NHẬT KÝ THỜI TIẾT & NGÀY MƯA</span>
+        <h1>Hệ Thống Quản Lý Thi Công</h1>
+        <span>NHẬT KÝ THI CÔNG & THEO DÕI NGÀY MƯA</span>
       </div>
     </div>
 
-    <!-- Navigation Dock -->
-    <nav class="nav-dock">
-      <a href="/index.html" class="nav-item">📊 Tổng quan</a>
-      <a href="/wbs.html" class="nav-item">🌲 WBS & Mốc</a>
-      <a href="/schedule.html" class="nav-item">📅 Bảng tiến độ</a>
-      <a href="/gantt.html" class="nav-item">📈 Sơ đồ Gantt</a>
-      <a href="/diary.html" class="nav-item active">🌧️ Nhật ký & Ngày mưa</a>
-      <a href="/calendar.html" class="nav-item">⚙️ Lịch làm việc</a>
-      <a href="/teams.html" class="nav-item">👷‍♂️ Đội & Giao việc</a>
-    </nav>
+    <div class="topbar-actions">
+      <!-- Nav Dock chuẩn hóa đồng bộ với toàn hệ thống -->
+      <nav class="nav-dock" aria-label="Điều hướng phân hệ">
+        <a href="/index.html" class="nav-dock-item" title="Bảng điều khiển trung tâm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Tổng quan
+        </a>
+        <a href="/wbs.html" class="nav-dock-item" title="Cơ cấu công việc (WBS)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          WBS
+        </a>
+        <a href="/schedule.html" class="nav-dock-item" title="Bảng tiến độ và đường găng (CPM)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          Tiến độ CPM
+        </a>
+        <a href="/gantt.html" class="nav-dock-item" title="Sơ đồ Gantt tiến độ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M7 8h5M7 12h8M7 16h3"></path></svg>
+          Gantt
+        </a>
+        <a href="/calendar.html" class="nav-dock-item" title="Lịch thi công & Nghỉ lễ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          Lịch thi công
+        </a>
+        <a href="/diary.html" class="nav-dock-item active" title="Nhật ký thi công & Ngày mưa (T51)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 16.2A4.5 4.5 0 0 0 16 9h-.7A7 7 0 1 0 4 15.6"></path><path d="M8 19v2M8 13v2M12 21v2M12 15v2M16 19v2M16 13v2"></path></svg>
+          Nhật ký
+        </a>
+        <a href="/teams.html" class="nav-dock-item" title="Đội thi công & Giao việc (S-25)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Đội & Giao việc
+        </a>
+      </nav>
 
-    <!-- User Information -->
-    <div class="user-pill">
-      <div class="user-avatar" id="avatar-letter">D</div>
-      <div class="user-meta">
-        <span class="user-name" id="display-user-name">Trần Mạnh Dũng</span>
-        <span class="user-role" id="display-user-role">Chỉ huy trưởng công trình</span>
+      <div class="user-pill">
+        <div class="user-avatar" id="avatar-letter">D</div>
+        <div class="user-meta">
+          <div class="user-name" id="display-user-name">Đang tải...</div>
+          <div class="user-role" id="display-user-role">Người dùng</div>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">Đăng xuất</button>
       </div>
     </div>
   </header>
 
-  <!-- Main Content -->
+  <!-- MAIN CONTAINER -->
   <main class="main-container">
 
-    <!-- Page Header & Week Navigator -->
-    <div class="page-header">
-      <div class="header-titles">
-        <h2>🌧️ Form Thống Kê & Đánh Dấu Ngày Mưa (T51)</h2>
-        <p>Ghi nhận nhật ký đầu ngày: Nhân lực, thiết bị, tình trạng thời tiết và đối chiếu ngày mưa với tiến độ thi công theo tuần.</p>
+    <!-- HERO BANNER -->
+    <section class="hero-banner">
+      <div class="hero-text">
+        <h2>Nhật Ký Thi Công Hiện Trường & Theo Dõi Ngày Mưa</h2>
+        <p>Ghi nhận nhật ký đầu ngày: Nhân lực, thiết bị, tình trạng thời tiết và đối chiếu ngày mưa với tiến độ thi công công trình theo tuần.</p>
       </div>
 
       <div class="week-navigator">
@@ -415,266 +1099,293 @@
         <button class="btn-nav" id="btn-today" onclick="selectToday()">Hôm nay</button>
         <button class="btn-nav" id="btn-next-week" onclick="navigateWeek(7)">Tuần sau ▶</button>
       </div>
-    </div>
+    </section>
 
-    <!-- Metrics Grid -->
-    <div class="metrics-grid">
-      <div class="metric-card">
-        <span class="metric-label">Tuần làm việc</span>
-        <div class="metric-value" id="metric-week-range">-- / --</div>
-        <span class="metric-sub">Thứ Hai đến Thứ Sáu (5 ngày chính thức)</span>
+    <!-- KHÓA SỔ S-24 -->
+    <div id="s24-lock-bar" class="diary-lock-bar">
+      <div id="s24-status-container">
+        <span class="lock-badge-unlocked">🔓 Sổ nhật ký đang mở (cho phép ghi/sửa)</span>
       </div>
-
-      <div class="metric-card rain">
-        <span class="metric-label">Số ngày mưa cả ngày</span>
-        <div class="metric-value" id="metric-rain-count">0 / 5</div>
-        <span class="metric-sub" id="metric-rain-ratio">Tỷ lệ ảnh hưởng: 0%</span>
-      </div>
-
-      <div class="metric-card warning">
-        <span class="metric-label">Tổng nhân lực tuần</span>
-        <div class="metric-value" id="metric-manpower-avg">0</div>
-        <span class="metric-sub">Lao động trung bình / ngày</span>
-      </div>
-
-      <div class="metric-card" id="metric-card-risk">
-        <span class="metric-label">Đánh giá tiến độ</span>
-        <div class="metric-value" style="font-size: 19px;" id="metric-risk-badge">BÌNH THƯỜNG</div>
-        <span class="metric-sub" id="metric-risk-sub">Không có gián đoạn</span>
+      <div id="s24-action-container">
+        <button id="btn-lock-diary" class="btn-lock" onclick="handleLockDiary()">🔒 Khoá sổ ngày</button>
+        <button id="btn-unlock-diary" class="btn-unlock" style="display:none;" onclick="openUnlockModal()">🔓 Mở khoá sổ</button>
       </div>
     </div>
 
-    <!-- Impact & Delay Correlation Banner -->
-    <div class="impact-banner" id="impact-banner">
-      <div class="impact-icon" id="impact-icon">💡</div>
+    <!-- STATS STRIP -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <span class="label">Tuần Làm Việc</span>
+        <div class="value" id="metric-week-range">-- / --</div>
+        <span class="desc">Thứ Hai đến Thứ Sáu (5 ngày làm việc chính)</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="label">Số Ngày Mưa Cả Ngày</span>
+        <div class="value" id="metric-rain-count" style="color: var(--danger);">0 / 5</div>
+        <span class="desc" id="metric-rain-ratio">Tỷ lệ ảnh hưởng: 0%</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="label">Tổng Nhân Lực Trung Bình</span>
+        <div class="value" id="metric-manpower-avg">0</div>
+        <span class="desc">Lao động trung bình / ngày</span>
+      </div>
+
+      <div class="stat-card" id="metric-card-risk">
+        <span class="label">Đánh Giá Nguy Cơ Tiến Độ</span>
+        <div class="value" id="metric-risk-badge" style="font-size: 17px; color: var(--emerald);">BÌNH THƯỜNG</div>
+        <span class="desc" id="metric-risk-sub">Không có gián đoạn</span>
+      </div>
+    </section>
+
+    <!-- ALERT / IMPACT BOX -->
+    <div class="alert-box alert-info" id="impact-banner">
+      <span class="impact-icon" id="impact-icon" style="font-size: 18px;">💡</span>
       <div class="impact-content">
-        <h3 id="impact-title">Đối chiếu tiến độ thi công & ảnh hưởng thời tiết</h3>
-        <p id="impact-desc">Đang tải dữ liệu đối chiếu...</p>
+        <strong id="impact-title" style="display: block; font-size: 13px; margin-bottom: 2px;">Đối chiếu tiến độ thi công & ảnh hưởng thời tiết</strong>
+        <div id="impact-desc" style="font-size: 12px; line-height: 1.5;">Đang tải dữ liệu đối chiếu...</div>
       </div>
     </div>
 
-    <!-- Split Grid: Weekly Grid vs Form -->
+    <!-- 2 COLUMNS: WEEKLY GRID & FORM -->
     <div class="content-grid">
 
-      <!-- Left Column: Weekly Grid (Thứ Hai -> Thứ Sáu) -->
-      <div class="section-card">
-        <div class="section-header">
+      <!-- CỘT TRÁI: TUẦN LÀM VIỆC & CÔNG VIỆC LIÊN QUAN -->
+      <section class="panel">
+        <div class="panel-header">
           <div>
-            <h3 class="section-title">📅 Tuần Làm Việc (Thứ Hai đến Thứ Sáu)</h3>
-            <span class="section-desc">Bấm vào bất kỳ ngày nào để tải hoặc sửa nhật ký chi tiết trên form bên phải.</span>
+            <div class="panel-title">
+              <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              Tuần Làm Việc (Thứ Hai đến Thứ Sáu)
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+              Bấm vào bất kỳ ngày nào để tải hoặc sửa nhật ký chi tiết trên form bên phải.
+            </div>
           </div>
           <button class="btn-preset" onclick="fillMondayToFridayRainPreset()" title="Thực hiện AC: Đánh dấu mưa cả tuần T2 -> T6">
             ⚡ Thử nghiệm AC: Nhập Mưa Cả Tuần (T2 ➔ T6)
           </button>
         </div>
 
-        <!-- 5 Workdays Container -->
-        <div class="week-days-container" id="workdays-grid">
-          <!-- Rendered via JS -->
-          <div style="padding: 20px; color: var(--text-muted); text-align: center; grid-column: 1 / -1;">Đang tải danh sách tuần...</div>
-        </div>
+        <div class="panel-body">
+          <!-- 5 Workdays Grid -->
+          <div class="week-days-container" id="workdays-grid">
+            <div style="padding: 20px; color: var(--text-muted); text-align: center; grid-column: 1 / -1;">Đang tải danh sách tuần...</div>
+          </div>
 
-        <!-- Weekend Extension (Thứ Bảy & Chủ Nhật) -->
-        <div style="margin-top: 14px;">
-          <h4 style="font-size: 13px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-            Cuối tuần (Thứ Bảy & Chủ Nhật)
-          </h4>
-          <div class="weekend-container" id="weekend-grid">
-            <!-- Rendered via JS -->
+          <!-- Cuối tuần (Thứ Bảy & Chủ Nhật) -->
+          <div style="margin-top: 16px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;">
+              Cuối tuần (Thứ Bảy & Chủ Nhật)
+            </div>
+            <div class="weekend-container" id="weekend-grid">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Bảng đối chiếu trễ -->
+          <div style="margin-top: 20px;">
+            <div style="font-size: 13px; font-weight: 700; color: var(--text-title); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+              🔍 Đối Chiếu Công Việc Có Khả Năng Bị Chậm Do Mưa
+            </div>
+            <div class="table-responsive">
+              <table class="table-tasks">
+                <thead>
+                  <tr>
+                    <th>Mã CV</th>
+                    <th>Tên Công Việc</th>
+                    <th>Thời Lượng</th>
+                    <th>Trạng Thái</th>
+                    <th>Đánh Giá Ảnh Hưởng Do Mưa</th>
+                  </tr>
+                </thead>
+                <tbody id="delayed-tasks-tbody">
+                  <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted);">Đang tải dữ liệu công việc...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
+      </section>
 
-        <!-- Delayed Tasks Correlation Table -->
-        <div style="margin-top: 16px;">
-          <h4 style="font-size: 13.5px; font-weight: 800; color: var(--text-title); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-            🔍 Đối Chiếu Công Việc Có Khả Năng Bị Chậm Do Mưa
-          </h4>
-          <div class="table-responsive">
-            <table class="table-tasks">
-              <thead>
-                <tr>
-                  <th>Mã CV</th>
-                  <th>Tên Công Việc</th>
-                  <th>Thời Lượng</th>
-                  <th>Trạng Thái</th>
-                  <th>Đánh Giá Ảnh Hưởng Do Mưa</th>
-                </tr>
-              </thead>
-              <tbody id="delayed-tasks-tbody">
-                <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Đang tải dữ liệu công việc...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right Column: Form T51 -->
-      <div class="section-card" id="form-container">
-        <div class="section-header">
+      <!-- CỘT PHẢI: FORM GHI NHẬT KÝ -->
+      <section class="panel" id="form-container">
+        <div class="panel-header">
           <div>
-            <h3 class="section-title">📝 Ghi Nhật Ký Ngày</h3>
-            <span class="section-desc">Mỗi ngày 1 mục đầu ngày cho thời tiết, nhân lực, thiết bị.</span>
+            <div class="panel-title">
+              <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+              Ghi Nhật Ký Ngày
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+              Mỗi ngày 1 mục đầu ngày cho thời tiết, nhân lực, thiết bị.
+            </div>
           </div>
         </div>
 
-        <!-- Message Alerts -->
-        <div class="toast-msg toast-success" id="toast-success">
-          <span>✅</span>
-          <span id="toast-success-text">Đã lưu nhật ký thành công!</span>
+        <div class="panel-body">
+          <!-- Thông báo lưu -->
+          <div class="toast-msg toast-success" id="toast-success">
+            <span>✅</span>
+            <span id="toast-success-text">Đã lưu nhật ký thành công!</span>
+          </div>
+          <div class="toast-msg toast-error" id="toast-error">
+            <span>🚫</span>
+            <span id="toast-error-text">Lỗi khi lưu dữ liệu</span>
+          </div>
+
+          <form id="diary-form" onsubmit="handleFormSubmit(event)" style="display: flex; flex-direction: column; gap: 6px;">
+
+            <!-- Ngày nhật ký -->
+            <div class="form-group">
+              <label class="form-label">
+                <span>Ngày nhật ký <span class="req">*</span></span>
+                <span id="form-day-name" style="color: var(--brand-blue); font-weight: 700;"></span>
+              </label>
+              <input type="date" class="form-control" id="input-diary-date" required onchange="onFormDateChange()">
+            </div>
+
+            <!-- Điều kiện thời tiết -->
+            <div class="form-group">
+              <label class="form-label"><span>Thời tiết trong ngày <span class="req">*</span></span></label>
+              <div class="weather-options">
+                <label class="weather-opt" id="opt-sunny" onclick="selectWeatherCondition('sunny')">
+                  <input type="radio" name="weather_cond" value="sunny" checked>
+                  <span>☀️ Nắng ráo</span>
+                </label>
+
+                <label class="weather-opt" id="opt-cloudy" onclick="selectWeatherCondition('cloudy')">
+                  <input type="radio" name="weather_cond" value="cloudy">
+                  <span>⛅ Nhiều mây</span>
+                </label>
+
+                <label class="weather-opt" id="opt-rain-intermittent" onclick="selectWeatherCondition('rain_intermittent')">
+                  <input type="radio" name="weather_cond" value="rain_intermittent">
+                  <span>🌦️ Mưa rải rác</span>
+                </label>
+
+                <label class="weather-opt" id="opt-rain-all-day" onclick="selectWeatherCondition('rain_all_day')">
+                  <input type="radio" name="weather_cond" value="rain_all_day">
+                  <span>🌧️ Mưa cả ngày</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Checkbox đánh dấu ngày mưa -->
+            <div class="checkbox-rain-mark">
+              <input type="checkbox" id="input-is-rain-day" onchange="onRainCheckboxChange()">
+              <label for="input-is-rain-day">
+                🌧️ Đánh dấu là NGÀY MƯA (Tạm hoãn hoặc ảnh hưởng thi công)
+              </label>
+            </div>
+
+            <!-- Diễn giải thời tiết -->
+            <div class="form-group">
+              <label class="form-label"><span>Chi tiết lượng mưa & thời tiết</span></label>
+              <input type="text" class="form-control" id="input-weather-notes" placeholder="VD: Mưa to từ 08:00 - 15:30, gió cấp 4">
+            </div>
+
+            <!-- Nhân lực & Thiết bị -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group">
+                <label class="form-label"><span>Nhân lực (người)</span></label>
+                <input type="number" min="0" class="form-control" id="input-manpower" placeholder="0" value="0">
+              </div>
+              <div class="form-group">
+                <label class="form-label"><span>Dự án</span></label>
+                <input type="text" class="form-control" value="Dự án Thi Công Mẫu #1" disabled style="background: #f1f5f9;">
+              </div>
+            </div>
+
+            <!-- Tình trạng máy móc / thiết bị -->
+            <div class="form-group">
+              <label class="form-label"><span>Tình trạng máy móc & thiết bị</span></label>
+              <textarea class="form-textarea" id="input-equipment-status" placeholder="VD: 1 máy xúc tạm dừng do mưa lầy; 2 máy bơm chìm hoạt động liên tục"></textarea>
+            </div>
+
+            <!-- Ghi chú nội dung công việc -->
+            <div class="form-group">
+              <label class="form-label"><span>Biện pháp thi công & Ghi chú</span></label>
+              <textarea class="form-textarea" id="input-work-notes" placeholder="VD: Tạm dừng đổ bê tông móng; chuyển công nhân sang buộc thép trong xưởng"></textarea>
+            </div>
+
+            <!-- Công việc liên kết (T52) -->
+            <div class="form-group">
+              <label class="form-label">
+                <span>Công việc / Hạng mục thi công</span>
+                <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">(Liên kết tiến độ)</span>
+              </label>
+              <select class="form-select" id="select-work-item" onchange="onWorkItemSelectChange()">
+                <option value="">-- Chọn công việc trong dự án (Tùy chọn) --</option>
+              </select>
+            </div>
+            <div id="work-item-details-row" style="display: none; grid-template-columns: 2fr 1fr 1fr; gap: 8px; margin-bottom: 14px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" style="font-size: 11px;"><span>Nội dung chi tiết</span></label>
+                <input type="text" class="form-control" id="input-item-content" placeholder="Mô tả công việc thực hiện">
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" style="font-size: 11px;"><span>Khối lượng</span></label>
+                <input type="number" min="0" step="any" class="form-control" id="input-item-quantity" placeholder="0">
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" style="font-size: 11px;"><span>Đơn vị</span></label>
+                <input type="text" class="form-control" id="input-item-unit" placeholder="m³, m², tấn...">
+              </div>
+            </div>
+
+            <!-- Ảnh hiện trường đính kèm (T52) -->
+            <div class="form-group" style="margin-top: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label class="form-label" style="margin-bottom: 0;">
+                  <span>📸 Ảnh đính kèm hiện trường</span>
+                </label>
+                <span style="font-size: 11px; font-weight: 600; color: var(--text-muted);" id="photo-count-indicator">
+                  Tối đa 10 ảnh (≤ 5MB/ảnh)
+                </span>
+              </div>
+
+              <!-- Dropzone -->
+              <div class="photo-dropzone" id="photo-dropzone">
+                <div style="font-size: 22px; margin-bottom: 3px;">📷</div>
+                <div style="font-size: 12.5px; font-weight: 600; color: var(--brand-blue);">
+                  Bấm để chọn ảnh hoặc kéo thả vào đây
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                  Định dạng: JPG, PNG, WEBP, GIF (Tối đa 5MB/ảnh)
+                </div>
+                <input type="file" id="input-diary-photos" multiple accept="image/png, image/jpeg, image/webp, image/gif" style="display: none;">
+              </div>
+
+              <!-- Danh sách ảnh chờ tải lên -->
+              <div id="photo-preview-container" class="photo-preview-grid" style="display: none;"></div>
+
+              <!-- Danh sách ảnh đã lưu trên server -->
+              <div id="existing-photos-container" style="display: none; margin-top: 10px;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; display: flex; justify-content: space-between;">
+                  <span>Ảnh đã lưu trên hệ thống:</span>
+                  <span id="existing-photos-count" style="color: var(--brand-blue);">0 ảnh</span>
+                </div>
+                <div id="existing-photos-grid" class="photo-preview-grid"></div>
+              </div>
+            </div>
+
+            <!-- Nút lưu -->
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+              <button type="submit" class="btn-primary" id="btn-submit-diary">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Lưu Nhật Ký & Tải Ảnh
+              </button>
+              <button type="button" class="btn-nav" onclick="resetFormToToday()" style="justify-content: center;">
+                Làm mới dữ liệu ngày hôm nay
+              </button>
+            </div>
+
+          </form>
         </div>
-        <div class="toast-msg toast-error" id="toast-error">
-          <span>🚫</span>
-          <span id="toast-error-text">Lỗi khi lưu dữ liệu</span>
-        </div>
-
-        <form id="diary-form" onsubmit="handleFormSubmit(event)" style="display: flex; flex-direction: column; gap: 14px;">
-          
-          <!-- Ngày nhật ký -->
-          <div class="form-group">
-            <label class="form-label">
-              <span>Ngày nhật ký <span class="req">*</span></span>
-              <span id="form-day-name" style="color: var(--brand-blue); font-weight: 800;"></span>
-            </label>
-            <input type="date" class="form-input" id="input-diary-date" required onchange="onFormDateChange()">
-          </div>
-
-          <!-- Điều kiện thời tiết -->
-          <div class="form-group">
-            <label class="form-label"><span>Thời tiết trong ngày <span class="req">*</span></span></label>
-            <div class="weather-options">
-              <label class="weather-opt" id="opt-sunny" onclick="selectWeatherCondition('sunny')">
-                <input type="radio" name="weather_cond" value="sunny" checked>
-                <span>☀️ Nắng ráo</span>
-              </label>
-
-              <label class="weather-opt" id="opt-cloudy" onclick="selectWeatherCondition('cloudy')">
-                <input type="radio" name="weather_cond" value="cloudy">
-                <span>⛅ Nhiều mây</span>
-              </label>
-
-              <label class="weather-opt" id="opt-rain-intermittent" onclick="selectWeatherCondition('rain_intermittent')">
-                <input type="radio" name="weather_cond" value="rain_intermittent">
-                <span>🌦️ Mưa rải rác</span>
-              </label>
-
-              <label class="weather-opt" id="opt-rain-all-day" onclick="selectWeatherCondition('rain_all_day')">
-                <input type="radio" name="weather_cond" value="rain_all_day">
-                <span>🌧️ Mưa cả ngày</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Đánh dấu ngày mưa -->
-          <div class="checkbox-rain-mark">
-            <input type="checkbox" id="input-is-rain-day" onchange="onRainCheckboxChange()">
-            <label for="input-is-rain-day">
-              🌧️ Đánh dấu là NGÀY MƯA (Tạm hoãn hoặc ảnh hưởng thi công)
-            </label>
-          </div>
-
-          <!-- Diễn giải thời tiết -->
-          <div class="form-group">
-            <label class="form-label"><span>Chi tiết lượng mưa & thời tiết</span></label>
-            <input type="text" class="form-input" id="input-weather-notes" placeholder="VD: Mưa to từ 08:00 - 15:30, gió cấp 4">
-          </div>
-
-          <!-- Nhân lực & Thiết bị -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div class="form-group">
-              <label class="form-label"><span>Nhân lực (người)</span></label>
-              <input type="number" min="0" class="form-input" id="input-manpower" placeholder="0" value="0">
-            </div>
-            <div class="form-group">
-              <label class="form-label"><span>Dự án</span></label>
-              <input type="text" class="form-input" value="Dự án Thi Công Mẫu #1" disabled style="background: #f1f5f9;">
-            </div>
-          </div>
-
-          <!-- Tình trạng máy móc / thiết bị -->
-          <div class="form-group">
-            <label class="form-label"><span>Tình trạng máy móc & thiết bị</span></label>
-            <textarea class="form-textarea" id="input-equipment-status" placeholder="VD: 1 máy xúc tạm dừng do mưa lầy; 2 máy bơm chìm hoạt động liên tục"></textarea>
-          </div>
-
-          <!-- Ghi chú nội dung công việc -->
-          <div class="form-group">
-            <label class="form-label"><span>Biện pháp thi công & Ghi chú</span></label>
-            <textarea class="form-textarea" id="input-work-notes" placeholder="VD: Tạm dừng đổ bê tông móng; chuyển công nhân sang buộc thép trong xưởng"></textarea>
-          </div>
-
-          <!-- Công việc / Hạng mục thi công liên kết (T52) -->
-          <div class="form-group">
-            <label class="form-label">
-              <span>Công việc / Hạng mục thi công</span>
-              <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">(Liên kết tiến độ)</span>
-            </label>
-            <select class="form-select" id="select-work-item" onchange="onWorkItemSelectChange()">
-              <option value="">-- Chọn công việc trong dự án (Tùy chọn) --</option>
-            </select>
-          </div>
-          <div id="work-item-details-row" style="display: none; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
-            <div class="form-group">
-              <label class="form-label" style="font-size: 12px;"><span>Nội dung chi tiết</span></label>
-              <input type="text" class="form-input" id="input-item-content" placeholder="Mô tả công việc thực hiện">
-            </div>
-            <div class="form-group">
-              <label class="form-label" style="font-size: 12px;"><span>Khối lượng</span></label>
-              <input type="number" min="0" step="any" class="form-input" id="input-item-quantity" placeholder="0">
-            </div>
-            <div class="form-group">
-              <label class="form-label" style="font-size: 12px;"><span>Đơn vị</span></label>
-              <input type="text" class="form-input" id="input-item-unit" placeholder="m³, m², tấn...">
-            </div>
-          </div>
-
-          <!-- Ảnh hiện trường đính kèm (T52) -->
-          <div class="form-group" style="margin-top: 4px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <label class="form-label" style="margin-bottom: 0;">
-                <span>📸 Ảnh đính kèm hiện trường</span>
-              </label>
-              <span style="font-size: 11px; font-weight: 700; color: var(--text-muted);" id="photo-count-indicator">
-                Tối đa 10 ảnh (≤ 5MB/ảnh)
-              </span>
-            </div>
-
-            <!-- Dropzone & File Input -->
-            <div class="photo-dropzone" id="photo-dropzone">
-              <div style="font-size: 26px; margin-bottom: 4px;">📷</div>
-              <div style="font-size: 13px; font-weight: 700; color: var(--brand-blue);">
-                Bấm để chọn ảnh hoặc kéo thả vào đây
-              </div>
-              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                Định dạng: JPG, PNG, WEBP, GIF (Dung lượng tối đa 5MB/ảnh)
-              </div>
-              <input type="file" id="input-diary-photos" multiple accept="image/png, image/jpeg, image/webp, image/gif" style="display: none;">
-            </div>
-
-            <!-- Danh sách ảnh chờ tải lên (Preview) -->
-            <div id="photo-preview-container" class="photo-preview-grid" style="display: none;"></div>
-
-            <!-- Danh sách ảnh đã lưu trên server cho ngày này -->
-            <div id="existing-photos-container" style="display: none; margin-top: 10px;">
-              <div style="font-size: 12px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; display: flex; justify-content: space-between;">
-                <span>Ảnh đã đính kèm trên hệ thống:</span>
-                <span id="existing-photos-count" style="color: var(--brand-blue);">0 ảnh</span>
-              </div>
-              <div id="existing-photos-grid" class="photo-preview-grid"></div>
-            </div>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="form-actions">
-            <button type="submit" class="btn-save" id="btn-submit-diary">
-              <span>💾 Lưu Nhật Ký & Tải Ảnh</span>
-            </button>
-            <button type="button" class="btn-nav" onclick="resetFormToToday()" style="justify-content: center;">
-              🔄 Làm mới dữ liệu ngày hôm nay
-            </button>
-          </div>
-
-        </form>
-      </div>
+      </section>
 
     </div>
 
@@ -690,6 +1401,19 @@
           <div id="lightbox-meta" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;"></div>
         </div>
         <button type="button" class="btn-nav" onclick="closeLightbox()">Đóng ✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Mở Khóa Sổ S24 -->
+  <div id="modal-unlock-s24" class="modal-overlay-s24">
+    <div class="modal-box-s24">
+      <h3 style="margin-bottom: 10px; font-size: 15px; font-weight: 700; color: var(--text-title);">Mở khoá sổ nhật ký</h3>
+      <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.5;">Vui lòng nhập lý do mở khoá (tối thiểu 10 ký tự). Thao tác này sẽ được lưu vào nhật ký thao tác (Audit Log).</p>
+      <textarea id="s24-unlock-reason" rows="4" style="width:100%; border:1px solid var(--border-dark); border-radius:6px; padding:8px 12px; font-family:inherit; font-size:13px; outline:none;" placeholder="Nhập lý do cụ thể..." oninput="validateUnlockReason()"></textarea>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+        <button onclick="closeUnlockModal()" style="padding:6px 12px; border:1px solid var(--border-dark); background:#f8fafc; border-radius:6px; cursor:pointer; font-size:12.5px;">Huỷ</button>
+        <button id="btn-confirm-unlock" disabled onclick="submitUnlockDiary()" class="btn-unlock" style="opacity:0.5; cursor:not-allowed;">Xác nhận mở khoá</button>
       </div>
     </div>
   </div>
@@ -719,12 +1443,33 @@
           currentUser = JSON.parse(userStr);
           userName = currentUser.full_name || currentUser.name || userName;
           userRole = currentUser.role_display_name || currentUser.role_name || userRole;
-        } catch (e) {}
+        } catch (e) { }
       }
 
-      document.getElementById('display-user-name').innerText = userName;
-      document.getElementById('display-user-role').innerText = String(userRole);
-      document.getElementById('avatar-letter').innerText = (userName.trim()[0] || 'D').toUpperCase();
+      const nameEl = document.getElementById('display-user-name');
+      const roleEl = document.getElementById('display-user-role');
+      const avatarEl = document.getElementById('avatar-letter');
+      if (nameEl) nameEl.innerText = userName;
+      if (roleEl) roleEl.innerText = String(userRole);
+      if (avatarEl) avatarEl.innerText = (userName.trim()[0] || 'D').toUpperCase();
+    }
+
+    async function handleLogout() {
+      if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi phiên làm việc?')) {
+        try {
+          const token = localStorage.getItem('quanly_token');
+          if (token) {
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+          }
+        } finally {
+          localStorage.removeItem('quanly_token');
+          localStorage.removeItem('quanly_user');
+          window.location.replace('/login.html');
+        }
+      }
     }
 
     // Tiện ích ngày
@@ -817,9 +1562,9 @@
       // 1. Metrics
       const weekRangeStr = `${formatDateDisplay(data.weekRange.startDate)} - ${formatDateDisplay(data.weekRange.fridayDate)}`;
       document.getElementById('metric-week-range').innerText = weekRangeStr;
-      
+
       const rainCount = data.summary.workdayRainCount;
-      document.getElementById('metric-rain-count').innerHTML = `${rainCount} <span style="font-size:16px; color:var(--text-muted);">/ 5 ngày</span>`;
+      document.getElementById('metric-rain-count').innerHTML = `${rainCount} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">/ 5 ngày</span>`;
       document.getElementById('metric-rain-ratio').innerText = `Tỷ lệ mưa: ${data.summary.rainRatio}% số ngày làm việc`;
 
       // Tính tổng nhân lực
@@ -837,19 +1582,15 @@
       // Đánh giá nguy cơ
       const riskEl = document.getElementById('metric-risk-badge');
       const riskSubEl = document.getElementById('metric-risk-sub');
-      const riskCard = document.getElementById('metric-card-risk');
-      riskCard.classList.remove('danger', 'warning', 'rain');
 
       if (data.summary.statusAlert === 'high_risk') {
         riskEl.innerText = 'CẢNH BÁO NGUY CƠ';
         riskEl.style.color = 'var(--danger)';
         riskSubEl.innerText = `Mưa ${rainCount}/5 ngày làm việc`;
-        riskCard.classList.add('danger');
       } else if (data.summary.statusAlert === 'medium_risk') {
         riskEl.innerText = 'THEO DÕI TIẾN ĐỘ';
         riskEl.style.color = '#d97706';
         riskSubEl.innerText = `Có ${rainCount} ngày mưa trong tuần`;
-        riskCard.classList.add('warning');
       } else {
         riskEl.innerText = 'THUẬN LỢI';
         riskEl.style.color = '#059669';
@@ -864,32 +1605,32 @@
 
       if (rainCount >= 3) {
         impactBanner.style.background = '#fef2f2';
-        impactBanner.style.borderColor = '#fca5a5';
+        impactBanner.style.borderColor = '#fecaca';
         impactIcon.innerText = '⚠️';
         impactTitle.innerText = `Cảnh báo: Tuần làm việc có ${rainCount}/5 ngày MƯA CẢ NGÀY`;
         impactTitle.style.color = '#991b1b';
         impactDesc.style.color = '#7f1d1d';
       } else if (rainCount > 0) {
-        impactBanner.style.background = '#fefce8';
-        impactBanner.style.borderColor = '#fde047';
+        impactBanner.style.background = '#fffbeb';
+        impactBanner.style.borderColor = '#fde68a';
         impactIcon.innerText = '🌦️';
         impactTitle.innerText = `Ghi nhận ${rainCount} ngày MƯA CẢ NGÀY trong tuần`;
-        impactTitle.style.color = '#854d0e';
-        impactDesc.style.color = '#713f12';
+        impactTitle.style.color = '#92400e';
+        impactDesc.style.color = '#78350f';
       } else {
-        impactBanner.style.background = 'var(--rain-bg)';
-        impactBanner.style.borderColor = 'var(--rain-border)';
+        impactBanner.style.background = 'var(--accent-soft)';
+        impactBanner.style.borderColor = 'var(--accent-border)';
         impactIcon.innerText = '☀️';
         impactTitle.innerText = 'Thời tiết tuần thuận lợi cho thi công';
-        impactTitle.style.color = '#0369a1';
-        impactDesc.style.color = '#0c4a6e';
+        impactTitle.style.color = '#1e3a8a';
+        impactDesc.style.color = '#1e293b';
       }
       impactDesc.innerText = data.summary.impactDescription;
 
       // 3. Render 5 ngày làm việc (Thứ Hai -> Thứ Sáu)
       const workdaysGrid = document.getElementById('workdays-grid');
       const workdays = data.days.filter(d => d.isWorkday);
-      
+
       workdaysGrid.innerHTML = workdays.map(d => {
         const isSelected = d.date === currentSelectedDate;
         let badgeClass = 'empty';
@@ -912,7 +1653,7 @@
         }
 
         const photosBadge = (d.photosCount && d.photosCount > 0)
-          ? `<div style="margin-top: 3px;"><span style="font-size:10.5px; background:#eff6ff; color:#1d4ed8; padding:2px 6px; border-radius:4px; font-weight:700; border:1px solid #bfdbfe; display:inline-flex; align-items:center; gap:3px;">📷 ${d.photosCount} ảnh</span></div>`
+          ? `<div style="margin-top: 2px;"><span style="font-size:10px; background:#eff6ff; color:#1d4ed8; padding:2px 5px; border-radius:4px; font-weight:700; border:1px solid #bfdbfe; display:inline-flex; align-items:center; gap:2px;">📷 ${d.photosCount} ảnh</span></div>`
           : '';
 
         return `
@@ -925,7 +1666,7 @@
               <span class="badge-weather ${badgeClass}">${badgeText}</span>
             </div>
             ${photosBadge}
-            <div class="day-info-row" style="margin-top: 4px;">
+            <div class="day-info-row" style="margin-top: 2px;">
               <span>👷 Nhân lực:</span>
               <strong>${d.hasDiary ? d.manpowerCount + ' ng' : '--'}</strong>
             </div>
@@ -934,8 +1675,8 @@
                 🚜 ${d.equipmentStatus ? escapeHtml(d.equipmentStatus) : (d.hasDiary ? 'Không có thiết bị' : '--')}
               </span>
             </div>
-            <button type="button" class="btn-nav" style="padding: 4px 8px; font-size: 11px; margin-top: auto; justify-content: center;">
-              ✏️ Chi tiết
+            <button type="button" class="btn-nav" style="padding: 3px 6px; font-size: 11px; margin-top: auto; justify-content: center;">
+              Chi tiết
             </button>
           </div>
         `;
@@ -949,7 +1690,7 @@
         let badgeClass = d.isRainDay ? 'rain' : (d.hasDiary ? 'sunny' : 'empty');
         let badgeText = d.isRainDay ? '🌧️ Mưa cả ngày' : (d.hasDiary ? '☀️ Có ghi nhật ký' : '⚪ Nghỉ cuối tuần');
         const photosBadge = (d.photosCount && d.photosCount > 0)
-          ? `<div style="margin-top: 3px;"><span style="font-size:10.5px; background:#eff6ff; color:#1d4ed8; padding:2px 6px; border-radius:4px; font-weight:700; border:1px solid #bfdbfe;">📷 ${d.photosCount} ảnh</span></div>`
+          ? `<div style="margin-top: 2px;"><span style="font-size:10px; background:#eff6ff; color:#1d4ed8; padding:2px 5px; border-radius:4px; font-weight:700; border:1px solid #bfdbfe;">📷 ${d.photosCount} ảnh</span></div>`
           : '';
 
         return `
@@ -979,7 +1720,7 @@
           </tr>
         `).join('');
       } else {
-        tasksTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Không có công việc nào cần xem xét</td></tr>';
+        tasksTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 18px;">Không có công việc nào cần xem xét</td></tr>';
       }
 
       // Nạp ngày được chọn vào Form
@@ -990,7 +1731,6 @@
     function selectDayFromGrid(dateStr) {
       currentSelectedDate = dateStr;
       loadFormWithDate(dateStr);
-      // Cập nhật lại border active
       document.querySelectorAll('.day-card').forEach(card => card.classList.remove('active-selected'));
       renderWeeklyDashboard(currentWeekData);
     }
@@ -1000,10 +1740,8 @@
       document.getElementById('input-diary-date').value = dateStr;
       document.getElementById('form-day-name').innerText = `(${getDayOfWeekName(dateStr)})`;
 
-      // Reset danh sách ảnh chờ tải lên
       clearSelectedPhotos();
 
-      // Mặc định ban đầu
       selectWeatherCondition('sunny');
       document.getElementById('input-is-rain-day').checked = false;
       document.getElementById('input-weather-notes').value = '';
@@ -1016,7 +1754,6 @@
       document.getElementById('input-item-quantity').value = '';
       document.getElementById('input-item-unit').value = '';
 
-      // Tải chi tiết nhật ký từ backend để lấy ảnh và items chính xác
       try {
         const token = localStorage.getItem('quanly_token');
         const headers = {};
@@ -1034,7 +1771,6 @@
             document.getElementById('input-equipment-status').value = diary.equipment_status || '';
             document.getElementById('input-work-notes').value = diary.work_notes || '';
 
-            // Nạp items nếu có
             if (Array.isArray(diary.items) && diary.items.length > 0) {
               const firstItem = diary.items[0];
               if (firstItem.work_item_id) {
@@ -1046,7 +1782,6 @@
               }
             }
 
-            // Nạp ảnh đã lưu trên server (T52)
             existingPhotos = Array.isArray(diary.photos) ? diary.photos : [];
             renderExistingPhotos();
             return;
@@ -1056,7 +1791,6 @@
         console.warn('Lỗi lấy chi tiết nhật ký:', e);
       }
 
-      // Nếu không có trên server, dùng dữ liệu tuần hiện có nếu có
       const dayObj = currentWeekData ? currentWeekData.days.find(d => d.date === dateStr) : null;
       if (dayObj && dayObj.hasDiary) {
         selectWeatherCondition(dayObj.weatherCondition || 'sunny');
@@ -1086,10 +1820,9 @@
 
       fileInput.addEventListener('change', (e) => {
         handlePhotoFilesSelected(e.target.files);
-        fileInput.value = ''; // Cho phép chọn lại cùng file nếu muốn
+        fileInput.value = '';
       });
 
-      // Kéo thả file
       ['dragenter', 'dragover'].forEach(eventName => {
         dropzone.addEventListener(eventName, (e) => {
           e.preventDefault();
@@ -1127,19 +1860,16 @@
       }
 
       for (const file of newFiles) {
-        // 1. Kiểm tra MIME Type
         if (!ALLOWED_MIME_TYPES.includes(file.type)) {
           showErrorToast(`Tập tin "${file.name}" không hợp lệ. Chỉ chấp nhận các định dạng ảnh: JPG, PNG, WEBP, GIF.`);
           return;
         }
 
-        // 2. Kiểm tra Dung lượng (Max 5MB)
         if (file.size > MAX_FILE_SIZE) {
           showErrorToast(`Tập tin "${file.name}" (${formatFileSize(file.size)}) vượt quá giới hạn 5MB cho phép.`);
           return;
         }
 
-        // Tạo preview URL
         const previewUrl = URL.createObjectURL(file);
         selectedPhotos.push({
           id: 'temp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
@@ -1177,7 +1907,7 @@
           </div>
           <div class="photo-meta-info">
             <span class="photo-file-size">${formatFileSize(p.file.size)}</span>
-            <input type="text" class="photo-caption-input" placeholder="Chú thích ảnh..." value="${escapeHtml(p.caption)}" onchange="updatePhotoCaption(${idx}, this.value)">
+            <input type="text" class="photo-caption-input" placeholder="Chú thích..." value="${escapeHtml(p.caption)}" onchange="updatePhotoCaption(${idx}, this.value)">
           </div>
         </div>
       `).join('');
@@ -1193,7 +1923,7 @@
       if (selectedPhotos[idx]) {
         try {
           URL.revokeObjectURL(selectedPhotos[idx].previewUrl);
-        } catch (e) {}
+        } catch (e) { }
         selectedPhotos.splice(idx, 1);
         renderSelectedPhotos();
       }
@@ -1201,7 +1931,7 @@
 
     function clearSelectedPhotos() {
       selectedPhotos.forEach(p => {
-        try { URL.revokeObjectURL(p.previewUrl); } catch (e) {}
+        try { URL.revokeObjectURL(p.previewUrl); } catch (e) { }
       });
       selectedPhotos = [];
       renderSelectedPhotos();
@@ -1256,7 +1986,6 @@
           showSuccessToast('Đã xóa ảnh đính kèm thành công');
           existingPhotos = existingPhotos.filter(p => p.id !== photoId);
           renderExistingPhotos();
-          // Cập nhật lại số lượng ảnh trên dashboard
           if (currentSelectedDate) {
             await loadWeekData(currentSelectedDate);
           }
@@ -1268,7 +1997,6 @@
       }
     }
 
-    // Modal Lightbox
     function openLightbox(src, caption, meta) {
       const modal = document.getElementById('photo-lightbox');
       const img = document.getElementById('lightbox-img');
@@ -1287,7 +2015,6 @@
       document.getElementById('lightbox-img').src = '';
     }
 
-    // Chọn radio thời tiết
     function selectWeatherCondition(cond) {
       ['sunny', 'cloudy', 'rain_intermittent', 'rain_all_day'].forEach(c => {
         const el = document.getElementById('opt-' + c.replace('_', '-'));
@@ -1303,7 +2030,6 @@
         if (radio) radio.checked = true;
       }
 
-      // Tự động bật checkbox ngày mưa nếu chọn mưa cả ngày
       const rainCheckbox = document.getElementById('input-is-rain-day');
       if (cond === 'rain_all_day') {
         rainCheckbox.checked = true;
@@ -1357,14 +2083,12 @@
 
     // ========================================================
     // SUBMIT LƯU NHẬT KÝ & TẢI ẢNH (T52)
-    // Chống bấm liên tiếp, gửi FormData multipart đúng contract
     // ========================================================
     async function handleFormSubmit(e) {
       e.preventDefault();
       const btn = document.getElementById('btn-submit-diary');
-      if (btn.disabled) return; // Chống gửi trùng
+      if (btn.disabled) return;
 
-      // Khóa nút gửi ngay lập tức
       btn.disabled = true;
       btn.innerHTML = '<span>⏳ Đang lưu nhật ký & tải ảnh...</span>';
 
@@ -1378,7 +2102,6 @@
       const equipStatus = document.getElementById('input-equipment-status').value.trim();
       const workNotes = document.getElementById('input-work-notes').value.trim();
 
-      // Kiểm tra trường bắt buộc
       if (!diaryDate) {
         showErrorToast('Vui lòng chọn ngày nhật ký');
         btn.disabled = false;
@@ -1386,7 +2109,6 @@
         return;
       }
 
-      // Đóng gói FormData multipart
       const formData = new FormData();
       formData.append('diary_date', diaryDate);
       formData.append('weather_condition', weatherCond);
@@ -1396,7 +2118,6 @@
       formData.append('equipment_status', equipStatus);
       formData.append('work_notes', workNotes);
 
-      // Liên kết công việc (work_item_id / items)
       const selectedWorkItemId = document.getElementById('select-work-item').value;
       if (selectedWorkItemId) {
         formData.append('work_item_id', selectedWorkItemId);
@@ -1409,12 +2130,10 @@
         formData.append('items', JSON.stringify([itemObj]));
       }
 
-      // Đính kèm các ảnh đã chọn (field 'photos')
       selectedPhotos.forEach(p => {
         formData.append('photos', p.file, p.file.name);
       });
 
-      // Mảng caption cho các ảnh
       if (selectedPhotos.length > 0) {
         const captions = selectedPhotos.map(p => p.caption || '');
         formData.append('captions', JSON.stringify(captions));
@@ -1438,19 +2157,13 @@
           const photoMsg = selectedPhotos.length > 0 ? ` kèm ${selectedPhotos.length} ảnh đính kèm!` : '';
           showSuccessToast(`Đã lưu nhật ký ngày ${formatDateDisplay(diaryDate)} thành công${photoMsg}`);
 
-          // Xóa danh sách ảnh tạm đã tải lên thành công
           clearSelectedPhotos();
-
-          // Tải lại dữ liệu tuần để đồng bộ Grid và Metrics
           await loadWeekData(diaryDate);
-          // Tải lại chi tiết để hiển thị ảnh mới lưu
           await loadFormWithDate(diaryDate);
         } else {
-          // Báo lỗi rõ ràng, giữ nguyên form và danh sách ảnh chờ tải để người dùng thử lại
           showErrorToast(data.message || 'Lưu nhật ký thất bại. Dữ liệu trên form và ảnh được giữ nguyên.');
         }
       } catch (err) {
-        // Lỗi mất mạng hoặc exception: Không báo thành công giả, giữ nguyên dữ liệu
         showErrorToast('Lỗi kết nối đến máy chủ: ' + err.message + '. Dữ liệu và ảnh không bị mất, vui lòng thử lại.');
       } finally {
         btn.disabled = false;
@@ -1459,8 +2172,7 @@
     }
 
     // ========================================================
-    // TÍNH NĂNG KIỂM THỬ ACCEPTANCE CRITERIA (AC T51):
-    // Nhập mưa cả ngày từ Thứ Hai đến Thứ Sáu
+    // TÍNH NĂNG KIỂM THỬ ACCEPTANCE CRITERIA (AC T51)
     // ========================================================
     async function fillMondayToFridayRainPreset() {
       if (!currentWeekData || !currentWeekData.days) return;
@@ -1525,7 +2237,12 @@
 
     function showErrorToast(msg) {
       const el = document.getElementById('toast-error');
-      document.getElementById('toast-error-text').innerText = msg;
+      const textEl = document.getElementById('toast-error-text');
+      if (typeof msg === 'string' && msg.includes('Phiên đăng nhập')) {
+        textEl.innerHTML = `${msg} <a href="/login.html" style="color: #1d4ed8; text-decoration: underline; font-weight: 800; margin-left: 6px;">[👉 Đăng nhập ngay]</a>`;
+      } else {
+        textEl.innerText = msg;
+      }
       el.style.display = 'flex';
     }
 
@@ -1539,6 +2256,81 @@
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    // ========================================================
+    // S24 LOCK LEDGER
+    // ========================================================
+    let currentDiaryStatus = { is_locked: false, locked_at: null, locked_by_name: null };
+    const currentUserRole = localStorage.getItem('user_role') || 'PROJECT_MANAGER';
+
+    function updateLockUI(isLocked, lockedAt, lockedByName) {
+      const statusContainer = document.getElementById('s24-status-container');
+      const lockBtn = document.getElementById('btn-lock-diary');
+      const unlockBtn = document.getElementById('btn-unlock-diary');
+
+      if (isLocked) {
+        statusContainer.innerHTML = '<span class="lock-badge-locked">🔒 Đã khoá sổ lúc ' + (lockedAt || 'vừa xong') + ' bởi ' + (lockedByName || 'Giám sát') + '</span>';
+        lockBtn.style.display = 'none';
+        if (currentUserRole === 'PROJECT_MANAGER' || currentUserRole === 'BQL') {
+          unlockBtn.style.display = 'inline-block';
+        } else {
+          unlockBtn.style.display = 'none';
+        }
+        setDiaryFormReadOnly(true);
+      } else {
+        statusContainer.innerHTML = '<span class="lock-badge-unlocked">🔓 Sổ nhật ký đang mở (cho phép ghi/sửa)</span>';
+        lockBtn.style.display = 'inline-block';
+        unlockBtn.style.display = 'none';
+        setDiaryFormReadOnly(false);
+      }
+    }
+
+    function setDiaryFormReadOnly(isReadOnly) {
+      const inputs = document.querySelectorAll('form input, form textarea, form select, form button[type="submit"]');
+      inputs.forEach(el => {
+        el.disabled = isReadOnly;
+      });
+    }
+
+    function handleLockDiary() {
+      if (confirm('Sau khi khoá sẽ không thể tự chỉnh sửa. Bạn có chắc chắn muốn khoá sổ ngày này?')) {
+        const nowStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString('vi-VN');
+        updateLockUI(true, nowStr, 'Ban Quản Lý');
+        alert('Đã khoá sổ nhật ký ngày thành công.');
+      }
+    }
+
+    function openUnlockModal() {
+      document.getElementById('s24-unlock-reason').value = '';
+      validateUnlockReason();
+      document.getElementById('modal-unlock-s24').style.display = 'flex';
+    }
+
+    function closeUnlockModal() {
+      document.getElementById('modal-unlock-s24').style.display = 'none';
+    }
+
+    function validateUnlockReason() {
+      const reason = document.getElementById('s24-unlock-reason').value.trim();
+      const btn = document.getElementById('btn-confirm-unlock');
+      if (reason.length >= 10) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+      } else {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+      }
+    }
+
+    function submitUnlockDiary() {
+      const reason = document.getElementById('s24-unlock-reason').value.trim();
+      if (reason.length < 10) return;
+      updateLockUI(false);
+      closeUnlockModal();
+      alert('Đã mở khoá sổ thành công và ghi nhận Audit Log: ' + reason);
+    }
+
     // Khởi chạy khi tải trang
     window.addEventListener('DOMContentLoaded', () => {
       initUser();
@@ -1548,172 +2340,6 @@
     });
   </script>
 
-<style>
-  .diary-lock-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 10px 16px;
-    margin: 12px 16px;
-  }
-  .lock-badge-locked {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #f87171;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 13px;
-  }
-  .lock-badge-unlocked {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: #ecfdf5;
-    color: #065f46;
-    border: 1px solid #a7f3d0;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 13px;
-  }
-  .btn-lock {
-    background: #dc2626;
-    color: white;
-    border: none;
-    padding: 6px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-  }
-  .btn-unlock {
-    background: #d97706;
-    color: white;
-    border: none;
-    padding: 6px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-  }
-  .modal-overlay-s24 {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 9999;
-    align-items: center;
-    justify-content: center;
-  }
-  .modal-box-s24 {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    max-width: 450px;
-    width: 90%;
-  }
-</style>
-
-<div id="s24-lock-bar" class="diary-lock-bar">
-  <div id="s24-status-container">
-    <span class="lock-badge-unlocked">🔓 Sổ nhật ký đang mở (cho phép ghi/sửa)</span>
-  </div>
-  <div id="s24-action-container">
-    <button id="btn-lock-diary" class="btn-lock" onclick="handleLockDiary()">🔒 Khoá sổ ngày</button>
-    <button id="btn-unlock-diary" class="btn-unlock" style="display:none;" onclick="openUnlockModal()">🔓 Mở khoá sổ</button>
-  </div>
-</div>
-
-<div id="modal-unlock-s24" class="modal-overlay-s24">
-  <div class="modal-box-s24">
-    <h3 style="margin-bottom: 10px;">Mở khoá sổ nhật ký</h3>
-    <p style="font-size: 13px; color: #64748b; margin-bottom: 8px;">Vui lòng nhập lý do mở khoá (tối thiểu 10 ký tự). Thao tác này sẽ được lưu vào nhật ký thao tác (Audit Log).</p>
-    <textarea id="s24-unlock-reason" rows="4" style="width:100%; border:1px solid #cbd5e1; border-radius:6px; padding:8px; font-family:inherit;" placeholder="Nhập lý do cụ thể..." oninput="validateUnlockReason()"></textarea>
-    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
-      <button onclick="closeUnlockModal()" style="padding:6px 12px; border:1px solid #cbd5e1; background:#f8fafc; border-radius:6px; cursor:pointer;">Huỷ</button>
-      <button id="btn-confirm-unlock" disabled onclick="submitUnlockDiary()" class="btn-unlock" style="opacity:0.5; cursor:not-allowed;">Xác nhận mở khoá</button>
-    </div>
-  </div>
-</div>
-
-<script>
-  let currentDiaryStatus = { is_locked: false, locked_at: null, locked_by_name: null };
-  const currentUserRole = localStorage.getItem('user_role') || 'PROJECT_MANAGER';
-
-  function updateLockUI(isLocked, lockedAt, lockedByName) {
-    const statusContainer = document.getElementById('s24-status-container');
-    const lockBtn = document.getElementById('btn-lock-diary');
-    const unlockBtn = document.getElementById('btn-unlock-diary');
-
-    if (isLocked) {
-      statusContainer.innerHTML = '<span class="lock-badge-locked">🔒 Đã khoá sổ lúc ' + (lockedAt || 'vừa xong') + ' bởi ' + (lockedByName || 'Giám sát') + '</span>';
-      lockBtn.style.display = 'none';
-      if (currentUserRole === 'PROJECT_MANAGER' || currentUserRole === 'BQL') {
-        unlockBtn.style.display = 'inline-block';
-      } else {
-        unlockBtn.style.display = 'none';
-      }
-      setDiaryFormReadOnly(true);
-    } else {
-      statusContainer.innerHTML = '<span class="lock-badge-unlocked">🔓 Sổ nhật ký đang mở (cho phép ghi/sửa)</span>';
-      lockBtn.style.display = 'inline-block';
-      unlockBtn.style.display = 'none';
-      setDiaryFormReadOnly(false);
-    }
-  }
-
-  function setDiaryFormReadOnly(isReadOnly) {
-    const inputs = document.querySelectorAll('form input, form textarea, form select, form button[type="submit"]');
-    inputs.forEach(el => {
-      el.disabled = isReadOnly;
-    });
-  }
-
-  function handleLockDiary() {
-    if (confirm('Sau khi khoá sẽ không thể tự chỉnh sửa. Bạn có chắc chắn muốn khoá sổ ngày này?')) {
-      const nowStr = new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) + ' ' + new Date().toLocaleDateString('vi-VN');
-      updateLockUI(true, nowStr, 'Ban Quản Lý');
-      alert('Đã khoá sổ nhật ký ngày thành công.');
-    }
-  }
-
-  function openUnlockModal() {
-    document.getElementById('s24-unlock-reason').value = '';
-    validateUnlockReason();
-    document.getElementById('modal-unlock-s24').style.display = 'flex';
-  }
-
-  function closeUnlockModal() {
-    document.getElementById('modal-unlock-s24').style.display = 'none';
-  }
-
-  function validateUnlockReason() {
-    const reason = document.getElementById('s24-unlock-reason').value.trim();
-    const btn = document.getElementById('btn-confirm-unlock');
-    if (reason.length >= 10) {
-      btn.disabled = false;
-      btn.style.opacity = '1';
-      btn.style.cursor = 'pointer';
-    } else {
-      btn.disabled = true;
-      btn.style.opacity = '0.5';
-      btn.style.cursor = 'not-allowed';
-    }
-  }
-
-  function submitUnlockDiary() {
-    const reason = document.getElementById('s24-unlock-reason').value.trim();
-    if (reason.length < 10) return;
-    updateLockUI(false);
-    closeUnlockModal();
-    alert('Đã mở khoá sổ thành công và ghi nhận Audit Log: ' + reason);
-  }
-</script>
-
 </body>
+
 </html>

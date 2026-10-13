@@ -4,6 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Đội Thi Công & Giao Việc | Hệ thống Quản trị Thi công</title>
+  <!-- PWA & Hiện trường Mobile (S-27 / SCRUM-119) -->
+  <meta name="theme-color" content="#1d4ed8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="QL Thi Công">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <script src="/js/pwa-register.js" defer></script>
+  <script src="/js/app-navbar.js" defer></script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -737,19 +748,19 @@
     </a>
 
     <nav class="nav-dock">
-      <a href="index.html" class="nav-item">📊 Tổng quan</a>
-      <a href="wbs.html" class="nav-item">🌳 WBS</a>
-      <a href="schedule.html" class="nav-item">⚡ CPM</a>
-      <a href="gantt.html" class="nav-item">📈 Gantt</a>
-      <a href="calendar.html" class="nav-item">📅 Lịch</a>
-      <a href="diary.html" class="nav-item">📖 Nhật ký</a>
-      <a href="teams.html" class="nav-item active">👷‍♂️ Đội & Giao việc</a>
+      <a href="/index.html" class="nav-item">📊 Tổng quan</a>
+      <a href="/wbs.html" class="nav-item">🌳 WBS</a>
+      <a href="/schedule.html" class="nav-item">⚡ CPM</a>
+      <a href="/gantt.html" class="nav-item">📈 Gantt</a>
+      <a href="/calendar.html" class="nav-item">📅 Lịch thi công</a>
+      <a href="/diary.html" class="nav-item">🌧️ Nhật ký</a>
+      <a href="/teams.html" class="nav-item active">👷‍♂️ Đội & Giao việc</a>
     </nav>
 
     <div class="user-profile">
       <div class="user-info-text">
-        <div class="user-name" id="user-display-name">Trần Mạnh Dũng</div>
-        <div class="user-role" id="user-display-role">Chỉ huy trưởng công trình</div>
+        <div class="user-name" id="user-display-name">Đang tải...</div>
+        <div class="user-role" id="user-display-role">Người dùng</div>
       </div>
       <button class="btn-logout" onclick="handleLogout()">Đăng xuất</button>
     </div>
@@ -1024,8 +1035,11 @@
         };
       }
 
-      document.getElementById('user-display-name').textContent = currentUser.full_name || currentUser.email;
-      document.getElementById('user-display-role').textContent = currentUser.role_display_name || currentUser.role_name || 'Chỉ huy trưởng';
+      const nameEl = document.getElementById('user-display-name') || document.getElementById('display-user-name');
+      if (nameEl) nameEl.textContent = currentUser.full_name || currentUser.email;
+
+      const roleEl = document.getElementById('user-display-role') || document.getElementById('display-user-role');
+      if (roleEl) roleEl.textContent = currentUser.role_display_name || currentUser.role_name || 'Chỉ huy trưởng';
 
       // Phân quyền: Viewer
       if (currentUser.role_id === 7 || currentUser.role_name === 'viewer') {
