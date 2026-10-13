@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nhật Ký Thi Công & Đánh Dấu Ngày Mưa (T51) | Quản Lý Thi Công</title>
+  <!-- PWA & Hiện trường Mobile (S-27 / SCRUM-119) -->
+  <meta name="theme-color" content="#1d4ed8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="QL Thi Công">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <script src="/js/pwa-register.js" defer></script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
@@ -389,12 +399,19 @@
       <a href="/teams.html" class="nav-item">👷‍♂️ Đội & Giao việc</a>
     </nav>
 
-    <!-- User Information -->
-    <div class="user-pill">
-      <div class="user-avatar" id="avatar-letter">D</div>
-      <div class="user-meta">
-        <span class="user-name" id="display-user-name">Trần Mạnh Dũng</span>
-        <span class="user-role" id="display-user-role">Chỉ huy trưởng công trình</span>
+    <!-- PWA Install Button (S-27) -->
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <button id="btn-install-app" class="btn-install-app" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #1d4ed8, #0284c7); color: #fff; border: none; padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);" title="Cài đặt ứng dụng hiện trường vào điện thoại / máy tính">
+        📲 Cài App PWA
+      </button>
+
+      <!-- User Information -->
+      <div class="user-pill">
+        <div class="user-avatar" id="avatar-letter">D</div>
+        <div class="user-meta">
+          <span class="user-name" id="display-user-name">Trần Mạnh Dũng</span>
+          <span class="user-role" id="display-user-role">Chỉ huy trưởng công trình</span>
+        </div>
       </div>
     </div>
   </header>

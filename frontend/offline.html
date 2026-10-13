@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ngoại tuyến | Quản Lý Thi Công Hiện Trường</title>
+  <meta name="theme-color" content="#1d4ed8">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-canvas: #f8fafc;
+      --card-bg: #ffffff;
+      --border-card: #e2e8f0;
+      --brand-blue: #1d4ed8;
+      --brand-blue-hover: #1e40af;
+      --text-title: #0f172a;
+      --text-body: #334155;
+      --text-muted: #64748b;
+      --amber: #f59e0b;
+      --amber-bg: #fffbeb;
+      --amber-border: #fde68a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+    }
+    .offline-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-card);
+      border-radius: 20px;
+      padding: 40px 28px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+    .icon-badge {
+      width: 80px;
+      height: 80px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #fef3c7 0%, #fee2e2 100%);
+      border: 2px solid #fde68a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-title);
+      line-height: 1.3;
+    }
+    p {
+      font-size: 14.5px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--amber-bg);
+      border: 1px solid var(--amber-border);
+      color: #b45309;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 999px;
+    }
+    .dot-pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f59e0b;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.4; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.2); }
+      100% { opacity: 0.4; transform: scale(0.9); }
+    }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 14.5px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--brand-blue);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+    }
+    .btn-primary:hover {
+      background: var(--brand-blue-hover);
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: #f1f5f9;
+      color: var(--text-title);
+      border: 1px solid var(--border-card);
+    }
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+    .footer-note {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-card">
+    <div class="icon-badge">📡</div>
+    <div class="status-pill">
+      <span class="dot-pulse"></span>
+      <span>Đang Mất Kết Nối Mạng</span>
+    </div>
+    <h1>Ứng Dụng Hiện Trường Ngoại Tuyến</h1>
+    <p>
+      Hiện trường thi công có thể đang ngoài vùng phủ sóng. Các trang và biểu đồ bạn đã mở trước đó đã được lưu trong bộ nhớ máy (PWA App Shell).
+    </p>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="retryConnection()">
+        🔄 Thử Kết Nối Lại
+      </button>
+      <a href="/diary.html" class="btn btn-secondary">
+        📋 Mở Nhật Ký Công Trường (Cache)
+      </a>
+      <a href="/index.html" class="btn btn-secondary">
+        📊 Mở Bảng Điều Khiển (Cache)
+      </a>
+    </div>
+
+    <div class="footer-note">
+      Hệ thống sẽ tự động đồng bộ ngay khi phát hiện có mạng trở lại.
+    </div>
+  </div>
+
+  <script>
+    function retryConnection() {
+      if (navigator.onLine) {
+        window.location.href = '/diary.html';
+      } else {
+        window.location.reload();
+      }
+    }
+
+    window.addEventListener('online', () => {
+      window.location.href = '/diary.html';
+    });
+  </script>
+</body>
+</html>
