@@ -71,7 +71,7 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
       } else {
         await Promise.race([
           rawPool.query('SELECT 1'),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Connect timeout 1200ms')), 1200))
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Connect timeout 8000ms')), 8000))
         ]);
       }
       connected = true;
