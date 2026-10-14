@@ -579,7 +579,7 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    // 12. Tạo bảng site_diary_photos (TASK T52 - S-23: Ảnh đính kèm nhật ký thi công)
+    // 12. Tạo bảng site_diary_photos (TASK T52 / S-23 & S-33: Ảnh đính kèm & Hàng đợi tải nền)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS site_diary_photos (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -589,11 +589,28 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
         file_size INT NOT NULL,
         mime_type VARCHAR(100) NOT NULL,
         caption VARCHAR(255) NULL,
+        upload_status ENUM('pending', 'uploading', 'completed', 'failed') NOT NULL DEFAULT 'completed',
+        client_photo_id VARCHAR(100) NULL,
+        temp_path VARCHAR(500) NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (diary_id) REFERENCES site_diaries(id) ON DELETE CASCADE,
-        INDEX idx_photo_diary (diary_id)
+        INDEX idx_photo_diary (diary_id),
+        INDEX idx_photo_client_id (client_photo_id),
+        INDEX idx_photo_upload_status (upload_status)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // S-33 / T-60: Bổ sung các cột cho hàng đợi tải ảnh nền nếu bảng đã tồn tại từ trước
+    try {
+      await pool.query(`
+        ALTER TABLE site_diary_photos
+        ADD COLUMN IF NOT EXISTS upload_status ENUM('pending', 'uploading', 'completed', 'failed') NOT NULL DEFAULT 'completed' AFTER caption,
+        ADD COLUMN IF NOT EXISTS client_photo_id VARCHAR(100) NULL AFTER upload_status,
+        ADD COLUMN IF NOT EXISTS temp_path VARCHAR(500) NULL AFTER client_photo_id;
+      `);
+    } catch (_) {
+      // Bỏ qua nếu MySQL không hỗ trợ IF NOT EXISTS trong ALTER TABLE hoặc cột đã có
+    }
 
     // 13. Tạo bảng project_teams & task_assignments (S-25 / SCRUM-125 / T-50: Đội thi công & Giao việc)
     await pool.query(`

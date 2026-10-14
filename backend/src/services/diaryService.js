@@ -3,8 +3,11 @@ const {
   getSiteDiaryByDate,
   saveSiteDiaryEntry,
   lockSiteDiary,
+  inMemorySiteDiaryPhotos,
   getSiteDiaryPhotos,
   saveSiteDiaryPhoto,
+  updateSiteDiaryPhoto,
+  registerPendingSiteDiaryPhotos,
   deleteSiteDiaryPhoto,
   getSiteDiaryItems,
   saveSiteDiaryItem,
@@ -154,26 +157,44 @@ class DiaryService {
 
     if (!diary) return null;
 
-    // Lấy danh sách ảnh đính kèm (T52)
+    // Lấy danh sách ảnh đính kèm (T52 & S-33 T-60)
     let photos = [];
     if (this.pool?.query) {
       try {
         const [pRows] = await this.pool.query(
-          'SELECT id, diary_id, file_name, file_path, file_size, mime_type, caption, created_at FROM site_diary_photos WHERE diary_id = ? ORDER BY id ASC',
+          'SELECT id, diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id, created_at FROM site_diary_photos WHERE diary_id = ? ORDER BY id ASC',
           [diary.id]
         );
-        photos = (pRows || []).map(p => ({
-          ...p,
-          url: `/uploads/diaries/${p.file_name}`
-        }));
+        photos = (pRows || []).map(p => {
+          const status = p.upload_status || 'completed';
+          const isPending = status === 'pending' || status === 'uploading';
+          return {
+            ...p,
+            upload_status: status,
+            url: isPending ? null : (p.file_name ? `/uploads/diaries/${p.file_name}` : null)
+          };
+        });
       } catch (e) {
-        photos = getSiteDiaryPhotos(diary.id);
+        photos = getSiteDiaryPhotos(diary.id).map(p => {
+          const status = p.upload_status || 'completed';
+          const isPending = status === 'pending' || status === 'uploading';
+          return {
+            ...p,
+            upload_status: status,
+            url: isPending ? null : (p.file_name ? `/uploads/diaries/${p.file_name}` : null)
+          };
+        });
       }
     } else {
-      photos = getSiteDiaryPhotos(diary.id).map(p => ({
-        ...p,
-        url: `/uploads/diaries/${p.file_name}`
-      }));
+      photos = getSiteDiaryPhotos(diary.id).map(p => {
+        const status = p.upload_status || 'completed';
+        const isPending = status === 'pending' || status === 'uploading';
+        return {
+          ...p,
+          upload_status: status,
+          url: isPending ? null : (p.file_name ? `/uploads/diaries/${p.file_name}` : null)
+        };
+      });
     }
 
     // Lấy danh sách công việc chi tiết (T51/T52)
@@ -350,7 +371,7 @@ class DiaryService {
         }
       }
 
-      // 4. Lưu ảnh đính kèm (photos)
+      // 4. Lưu ảnh đính kèm hoàn chỉnh (photos)
       if (Array.isArray(files) && files.length > 0) {
         for (const file of files) {
           const fileName = file.filename || file.file_name || file.name;
@@ -360,8 +381,33 @@ class DiaryService {
           const caption = file.caption ? String(file.caption).trim() : null;
 
           await this.pool.query(
-            'INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption) VALUES (?, ?, ?, ?, ?, ?)',
-            [diaryId, fileName, filePath, fileSize, mimeType, caption]
+            'INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [diaryId, fileName, filePath, fileSize, mimeType, caption, 'completed']
+          );
+        }
+      }
+
+      // 4b. Lưu danh sách ảnh chờ tải nền (S-33 / SCRUM-158 / T-60)
+      let pendingList = [];
+      if (Array.isArray(entryData.pending_photos)) {
+        pendingList = entryData.pending_photos;
+      } else if (typeof entryData.pending_photos === 'string' && entryData.pending_photos.trim()) {
+        try {
+          const parsed = JSON.parse(entryData.pending_photos);
+          if (Array.isArray(parsed)) pendingList = parsed;
+        } catch (_) {}
+      }
+
+      if (pendingList.length > 0) {
+        for (const p of pendingList) {
+          const fileName = p.file_name || p.fileName || 'anh_cho_tai.jpg';
+          const fileSize = Number(p.file_size || p.fileSize || 0);
+          const mimeType = p.mime_type || p.fileType || 'image/jpeg';
+          const caption = p.caption ? String(p.caption).trim() : null;
+          const clientPhotoId = p.client_photo_id || p.id || null;
+          await this.pool.query(
+            'INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [diaryId, fileName, '', fileSize, mimeType, caption, 'pending', clientPhotoId]
           );
         }
       }
@@ -410,9 +456,24 @@ class DiaryService {
           file_path: f.path || f.file_path || f.url || '',
           file_size: Number(f.size || f.file_size || 0),
           mime_type: f.mimetype || f.mime_type || 'image/jpeg',
-          caption: f.caption ? String(f.caption).trim() : null
+          caption: f.caption ? String(f.caption).trim() : null,
+          upload_status: 'completed'
         });
       });
+    }
+
+    // Lưu pending_photos in-memory (S-33 / T-60)
+    let pendingListMem = [];
+    if (Array.isArray(entryData.pending_photos)) {
+      pendingListMem = entryData.pending_photos;
+    } else if (typeof entryData.pending_photos === 'string' && entryData.pending_photos.trim()) {
+      try {
+        const parsed = JSON.parse(entryData.pending_photos);
+        if (Array.isArray(parsed)) pendingListMem = parsed;
+      } catch (_) {}
+    }
+    if (pendingListMem.length > 0) {
+      registerPendingSiteDiaryPhotos(diaryId, pendingListMem);
     }
 
     return this.getDiaryByDate(pId, diaryDate);
@@ -448,8 +509,8 @@ class DiaryService {
         const caption = file.caption || null;
 
         await this.pool.query(
-          'INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption) VALUES (?, ?, ?, ?, ?, ?)',
-          [diary.id, fileName, filePath, fileSize, mimeType, caption]
+          'INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [diary.id, fileName, filePath, fileSize, mimeType, caption, 'completed']
         );
       }
     } else {
@@ -460,12 +521,151 @@ class DiaryService {
           file_path: f.path || f.file_path || '',
           file_size: Number(f.size || 0),
           mime_type: f.mimetype || 'image/jpeg',
-          caption: f.caption || null
+          caption: f.caption || null,
+          upload_status: 'completed'
         });
       });
     }
 
     return this.getDiaryByDate(pId, diaryDate);
+  }
+
+  /**
+   * S-33 / SCRUM-158 / T-60: Đăng ký hàng đợi ảnh chờ tải nền
+   */
+  async registerPendingPhotos(projectId, diaryDate, pendingPhotos = [], userId = 1) {
+    const pId = Number(projectId);
+    let diary = await this.getDiaryByDate(pId, diaryDate);
+    if (!diary) {
+      diary = await this.saveDiary(pId, { diary_date: diaryDate }, userId);
+    }
+
+    if (diary.is_locked === 1) {
+      const err = new Error('Nhật ký đã bị khóa sổ, không thể đăng ký thêm ảnh.');
+      err.status = 423;
+      throw err;
+    }
+
+    const list = Array.isArray(pendingPhotos) ? pendingPhotos : [];
+    if (list.length === 0) return { success: true, registeredCount: 0 };
+
+    if (this.pool?.query) {
+      for (const p of list) {
+        const fileName = p.file_name || p.fileName || 'anh_cho_tai.jpg';
+        const fileSize = Number(p.file_size || p.fileSize || 0);
+        const mimeType = p.mime_type || p.fileType || 'image/jpeg';
+        const caption = p.caption ? String(p.caption).trim() : null;
+        const clientPhotoId = p.client_photo_id || p.id || null;
+
+        await this.pool.query(
+          `INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id)
+           VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`,
+          [diary.id, fileName, '', fileSize, mimeType, caption, clientPhotoId]
+        );
+      }
+    } else {
+      registerPendingSiteDiaryPhotos(diary.id, list);
+    }
+
+    return this.getDiaryByDate(pId, diaryDate);
+  }
+
+  /**
+   * S-33 / SCRUM-159 & SCRUM-160 / T-61 & T-62: Tải lên từng ảnh nền từ hàng đợi
+   * - Hỗ trợ retry không gây hỏng file trên máy chủ
+   * - Cập nhật trạng thái từ 'pending' sang 'completed'
+   */
+  async uploadSinglePhoto(projectId, diaryDate, file, { client_photo_id, caption, userId = 1 } = {}) {
+    const pId = Number(projectId);
+    let diary = await this.getDiaryByDate(pId, diaryDate);
+    if (!diary) {
+      diary = await this.saveDiary(pId, { diary_date: diaryDate }, userId);
+    }
+
+    if (diary.is_locked === 1) {
+      const err = new Error('Nhật ký đã bị khóa sổ, không thể tải ảnh lên.');
+      err.status = 423;
+      throw err;
+    }
+
+    if (!file) {
+      const err = new Error('Không có tệp ảnh nào được gửi lên');
+      err.status = 400;
+      throw err;
+    }
+
+    const fileName = file.filename || file.file_name;
+    const filePath = file.path || file.file_path || '';
+    const fileSize = Number(file.size || 0);
+    const mimeType = file.mimetype || 'image/jpeg';
+    const photoCaption = caption || file.caption || null;
+    const clientId = client_photo_id || null;
+
+    if (this.pool?.query) {
+      let existingId = null;
+      if (clientId) {
+        const [rows] = await this.pool.query(
+          'SELECT id, caption FROM site_diary_photos WHERE diary_id = ? AND client_photo_id = ? LIMIT 1',
+          [diary.id, clientId]
+        );
+        if (rows && rows.length > 0) {
+          existingId = rows[0].id;
+        }
+      }
+
+      if (existingId) {
+        await this.pool.query(
+          `UPDATE site_diary_photos
+           SET file_name = ?, file_path = ?, file_size = ?, mime_type = ?,
+               caption = COALESCE(?, caption), upload_status = 'completed'
+           WHERE id = ?`,
+          [fileName, filePath, fileSize, mimeType, photoCaption, existingId]
+        );
+      } else {
+        await this.pool.query(
+          `INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id)
+           VALUES (?, ?, ?, ?, ?, ?, 'completed', ?)`,
+          [diary.id, fileName, filePath, fileSize, mimeType, photoCaption, clientId]
+        );
+      }
+    } else {
+      const existing = clientId ? inMemorySiteDiaryPhotos.find(p => p.diary_id === diary.id && p.client_photo_id === clientId) : null;
+      if (existing) {
+        updateSiteDiaryPhoto(existing.id, {
+          file_name: fileName,
+          file_path: filePath,
+          file_size: fileSize,
+          mime_type: mimeType,
+          caption: photoCaption || existing.caption,
+          upload_status: 'completed'
+        });
+      } else {
+        saveSiteDiaryPhoto({
+          diary_id: diary.id,
+          file_name: fileName,
+          file_path: filePath,
+          file_size: fileSize,
+          mime_type: mimeType,
+          caption: photoCaption,
+          upload_status: 'completed',
+          client_photo_id: clientId
+        });
+      }
+    }
+
+    return {
+      success: true,
+      message: 'Tải ảnh nền thành công',
+      photo: {
+        file_name: fileName,
+        file_size: fileSize,
+        mime_type: mimeType,
+        url: `/uploads/diaries/${fileName}`,
+        caption: photoCaption,
+        upload_status: 'completed',
+        client_photo_id: clientId
+      }
+    };
   }
 
   async deletePhoto(projectId, photoId) {

@@ -595,25 +595,66 @@ function getSiteDiaryPhotos(diaryId) {
 function saveSiteDiaryPhoto({
   diary_id,
   file_name,
-  file_path,
-  file_size,
-  mime_type,
-  caption = ''
+  file_path = '',
+  file_size = 0,
+  mime_type = 'image/jpeg',
+  caption = '',
+  upload_status = 'completed',
+  client_photo_id = null,
+  temp_path = null
 }) {
   const dId = Number(diary_id);
   const newId = inMemorySiteDiaryPhotos.length > 0 ? Math.max(...inMemorySiteDiaryPhotos.map(p => p.id)) + 1 : 1;
   const newPhoto = {
     id: newId,
     diary_id: dId,
-    file_name: String(file_name).trim(),
-    file_path: String(file_path).trim(),
+    file_name: String(file_name || 'photo.jpg').trim(),
+    file_path: String(file_path || '').trim(),
     file_size: Number(file_size || 0),
     mime_type: String(mime_type || 'image/jpeg'),
     caption: caption ? String(caption).trim() : null,
+    upload_status: upload_status || 'completed',
+    client_photo_id: client_photo_id ? String(client_photo_id) : null,
+    temp_path: temp_path ? String(temp_path) : null,
     created_at: new Date().toISOString()
   };
   inMemorySiteDiaryPhotos.push(newPhoto);
   return newPhoto;
+}
+
+function updateSiteDiaryPhoto(photoIdOrClientId, updateData) {
+  const photo = inMemorySiteDiaryPhotos.find(p => 
+    p.id === Number(photoIdOrClientId) || (p.client_photo_id && p.client_photo_id === String(photoIdOrClientId))
+  );
+  if (!photo) return null;
+  if (updateData.file_name !== undefined) photo.file_name = updateData.file_name;
+  if (updateData.file_path !== undefined) photo.file_path = updateData.file_path;
+  if (updateData.file_size !== undefined) photo.file_size = Number(updateData.file_size);
+  if (updateData.mime_type !== undefined) photo.mime_type = updateData.mime_type;
+  if (updateData.caption !== undefined) photo.caption = updateData.caption;
+  if (updateData.upload_status !== undefined) photo.upload_status = updateData.upload_status;
+  if (updateData.client_photo_id !== undefined) photo.client_photo_id = updateData.client_photo_id;
+  if (updateData.temp_path !== undefined) photo.temp_path = updateData.temp_path;
+  return photo;
+}
+
+function registerPendingSiteDiaryPhotos(diaryId, pendingPhotosList = []) {
+  const dId = Number(diaryId);
+  const created = [];
+  for (const item of pendingPhotosList) {
+    const photo = saveSiteDiaryPhoto({
+      diary_id: dId,
+      file_name: item.file_name || item.fileName || 'anh_dang_cho.jpg',
+      file_path: '',
+      file_size: Number(item.file_size || item.fileSize || 0),
+      mime_type: item.mime_type || item.mimeType || 'image/jpeg',
+      caption: item.caption || null,
+      upload_status: 'pending',
+      client_photo_id: item.client_photo_id || item.id || null
+    });
+    created.push(photo);
+  }
+  return created;
 }
 
 function deleteSiteDiaryPhoto(photoId) {
@@ -1020,6 +1061,8 @@ module.exports = {
   inMemorySiteDiaryPhotos,
   getSiteDiaryPhotos,
   saveSiteDiaryPhoto,
+  updateSiteDiaryPhoto,
+  registerPendingSiteDiaryPhotos,
   deleteSiteDiaryPhoto,
   inMemorySiteDiaryItems,
   getSiteDiaryItems,

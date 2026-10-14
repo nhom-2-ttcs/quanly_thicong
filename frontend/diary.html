@@ -316,6 +316,52 @@
     }
     .photo-caption-input:focus { border-color: var(--brand-blue); }
 
+    /* S-33: Ô ảnh chờ tải nền thay vì ảnh vỡ (AC 3) */
+    .photo-card-pending {
+      border: 1.5px dashed #93c5fd; background: #f8fafc;
+    }
+    .photo-placeholder-wrap {
+      width: 100%; height: 75px; position: relative; overflow: hidden;
+      background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 4px; border-bottom: 1px dashed #bfdbfe;
+    }
+    .photo-placeholder-spin {
+      font-size: 20px; display: inline-block; animation: spinHourglass 2s infinite ease-in-out;
+    }
+    @keyframes spinHourglass {
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(1.1); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+    .photo-placeholder-badge {
+      font-size: 9px; font-weight: 800; color: #1d4ed8; text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.9); padding: 1px 6px; border-radius: 4px;
+      letter-spacing: 0.3px; border: 1px solid #bfdbfe;
+    }
+
+    /* Thanh tiến trình tải ảnh nền nổi (S-33 / T-60, T-61, T-62) */
+    .bg-upload-bar {
+      position: fixed; bottom: 20px; right: 24px; z-index: 100;
+      background: #ffffff; border: 1.5px solid var(--border-card);
+      border-radius: 12px; padding: 10px 16px; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.15);
+      display: none; align-items: center; gap: 12px; max-width: 380px; width: calc(100% - 48px);
+      transition: all 0.2s ease;
+    }
+    .bg-upload-bar.active { display: flex; }
+    .bg-upload-icon {
+      font-size: 22px; flex-shrink: 0; animation: spinHourglass 2s infinite ease-in-out;
+    }
+    .bg-upload-details { display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0; }
+    .bg-upload-title { font-size: 12.5px; font-weight: 800; color: var(--text-title); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bg-upload-status { font-size: 11px; color: var(--brand-blue); font-weight: 600; }
+    .bg-upload-retry {
+      background: #eff6ff; border: 1px solid #bfdbfe; color: var(--brand-blue);
+      border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: 700;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .bg-upload-retry:hover { background: #dbeafe; }
+
     /* Modal xem ảnh lớn */
     .photo-lightbox {
       display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85);
@@ -365,6 +411,7 @@
       .input-date-nav { flex-grow: 1; }
     }
   </style>
+  <script src="/js/backgroundPhotoQueue.js"></script>
 </head>
 <body>
 
@@ -637,7 +684,7 @@
                 <span>📸 Ảnh đính kèm hiện trường</span>
               </label>
               <span style="font-size: 11px; font-weight: 700; color: var(--text-muted);" id="photo-count-indicator">
-                Tối đa 10 ảnh (≤ 5MB/ảnh)
+                Tối đa 50 ảnh (≤ 5MB/ảnh) • Tải nền tự động
               </span>
             </div>
 
@@ -709,7 +756,7 @@
     const DAY_NAMES = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
     const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-    const MAX_PHOTOS = 10;
+    const MAX_PHOTOS = 50; // S-33: Cho phép tải hàng đợi lên tới 30-50 ảnh nền (AC 1)
 
     // Khởi tạo người dùng
     function initUser() {
@@ -1224,20 +1271,45 @@
       container.style.display = 'block';
       countEl.innerText = `${existingPhotos.length} ảnh`;
 
-      grid.innerHTML = existingPhotos.map(p => `
-        <div class="photo-card" id="existing-photo-${p.id}">
-          <div class="photo-thumb-wrap">
-            <img src="${p.url || '/uploads/diaries/' + p.file_name}" alt="${escapeHtml(p.caption || p.file_name)}" onclick="openLightbox('${p.url || '/uploads/diaries/' + p.file_name}', '${escapeHtml(p.caption || p.file_name)}', 'Đã lưu • ${formatFileSize(p.file_size)}')">
-            <button type="button" class="photo-remove-btn" onclick="deleteExistingPhoto(${p.id})" title="Xóa ảnh trên server">✕</button>
+      grid.innerHTML = existingPhotos.map(p => {
+        const isPending = p.upload_status === 'pending' || p.upload_status === 'uploading' || !p.url;
+
+        // AC 3: Khi ảnh đang chờ tải ở nền, hiển thị ô ảnh chờ thay vì ảnh vỡ
+        if (isPending) {
+          const clientKey = p.client_photo_id || p.id;
+          return `
+            <div class="photo-card photo-card-pending" id="existing-photo-${p.id || clientKey}" data-client-id="${clientKey}">
+              <div class="photo-placeholder-wrap">
+                <span class="photo-placeholder-spin">⏳</span>
+                <span class="photo-placeholder-badge">Đang tải nền...</span>
+              </div>
+              <div class="photo-meta-info">
+                <span style="font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(p.caption || p.file_name || 'Ảnh hiện trường')}">
+                  ${escapeHtml(p.caption || p.file_name || 'Ảnh hiện trường')}
+                </span>
+                <span class="photo-file-size" style="color:var(--brand-blue); font-weight:700;">
+                  ⏳ Chờ tải • ${formatFileSize(p.file_size)}
+                </span>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="photo-card" id="existing-photo-${p.id}">
+            <div class="photo-thumb-wrap">
+              <img src="${p.url || '/uploads/diaries/' + p.file_name}" alt="${escapeHtml(p.caption || p.file_name)}" onclick="openLightbox('${p.url || '/uploads/diaries/' + p.file_name}', '${escapeHtml(p.caption || p.file_name)}', 'Đã lưu • ${formatFileSize(p.file_size)}')">
+              <button type="button" class="photo-remove-btn" onclick="deleteExistingPhoto(${p.id})" title="Xóa ảnh trên server">✕</button>
+            </div>
+            <div class="photo-meta-info">
+              <span style="font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(p.caption || p.file_name)}">
+                ${escapeHtml(p.caption || p.file_name)}
+              </span>
+              <span class="photo-file-size">${formatFileSize(p.file_size)}</span>
+            </div>
           </div>
-          <div class="photo-meta-info">
-            <span style="font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(p.caption || p.file_name)}">
-              ${escapeHtml(p.caption || p.file_name)}
-            </span>
-            <span class="photo-file-size">${formatFileSize(p.file_size)}</span>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     async function deleteExistingPhoto(photoId) {
@@ -1359,17 +1431,18 @@
     }
 
     // ========================================================
-    // SUBMIT LƯU NHẬT KÝ & TẢI ẢNH (T52)
-    // Chống bấm liên tiếp, gửi FormData multipart đúng contract
+    // SUBMIT LƯU NHẬT KÝ & TẢI ẢNH NỀN (S-33 / T-60, T-61, T-62)
+    // NFR: Ảnh gửi sau mục nhật ký, mục không chờ ảnh
+    // AC 1: Lưu ngay lập tức để người dùng tiếp tục ghi mục mới
     // ========================================================
     async function handleFormSubmit(e) {
       e.preventDefault();
       const btn = document.getElementById('btn-submit-diary');
       if (btn.disabled) return; // Chống gửi trùng
 
-      // Khóa nút gửi ngay lập tức
+      // Khóa nút tạm thời trong tích tắc để gửi metadata nhật ký
       btn.disabled = true;
-      btn.innerHTML = '<span>⏳ Đang lưu nhật ký & tải ảnh...</span>';
+      btn.innerHTML = '<span>⏳ Đang lưu mục nhật ký...</span>';
 
       hideToasts();
 
@@ -1389,6 +1462,18 @@
         return;
       }
 
+      // Lưu lại danh sách ảnh cần tải nền trước khi clear form
+      const photosToQueue = [...selectedPhotos];
+
+      // Chuẩn bị metadata ảnh chờ tải (S-33 / T-60)
+      const pendingPhotosMetadata = photosToQueue.map(p => ({
+        client_photo_id: p.id,
+        file_name: p.file ? p.file.name : (p.fileName || 'photo.jpg'),
+        file_size: p.file ? p.file.size : (p.fileSize || 0),
+        mime_type: p.file ? p.file.type : (p.fileType || 'image/jpeg'),
+        caption: p.caption || ''
+      }));
+
       // Đóng gói FormData multipart
       const formData = new FormData();
       formData.append('diary_date', diaryDate);
@@ -1398,6 +1483,11 @@
       formData.append('manpower_count', String(manpower));
       formData.append('equipment_status', equipStatus);
       formData.append('work_notes', workNotes);
+
+      // Đính kèm metadata ảnh chờ tải nền
+      if (pendingPhotosMetadata.length > 0) {
+        formData.append('pending_photos', JSON.stringify(pendingPhotosMetadata));
+      }
 
       // Liên kết công việc (work_item_id / items)
       const selectedWorkItemId = document.getElementById('select-work-item').value;
@@ -1412,15 +1502,11 @@
         formData.append('items', JSON.stringify([itemObj]));
       }
 
-      // Đính kèm các ảnh đã chọn (field 'photos')
-      selectedPhotos.forEach(p => {
-        formData.append('photos', p.file, p.file.name);
-      });
-
-      // Mảng caption cho các ảnh
-      if (selectedPhotos.length > 0) {
-        const captions = selectedPhotos.map(p => p.caption || '');
-        formData.append('captions', JSON.stringify(captions));
+      // Đính kèm các ảnh đã chọn (hỗ trợ cả gửi trực tiếp qua field photos hoặc tải nền theo hàng đợi S-33)
+      if (window.UPLOAD_MODE === 'direct') {
+        selectedPhotos.forEach(p => {
+          if (p.file) formData.append('photos', p.file, p.file.name);
+        });
       }
 
       try {
@@ -1429,6 +1515,7 @@
         if (token) headers['Authorization'] = `Bearer ${token}`;
         // LƯU Ý QUAN TRỌNG: KHÔNG đặt Content-Type để trình duyệt tự tạo boundary multipart
 
+        // Gửi nội dung nhật ký lên máy chủ NGAY LẬP TỨC (< 100ms) - Mục không chờ ảnh (NFR)
         const res = await fetch(`/api/projects/${PROJECT_ID}/diaries`, {
           method: 'POST',
           headers,
@@ -1438,22 +1525,31 @@
         const data = await res.json();
 
         if (res.ok && data.success) {
-          const photoMsg = selectedPhotos.length > 0 ? ` kèm ${selectedPhotos.length} ảnh đính kèm!` : '';
+          const photoMsg = photosToQueue.length > 0
+            ? ` (${photosToQueue.length} ảnh đang tự động tải ở nền)`
+            : '';
           showSuccessToast(`Đã lưu nhật ký ngày ${formatDateDisplay(diaryDate)} thành công${photoMsg}`);
 
-          // Xóa danh sách ảnh tạm đã tải lên thành công
+          // AC 1 & T-62: Xóa ảnh đã chọn trên form NGAY LẬP TỨC để kỹ sư có thể tiếp tục ghi mục mới
           clearSelectedPhotos();
+
+          // Đưa ảnh vào hàng đợi nền xử lý tuần tự (T-60 / T-62)
+          if (photosToQueue.length > 0 && typeof BackgroundPhotoQueue !== 'undefined') {
+            await BackgroundPhotoQueue.enqueueBatch({
+              projectId: PROJECT_ID,
+              diaryDate,
+              photos: photosToQueue
+            });
+          }
 
           // Tải lại dữ liệu tuần để đồng bộ Grid và Metrics
           await loadWeekData(diaryDate);
-          // Tải lại chi tiết để hiển thị ảnh mới lưu
+          // Tải lại chi tiết để hiển thị ô ảnh đang chờ (AC 3)
           await loadFormWithDate(diaryDate);
         } else {
-          // Báo lỗi rõ ràng, giữ nguyên form và danh sách ảnh chờ tải để người dùng thử lại
           showErrorToast(data.message || 'Lưu nhật ký thất bại. Dữ liệu trên form và ảnh được giữ nguyên.');
         }
       } catch (err) {
-        // Lỗi mất mạng hoặc exception: Không báo thành công giả, giữ nguyên dữ liệu
         showErrorToast('Lỗi kết nối đến máy chủ: ' + err.message + '. Dữ liệu và ảnh không bị mất, vui lòng thử lại.');
       } finally {
         btn.disabled = false;
@@ -1716,6 +1812,79 @@
     closeUnlockModal();
     alert('Đã mở khoá sổ thành công và ghi nhận Audit Log: ' + reason);
   }
+
+  // ========================================================
+  // KHỞI TẠO HÀNG ĐỢI TẢI ẢNH NỀN (S-33 / T-60, T-61, T-62)
+  // ========================================================
+  function initBackgroundPhotoQueueUI() {
+    if (typeof BackgroundPhotoQueue === 'undefined') return;
+
+    const bar = document.getElementById('bg-upload-bar');
+    const titleEl = document.getElementById('bg-upload-title');
+    const statusEl = document.getElementById('bg-upload-status');
+    const retryBtn = document.getElementById('bg-upload-retry-btn');
+    const iconEl = document.getElementById('bg-upload-icon');
+
+    // Lắng nghe tiến trình tải ảnh nền (T-62)
+    BackgroundPhotoQueue.on('progress', (data) => {
+      const activeCount = data.pending + data.uploading;
+      if (activeCount > 0) {
+        bar.classList.add('active');
+        if (!data.isOnline) {
+          iconEl.innerText = '🔴';
+          titleEl.innerText = 'Mất kết nối mạng!';
+          statusEl.innerText = `Đang chờ có mạng để tải tiếp (${activeCount} ảnh còn lại)`;
+          retryBtn.style.display = 'inline-block';
+        } else {
+          iconEl.innerText = '⏳';
+          const currentName = data.activeItem ? data.activeItem.fileName : 'ảnh hiện trường';
+          titleEl.innerText = `Đang tải: ${currentName}`;
+          statusEl.innerText = `Còn ${activeCount} ảnh trong hàng đợi • Đang tải ở nền...`;
+          retryBtn.style.display = data.failed > 0 ? 'inline-block' : 'none';
+        }
+      } else if (data.failed > 0) {
+        bar.classList.add('active');
+        iconEl.innerText = '⚠️';
+        titleEl.innerText = `${data.failed} ảnh tải chưa thành công`;
+        statusEl.innerText = 'Bấm nút để thử tải lại ảnh';
+        retryBtn.style.display = 'inline-block';
+      } else {
+        bar.classList.remove('active');
+      }
+    });
+
+    // Khi 1 ảnh hoàn tất tải lên (T-60 / AC 3)
+    BackgroundPhotoQueue.on('item-success', ({ item, result }) => {
+      console.log('[PhotoQueue] ✅ Tải thành công ảnh nền:', item.fileName);
+      // Nếu đang mở đúng ngày này, cập nhật trực tiếp ô ảnh placeholder thành ảnh thật
+      if (item.diaryDate === currentSelectedDate) {
+        const placeholderCard = document.querySelector(`[data-client-id="${item.id}"]`) ||
+                                document.getElementById(`existing-photo-${item.id}`);
+        if (placeholderCard) {
+          const photoUrl = result.url || `/uploads/diaries/${result.file_name}`;
+          placeholderCard.classList.remove('photo-card-pending');
+          placeholderCard.innerHTML = `
+            <div class="photo-thumb-wrap">
+              <img src="${photoUrl}" alt="${escapeHtml(result.caption || item.fileName)}" onclick="openLightbox('${photoUrl}', '${escapeHtml(result.caption || item.fileName)}', 'Đã lưu • ${formatFileSize(result.file_size || item.fileSize)}')">
+            </div>
+            <div class="photo-meta-info">
+              <span style="font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${escapeHtml(result.caption || item.fileName)}
+              </span>
+              <span class="photo-file-size" style="color:var(--emerald-text); font-weight:700;">✅ Đã tải xong</span>
+            </div>
+          `;
+        }
+      }
+    });
+
+    // Bắt đầu xử lý các ảnh còn lưu trong storage từ phiên trước nếu có
+    BackgroundPhotoQueue.processNext();
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    initBackgroundPhotoQueueUI();
+  });
 </script>
 
 <!-- S-31 / T-55 / T-56: Nạp module quản lý đồng bộ ngoại tuyến và thanh trạng thái trên thiết bị -->
@@ -1729,6 +1898,18 @@
     }
   });
 </script>
+
+  <!-- Floating Background Photo Queue Indicator (S-33 / T-60, T-61, T-62) -->
+  <div class="bg-upload-bar" id="bg-upload-bar" role="status" aria-live="polite">
+    <div class="bg-upload-icon" id="bg-upload-icon">⏳</div>
+    <div class="bg-upload-details">
+      <div class="bg-upload-title" id="bg-upload-title">Đang tải ảnh nền...</div>
+      <div class="bg-upload-status" id="bg-upload-status">0/0 ảnh (0%)</div>
+    </div>
+    <button type="button" class="bg-upload-retry" id="bg-upload-retry-btn" onclick="BackgroundPhotoQueue.retryFailed()" style="display:none;">
+      🔄 Thử lại
+    </button>
+  </div>
 
 </body>
 </html>

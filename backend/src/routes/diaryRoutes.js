@@ -171,5 +171,71 @@ const { handleMultipartUpload } = require('../middlewares/multipartUpload');
     }
   });
 
+  // 7. S-33 / SCRUM-158 / T-60: Đăng ký danh sách ảnh vào hàng đợi nền
+  router.post('/projects/:projectId/diaries/:date/photo-queue/register', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const dateStr = req.params.date;
+
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId không hợp lệ' });
+    }
+
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const userId = req.user?.userId || req.user?.id || 1;
+      const pendingPhotos = req.body?.pending_photos || req.body?.photos || [];
+      const updated = await diaryService.registerPendingPhotos(projectId, dateStr, pendingPhotos, userId);
+      res.status(200).json({
+        success: true,
+        message: 'Đăng ký danh sách ảnh vào hàng đợi nền thành công',
+        data: updated
+      });
+    } catch (err) {
+      const statusCode = err.status || 500;
+      res.status(statusCode).json({
+        success: false,
+        message: err.message || 'Không thể đăng ký hàng đợi ảnh'
+      });
+    }
+  });
+
+  // 8. S-33 / SCRUM-159 & SCRUM-160 / T-61 & T-62: Tải lên từng ảnh nền trong hàng đợi
+  router.post('/projects/:projectId/diaries/:date/photos/upload-single', handleMultipartUpload, async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const dateStr = req.params.date;
+
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId không hợp lệ' });
+    }
+
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const userId = req.user?.userId || req.user?.id || 1;
+      const file = (req.files && req.files.length > 0) ? req.files[0] : null;
+      if (!file) {
+        return res.status(400).json({ success: false, message: 'Vui lòng đính kèm tệp ảnh cần tải lên' });
+      }
+
+      const clientPhotoId = req.body.client_photo_id || req.body.id || null;
+      const caption = req.body.caption || '';
+
+      const result = await diaryService.uploadSinglePhoto(projectId, dateStr, file, {
+        client_photo_id: clientPhotoId,
+        caption,
+        userId
+      });
+
+      res.status(200).json(result);
+    } catch (err) {
+      const statusCode = err.status || 500;
+      res.status(statusCode).json({
+        success: false,
+        message: err.message || 'Lỗi khi tải ảnh nền lên máy chủ'
+      });
+    }
+  });
+
   return router;
 };

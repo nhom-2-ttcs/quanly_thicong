@@ -135,8 +135,17 @@ function parseMultipartBuffer(buffer, boundary, projectId) {
       ensureUploadDir();
       const safeFilename = generateSafeFilename(projectId, filename);
       const targetPath = path.join(UPLOAD_DIR, safeFilename);
+      const tempPath = `${targetPath}.part`;
 
-      fs.writeFileSync(targetPath, partData);
+      try {
+        fs.writeFileSync(tempPath, partData);
+        fs.renameSync(tempPath, targetPath);
+      } catch (writeErr) {
+        if (fs.existsSync(tempPath)) {
+          try { fs.unlinkSync(tempPath); } catch (_) {}
+        }
+        throw writeErr;
+      }
 
       files.push({
         fieldname: fieldName,
@@ -237,7 +246,16 @@ function handleMultipartUpload(req, res, next) {
 
             const safeFilename = generateSafeFilename(projectId, photoObj.filename || 'photo.jpg');
             const targetPath = path.join(UPLOAD_DIR, safeFilename);
-            fs.writeFileSync(targetPath, buffer);
+            const tempPath = `${targetPath}.part`;
+            try {
+              fs.writeFileSync(tempPath, buffer);
+              fs.renameSync(tempPath, targetPath);
+            } catch (writeErr) {
+              if (fs.existsSync(tempPath)) {
+                try { fs.unlinkSync(tempPath); } catch (_) {}
+              }
+              throw writeErr;
+            }
 
             req.files.push({
               fieldname: 'photos',
