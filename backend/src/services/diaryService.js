@@ -433,6 +433,24 @@ class DiaryService {
           const mimeType = p.mime_type || p.fileType || 'image/jpeg';
           const caption = p.caption ? String(p.caption).trim() : null;
           const clientPhotoId = p.client_photo_id || p.id || null;
+
+          // S-34 / T-64: Idempotency & Deduplication
+          if (clientPhotoId) {
+            const [existing] = await this.pool.query(
+              'SELECT id FROM site_diary_photos WHERE diary_id = ? AND client_photo_id = ? LIMIT 1',
+              [diaryId, clientPhotoId]
+            );
+            if (existing && existing.length > 0) {
+              await this.pool.query(
+                `UPDATE site_diary_photos
+                 SET file_name = ?, file_size = ?, mime_type = ?, caption = COALESCE(?, caption)
+                 WHERE id = ?`,
+                [fileName, fileSize, mimeType, caption, existing[0].id]
+              );
+              continue;
+            }
+          }
+
           await this.pool.query(
             'INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             [diaryId, fileName, '', fileSize, mimeType, caption, 'pending', clientPhotoId]
@@ -585,6 +603,23 @@ class DiaryService {
         const mimeType = p.mime_type || p.fileType || 'image/jpeg';
         const caption = p.caption ? String(p.caption).trim() : null;
         const clientPhotoId = p.client_photo_id || p.id || null;
+
+        // S-34 / T-64: Idempotency & Deduplication
+        if (clientPhotoId) {
+          const [existing] = await this.pool.query(
+            'SELECT id FROM site_diary_photos WHERE diary_id = ? AND client_photo_id = ? LIMIT 1',
+            [diary.id, clientPhotoId]
+          );
+          if (existing && existing.length > 0) {
+            await this.pool.query(
+              `UPDATE site_diary_photos
+               SET file_name = ?, file_size = ?, mime_type = ?, caption = COALESCE(?, caption)
+               WHERE id = ?`,
+              [fileName, fileSize, mimeType, caption, existing[0].id]
+            );
+            continue;
+          }
+        }
 
         await this.pool.query(
           `INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id)

@@ -671,6 +671,7 @@
     }
   </style>
   <script src="/js/backgroundPhotoQueue.js"></script>
+  <script type="module" src="/js/offlineDiaryStorage.js"></script>
 </head>
 <body>
 
@@ -2239,6 +2240,29 @@
         if (token) headers['Authorization'] = `Bearer ${token}`;
         // LƯU Ý QUAN TRỌNG: KHÔNG đặt Content-Type để trình duyệt tự tạo boundary multipart
 
+        // S-34 / T-63: Hỗ trợ ghi nhật ký và đính kèm ảnh khi mất kết nối mạng (Offline Mode)
+        const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+        if (isOffline) {
+          if (photosToQueue.length > 0 && typeof BackgroundPhotoQueue !== 'undefined') {
+            await BackgroundPhotoQueue.enqueueBatch({
+              projectId: PROJECT_ID,
+              diaryDate,
+              photos: photosToQueue
+            });
+          }
+          if (typeof OfflineDiaryStorage !== 'undefined' && OfflineDiaryStorage.saveOfflineDiary) {
+            await OfflineDiaryStorage.saveOfflineDiary({
+              content: workNotes,
+              projectId: PROJECT_ID,
+              diaryDate,
+              photoDataUrl: photosToQueue.length > 0 ? (photosToQueue[0].dataUrl || photosToQueue[0].previewUrl) : null
+            });
+          }
+          clearSelectedPhotos();
+          showSuccessToast(`Đang ngoại tuyến: Đã lưu nhật ký và ${photosToQueue.length} ảnh vào hàng đợi thiết bị. Sẽ tự động đồng bộ khi có kết nối mạng.`);
+          return;
+        }
+
         // Gửi nội dung nhật ký lên máy chủ NGAY LẬP TỨC (< 100ms) - Mục không chờ ảnh (NFR)
         const res = await fetch(`/api/projects/${PROJECT_ID}/diaries`, {
           method: 'POST',
@@ -2274,6 +2298,26 @@
           showErrorToast(data.message || 'Lưu nhật ký thất bại. Dữ liệu trên form và ảnh được giữ nguyên.');
         }
       } catch (err) {
+        if (typeof navigator !== 'undefined' && (navigator.onLine === false || err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+          if (photosToQueue.length > 0 && typeof BackgroundPhotoQueue !== 'undefined') {
+            await BackgroundPhotoQueue.enqueueBatch({
+              projectId: PROJECT_ID,
+              diaryDate,
+              photos: photosToQueue
+            });
+          }
+          if (typeof OfflineDiaryStorage !== 'undefined' && OfflineDiaryStorage.saveOfflineDiary) {
+            await OfflineDiaryStorage.saveOfflineDiary({
+              content: workNotes,
+              projectId: PROJECT_ID,
+              diaryDate,
+              photoDataUrl: photosToQueue.length > 0 ? (photosToQueue[0].dataUrl || photosToQueue[0].previewUrl) : null
+            });
+          }
+          clearSelectedPhotos();
+          showSuccessToast(`Mất mạng: Đã bảo vệ và lưu ${photosToQueue.length} ảnh vào hàng đợi ngoại tuyến.`);
+          return;
+        }
         showErrorToast('Lỗi kết nối đến máy chủ: ' + err.message + '. Dữ liệu và ảnh không bị mất, vui lòng thử lại.');
       } finally {
         btn.disabled = false;

@@ -604,6 +604,23 @@ function saveSiteDiaryPhoto({
   temp_path = null
 }) {
   const dId = Number(diary_id);
+  const cId = client_photo_id ? String(client_photo_id) : null;
+
+  // S-34 / T-64: Idempotency & deduplication - Nếu client_photo_id đã tồn tại trong nhật ký, cập nhật bản ghi cũ
+  if (cId) {
+    const existing = inMemorySiteDiaryPhotos.find(p => p.diary_id === dId && p.client_photo_id === cId);
+    if (existing) {
+      if (file_name) existing.file_name = String(file_name).trim();
+      if (file_path) existing.file_path = String(file_path).trim();
+      if (file_size) existing.file_size = Number(file_size);
+      if (mime_type) existing.mime_type = String(mime_type);
+      if (caption !== undefined && caption !== null) existing.caption = String(caption).trim();
+      if (upload_status) existing.upload_status = upload_status;
+      if (temp_path !== undefined) existing.temp_path = temp_path;
+      return existing;
+    }
+  }
+
   const newId = inMemorySiteDiaryPhotos.length > 0 ? Math.max(...inMemorySiteDiaryPhotos.map(p => p.id)) + 1 : 1;
   const newPhoto = {
     id: newId,
@@ -614,7 +631,7 @@ function saveSiteDiaryPhoto({
     mime_type: String(mime_type || 'image/jpeg'),
     caption: caption ? String(caption).trim() : null,
     upload_status: upload_status || 'completed',
-    client_photo_id: client_photo_id ? String(client_photo_id) : null,
+    client_photo_id: cId,
     temp_path: temp_path ? String(temp_path) : null,
     created_at: new Date().toISOString()
   };

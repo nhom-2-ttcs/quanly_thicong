@@ -73,11 +73,19 @@ jobs:
 
       - name: 5. Run Automated Tests
         env:
-          BACKEND_BASE_URL: http://localhost:5001
-          FRONTEND_BASE_URL: http://localhost:8081
+          BACKEND_BASE_URL: http://localhost:5000
+          FRONTEND_BASE_URL: http://localhost:5000
         run: |
           cd backend
           npm test
+
+      - name: 6. Run S-34 E2E Offline 20 Photos Test (T-63, T-64, T-65 < 3 mins)
+        env:
+          BACKEND_BASE_URL: http://localhost:5000
+          FRONTEND_BASE_URL: http://localhost:5000
+        run: |
+          cd backend
+          npm run test:s34
 
       - name: Diagnostics on Failure
         if: failure()
