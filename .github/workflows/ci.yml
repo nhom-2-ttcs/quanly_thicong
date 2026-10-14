@@ -49,9 +49,9 @@ jobs:
           }
 
           while [ $ELAPSED -lt $TIMEOUT ]; do
-            if check_endpoint "http://localhost:5001/api/health" && \
-               check_endpoint "http://localhost:5001/api/db-check" && \
-               check_endpoint "http://localhost:8081/login.html" && \
+            if check_endpoint "http://localhost:5000/api/health" && \
+               check_endpoint "http://localhost:5000/api/db-check" && \
+               check_endpoint "http://localhost:5000/login.html" && \
                check_endpoint "http://localhost:8081/schedule.html"; then
               echo "✅ All services are healthy and responding with HTTP 200 after ${ELAPSED}s!"
               exit 0
@@ -69,7 +69,7 @@ jobs:
           echo "=== Backend Logs ==="
           docker compose logs backend --tail=100
           echo "=== Frontend Logs ==="
-          docker compose logs frontend || true --tail=100
+          echo "No frontend service" || true --tail=100
           exit 1
 
       - name: 5. Run Automated Tests
@@ -90,7 +90,7 @@ jobs:
           echo "=== Backend Logs ==="
           docker compose logs backend --tail=100
           echo "=== Frontend Logs ==="
-          docker compose logs frontend || true --tail=100
+          echo "No frontend service" || true --tail=100
 
       - name: Teardown Docker Stack
         if: always()
