@@ -237,5 +237,116 @@ const { handleMultipartUpload } = require('../middlewares/multipartUpload');
     }
   });
 
+  // ========================================================
+  // S-21 / SCRUM-113: CÁC ROUTE GHI VÀ LỌC MỤC NHẬT KÝ HẰNG NGÀY GẮN HẠNG MỤC
+  // ========================================================
+
+  // 9. Lấy danh sách mục nhật ký theo dự án (hỗ trợ lọc theo ngày, theo hạng mục work_item_id) (AC 2)
+  router.get('/projects/:projectId/diary-items', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId không hợp lệ' });
+    }
+
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    try {
+      const { date, work_item_id, start_date, end_date } = req.query;
+      const items = await diaryService.getDiaryItems(projectId, {
+        date,
+        work_item_id: (work_item_id !== undefined && work_item_id !== '') ? Number(work_item_id) : undefined,
+        start_date,
+        end_date
+      });
+      res.json({ success: true, data: items });
+    } catch (err) {
+      res.status(err.status || 500).json({
+        success: false,
+        message: err.message || 'Lỗi khi lấy danh sách mục nhật ký'
+      });
+    }
+  });
+
+  // 10. Kỹ sư giám sát ghi thêm một mục nhật ký gắn hạng mục thi công (AC 1 & AC 3)
+  router.post('/projects/:projectId/diary-items', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId không hợp lệ' });
+    }
+
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const userId = req.user?.userId || req.user?.id || 1;
+      const dateStr = req.body.diary_date || req.body.date || new Date().toISOString().split('T')[0];
+      const result = await diaryService.addDiaryItem(projectId, dateStr, req.body, userId);
+      res.status(201).json({
+        success: true,
+        message: 'Ghi mục nhật ký thành công',
+        data: result.item,
+        dayItems: result.dayItems
+      });
+    } catch (err) {
+      const statusCode = err.status || 500;
+      res.status(statusCode).json({
+        success: false,
+        message: err.message || 'Không thể lưu mục nhật ký'
+      });
+    }
+  });
+
+  // 11. Cập nhật nội dung mục nhật ký
+  router.put('/projects/:projectId/diary-items/:itemId', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const itemId = Number(req.params.itemId);
+
+    if (!Number.isInteger(projectId) || projectId <= 0 || !Number.isInteger(itemId) || itemId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId hoặc itemId không hợp lệ' });
+    }
+
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const updated = await diaryService.updateDiaryItem(projectId, itemId, req.body);
+      res.json({
+        success: true,
+        message: 'Cập nhật mục nhật ký thành công',
+        data: updated
+      });
+    } catch (err) {
+      const statusCode = err.status || 500;
+      res.status(statusCode).json({
+        success: false,
+        message: err.message || 'Không thể cập nhật mục nhật ký'
+      });
+    }
+  });
+
+  // 12. Xóa mục nhật ký
+  router.delete('/projects/:projectId/diary-items/:itemId', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const itemId = Number(req.params.itemId);
+
+    if (!Number.isInteger(projectId) || projectId <= 0 || !Number.isInteger(itemId) || itemId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId hoặc itemId không hợp lệ' });
+    }
+
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      await diaryService.deleteDiaryItem(projectId, itemId);
+      res.json({
+        success: true,
+        message: 'Đã xóa mục nhật ký thành công'
+      });
+    } catch (err) {
+      const statusCode = err.status || 500;
+      res.status(statusCode).json({
+        success: false,
+        message: err.message || 'Không thể xóa mục nhật ký'
+      });
+    }
+  });
+
   return router;
 };
