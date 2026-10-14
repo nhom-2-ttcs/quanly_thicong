@@ -207,5 +207,60 @@ module.exports = (db) => {
     }
   });
 
+  // 10. S-26 / SCRUM-118: Đội trưởng xem công việc của đội mình (sắp xếp start_date ASC, găng, luỹ kế)
+  router.get('/projects/:projectId/contractor/tasks', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId không hợp lệ.' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    try {
+      const user = req.user || { id: Number(req.query.user_id) || 4, role_name: req.query.role || 'contractor' };
+      const teamId = req.query.team_id || req.query.teamId;
+      const tasks = await teamService.getContractorTasks(projectId, user, teamId);
+      res.json({ success: true, data: tasks });
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
+  // 11. S-26 / SCRUM-118: Báo cáo khối lượng hoàn thành theo ngày (lưu thời điểm, tính luỹ kế, cảnh báo vượt)
+  router.post('/projects/:projectId/contractor/tasks/:taskId/daily-progress', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const taskId = Number(req.params.taskId);
+    if (!Number.isInteger(projectId) || projectId <= 0 || !Number.isInteger(taskId) || taskId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId hoặc taskId không hợp lệ.' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const user = req.user || { id: Number(req.body.user_id || req.query.user_id) || 4, role_name: req.body.role || req.query.role || 'contractor' };
+      const result = await teamService.reportDailyProgress(projectId, taskId, req.body, user);
+      res.status(201).json(result);
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
+  // 12. S-26: Lấy lịch sử báo cáo khối lượng hàng ngày của một công việc
+  router.get('/projects/:projectId/contractor/tasks/:taskId/daily-progress', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const taskId = Number(req.params.taskId);
+    if (!Number.isInteger(projectId) || projectId <= 0 || !Number.isInteger(taskId) || taskId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId hoặc taskId không hợp lệ.' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    try {
+      const user = req.user;
+      const result = await teamService.getTaskDailyProgress(projectId, taskId, user);
+      res.json(result);
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
   return router;
 };

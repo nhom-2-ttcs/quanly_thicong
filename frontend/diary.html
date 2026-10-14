@@ -4,8 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nhật Ký Thi Công & Đánh Dấu Ngày Mưa (T51) | Quản Lý Thi Công</title>
+  <!-- PWA & Hiện trường Mobile (S-27 / SCRUM-119) -->
+  <meta name="theme-color" content="#1d4ed8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="QL Thi Công">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <script src="/js/pwa-register.js" defer></script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 
   <style>
@@ -1038,6 +1048,7 @@
           <div class="form-group">
             <label class="form-label"><span>Tình trạng máy móc & thiết bị</span></label>
             <textarea class="form-textarea" id="input-equipment-status" placeholder="VD: 1 máy xúc tạm dừng do mưa lầy; 2 máy bơm chìm hoạt động liên tục"></textarea>
+            <div id="equipment-config-chips" style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px;"></div>
           </div>
 
           <!-- Ghi chú nội dung công việc -->
@@ -2120,6 +2131,43 @@
       }
     }
 
+    // S-22 / SCRUM-114: Nạp danh mục thiết bị và thời tiết từ cấu hình tập trung
+    let diaryConfigData = null;
+    async function loadDiaryConfig() {
+      try {
+        const res = await fetch(`/api/projects/${PROJECT_ID}/diary-config`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json && json.data) {
+            diaryConfigData = json.data;
+            renderEquipmentSuggestions(diaryConfigData.equipment_list);
+          }
+        }
+      } catch (err) {
+        console.warn('Không thể nạp cấu hình nhật ký từ server, dùng cấu hình fallback:', err);
+      }
+    }
+
+    function renderEquipmentSuggestions(list) {
+      const container = document.getElementById('equipment-config-chips');
+      if (!container || !Array.isArray(list)) return;
+      container.innerHTML = '<span style="font-size: 11px; color: var(--text-muted); align-self: center; font-weight: 600;">📋 Thiết bị danh mục:</span>';
+      list.forEach(eq => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.style.cssText = 'padding: 2px 8px; font-size: 11px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 4px; cursor: pointer; font-weight: 500;';
+        chip.innerText = '+ ' + eq.name;
+        chip.onclick = () => {
+          const textarea = document.getElementById('input-equipment-status');
+          if (textarea) {
+            const entry = `${eq.name}: Hoạt động`;
+            textarea.value = textarea.value ? `${textarea.value}; ${entry}` : entry;
+          }
+        };
+        container.appendChild(chip);
+      });
+    }
+
     function onFormDateChange() {
       const newDate = document.getElementById('input-diary-date').value;
       if (newDate) {
@@ -2661,6 +2709,7 @@
 
   window.addEventListener('DOMContentLoaded', () => {
     initBackgroundPhotoQueueUI();
+    loadDiaryConfig();
   });
 </script>
 

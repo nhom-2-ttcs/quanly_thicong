@@ -609,7 +609,7 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    // S-33 / T-60: Bổ sung các cột cho hàng đợi tải ảnh nền nếu bảng đã tồn tại từ trước
+    // S-33 / T-60 & S-30: Bổ sung các cột cho hàng đợi tải ảnh nền và ràng buộc unique idempotency
     try {
       await pool.query(`
         ALTER TABLE site_diary_photos
@@ -617,9 +617,98 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
         ADD COLUMN IF NOT EXISTS client_photo_id VARCHAR(100) NULL AFTER upload_status,
         ADD COLUMN IF NOT EXISTS temp_path VARCHAR(500) NULL AFTER client_photo_id;
       `);
-    } catch (_) {
-      // Bỏ qua nếu MySQL không hỗ trợ IF NOT EXISTS trong ALTER TABLE hoặc cột đã có
-    }
+      // Thêm UNIQUE index cho client_photo_id (S-30)
+      const [pIndexes] = await pool.query(`SHOW INDEX FROM site_diary_photos WHERE Key_name = 'uq_photo_client_id'`);
+      if (!pIndexes || pIndexes.length === 0) {
+        await pool.query('ALTER TABLE site_diary_photos ADD UNIQUE KEY uq_photo_client_id (client_photo_id)');
+      }
+    } catch (_) {}
+
+    // S-30 & S-32: Bổ sung client_diary_id, version vào site_diaries
+    try {
+      await pool.query(`
+        ALTER TABLE site_diaries
+        ADD COLUMN IF NOT EXISTS client_diary_id VARCHAR(64) NULL AFTER project_id,
+        ADD COLUMN IF NOT EXISTS version INT NOT NULL DEFAULT 1 AFTER is_locked;
+      `);
+      const [dIndexes] = await pool.query(`SHOW INDEX FROM site_diaries WHERE Key_name = 'uq_diary_client_id'`);
+      if (!dIndexes || dIndexes.length === 0) {
+        await pool.query('ALTER TABLE site_diaries ADD UNIQUE KEY uq_diary_client_id (client_diary_id)');
+      }
+    } catch (_) {}
+
+    // S-30 & S-32: Bổ sung client_item_id, version vào site_diary_items
+    try {
+      await pool.query(`
+        ALTER TABLE site_diary_items
+        ADD COLUMN IF NOT EXISTS client_item_id VARCHAR(64) NULL AFTER diary_id,
+        ADD COLUMN IF NOT EXISTS version INT NOT NULL DEFAULT 1 AFTER quantity_done;
+      `);
+      const [iIndexes] = await pool.query(`SHOW INDEX FROM site_diary_items WHERE Key_name = 'uq_item_client_id'`);
+      if (!iIndexes || iIndexes.length === 0) {
+        await pool.query('ALTER TABLE site_diary_items ADD UNIQUE KEY uq_item_client_id (client_item_id)');
+      }
+    } catch (_) {}
+
+    // S-24: Bảng audit_logs phục vụ kiểm toán mở khóa sổ nhật ký
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        action VARCHAR(50) NOT NULL,
+        resource_type VARCHAR(50) NOT NULL,
+        resource_id VARCHAR(100) NOT NULL,
+        reason TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_audit_user (user_id),
+        INDEX idx_audit_resource (resource_type, resource_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // S-26: Bảng team_daily_progress (Báo cáo khối lượng hằng ngày của đội thi công)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS team_daily_progress (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        task_id INT NOT NULL,
+        team_id INT NOT NULL,
+        report_date DATE NOT NULL,
+        reported_quantity DECIMAL(12, 2) NOT NULL,
+        notes TEXT NULL,
+        created_by INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+        FOREIGN KEY (team_id) REFERENCES project_teams(id) ON DELETE CASCADE,
+        INDEX idx_tdp_task (task_id),
+        INDEX idx_tdp_team (team_id),
+        INDEX idx_tdp_date (report_date)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // S-32: Bảng diary_conflicts (Lưu vết xung đột phiên bản và giữ cả hai bản)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS diary_conflicts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        entity_type ENUM('diary', 'diary_item') NOT NULL,
+        entity_id INT NOT NULL,
+        server_version INT NOT NULL,
+        client_version INT NOT NULL,
+        server_data JSON NOT NULL,
+        client_data JSON NOT NULL,
+        conflict_fields JSON NOT NULL,
+        auto_merged TINYINT(1) NOT NULL DEFAULT 0,
+        merged_data JSON NULL,
+        status ENUM('pending', 'resolved_server', 'resolved_client', 'resolved_merged') NOT NULL DEFAULT 'pending',
+        resolved_by INT NULL,
+        resolved_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        INDEX idx_conflict_entity (entity_type, entity_id),
+        INDEX idx_conflict_status (project_id, status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
 
     // 13. Tạo bảng project_teams & task_assignments (S-25 / SCRUM-125 / T-50: Đội thi công & Giao việc)
     await pool.query(`
