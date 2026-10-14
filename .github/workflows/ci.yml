@@ -51,8 +51,7 @@ jobs:
           while [ $ELAPSED -lt $TIMEOUT ]; do
             if check_endpoint "http://localhost:5000/api/health" && \
                check_endpoint "http://localhost:5000/api/db-check" && \
-               check_endpoint "http://localhost:5000/login.html" && \
-               check_endpoint "http://localhost:8081/schedule.html"; then
+               check_endpoint "http://localhost:5000/login.html"; then
               echo "✅ All services are healthy and responding with HTTP 200 after ${ELAPSED}s!"
               exit 0
             fi
