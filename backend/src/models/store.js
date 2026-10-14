@@ -507,9 +507,81 @@ function getSiteDiaryByDate(projectId, date) {
   return inMemorySiteDiaries.find(d => Number(d.project_id) === pId && d.diary_date === date) || null;
 }
 
+let inMemoryAuditLogs = [];
+function logAudit({ userId, action, resourceType, resourceId, reason }) {
+  const newId = inMemoryAuditLogs.length > 0 ? Math.max(...inMemoryAuditLogs.map(l => l.id)) + 1 : 1;
+  const entry = {
+    id: newId,
+    user_id: Number(userId || 1),
+    action: String(action),
+    resource_type: String(resourceType),
+    resource_id: String(resourceId),
+    reason: String(reason || ''),
+    created_at: new Date().toISOString()
+  };
+  inMemoryAuditLogs.push(entry);
+  return entry;
+}
+
+function getAuditLogs({ resourceType, resourceId } = {}) {
+  let list = [...inMemoryAuditLogs];
+  if (resourceType) list = list.filter(l => l.resource_type === resourceType);
+  if (resourceId) list = list.filter(l => String(l.resource_id) === String(resourceId));
+  return list;
+}
+
+let inMemoryDiaryConflicts = [];
+function saveDiaryConflict({ projectId, entityType, entityId, serverVersion, clientVersion, serverData, clientData, conflictFields, autoMerged = false, mergedData = null }) {
+  const newId = inMemoryDiaryConflicts.length > 0 ? Math.max(...inMemoryDiaryConflicts.map(c => c.id)) + 1 : 1;
+  const conflict = {
+    id: newId,
+    project_id: Number(projectId),
+    entity_type: entityType,
+    entity_id: Number(entityId),
+    server_version: Number(serverVersion),
+    client_version: Number(clientVersion),
+    server_data: serverData,
+    client_data: clientData,
+    conflict_fields: conflictFields || [],
+    auto_merged: autoMerged ? 1 : 0,
+    merged_data: mergedData || null,
+    status: autoMerged ? 'resolved_merged' : 'pending',
+    resolved_by: autoMerged ? 1 : null,
+    resolved_at: autoMerged ? new Date().toISOString() : null,
+    created_at: new Date().toISOString()
+  };
+  inMemoryDiaryConflicts.push(conflict);
+  return conflict;
+}
+
+function getDiaryConflicts(projectId, status = null) {
+  const pId = Number(projectId);
+  let list = inMemoryDiaryConflicts.filter(c => c.project_id === pId);
+  if (status) list = list.filter(c => c.status === status);
+  return list;
+}
+
+function getDiaryConflictById(id) {
+  const cId = Number(id);
+  return inMemoryDiaryConflicts.find(c => c.id === cId) || null;
+}
+
+function resolveDiaryConflict(id, resolution, resolvedBy = 1) {
+  const conflict = getDiaryConflictById(id);
+  if (!conflict) return null;
+  conflict.status = resolution.status || 'resolved_client';
+  conflict.resolved_by = Number(resolvedBy || 1);
+  conflict.resolved_at = new Date().toISOString();
+  if (resolution.mergedData) {
+    conflict.merged_data = resolution.mergedData;
+  }
+  return conflict;
+}
+
 function saveSiteDiaryEntry({
   project_id,
   diary_date,
+  client_diary_id = null,
   weather_condition = 'sunny',
   is_rain_day = false,
   temperature_min = null,
@@ -522,6 +594,14 @@ function saveSiteDiaryEntry({
 }) {
   const pId = Number(project_id);
   const nowStr = new Date().toISOString();
+
+  // S-30: Ràng buộc idempotency - Nếu đã có bản ghi cùng client_diary_id thì trả về luôn bản ghi cũ (không tạo trùng)
+  if (client_diary_id) {
+    const existingByClient = inMemorySiteDiaries.find(d => Number(d.project_id) === pId && d.client_diary_id === String(client_diary_id));
+    if (existingByClient) {
+      return existingByClient;
+    }
+  }
 
   // Kiểm tra khóa sổ (S-24)
   const existing = inMemorySiteDiaries.find(d => Number(d.project_id) === pId && d.diary_date === diary_date);
@@ -543,6 +623,7 @@ function saveSiteDiaryEntry({
     existing.manpower_count = Number(manpower_count || 0);
     existing.equipment_status = equipment_status;
     existing.work_notes = work_notes;
+    existing.version = (existing.version || 1) + 1; // S-32: Tăng phiên bản khi sửa
     existing.updated_at = nowStr;
     return existing;
   } else {
@@ -551,6 +632,7 @@ function saveSiteDiaryEntry({
       id: newId,
       project_id: pId,
       diary_date,
+      client_diary_id: client_diary_id ? String(client_diary_id) : null,
       weather_condition,
       is_rain_day: calculatedIsRain ? 1 : 0,
       temperature_min,
@@ -562,6 +644,7 @@ function saveSiteDiaryEntry({
       is_locked: 0,
       locked_at: null,
       locked_by: null,
+      version: 1, // S-32: Phiên bản khởi tạo
       created_by: Number(created_by || 1),
       created_at: nowStr,
       updated_at: nowStr
@@ -581,6 +664,26 @@ function lockSiteDiary(projectId, date, userId) {
   diary.is_locked = 1;
   diary.locked_at = new Date().toISOString();
   diary.locked_by = Number(userId || 1);
+  return diary;
+}
+
+function unlockSiteDiary(projectId, date, userId, reason) {
+  const diary = getSiteDiaryByDate(projectId, date);
+  if (!diary) {
+    const err = new Error('Không tìm thấy nhật ký của ngày này để mở khóa.');
+    err.status = 404;
+    throw err;
+  }
+  diary.is_locked = 0;
+  diary.locked_at = null;
+  diary.locked_by = null;
+  logAudit({
+    userId,
+    action: 'UNLOCK_DIARY',
+    resourceType: 'site_diaries',
+    resourceId: `${projectId}_${date}`,
+    reason
+  });
   return diary;
 }
 
@@ -696,6 +799,7 @@ function getSiteDiaryItemById(itemId) {
 
 function saveSiteDiaryItem({
   diary_id,
+  client_item_id = null,
   work_item_id = null,
   work_content,
   log_time = null,
@@ -703,15 +807,27 @@ function saveSiteDiaryItem({
   unit = ''
 }) {
   const dId = Number(diary_id);
+  const cId = client_item_id ? String(client_item_id) : null;
+
+  // S-30: Ràng buộc idempotency - Nếu đã có client_item_id trùng thì trả về bản ghi cũ
+  if (cId) {
+    const existing = inMemorySiteDiaryItems.find(i => Number(i.diary_id) === dId && i.client_item_id === cId);
+    if (existing) {
+      return existing;
+    }
+  }
+
   const newId = inMemorySiteDiaryItems.length > 0 ? Math.max(...inMemorySiteDiaryItems.map(i => i.id)) + 1 : 1;
   const newItem = {
     id: newId,
     diary_id: dId,
+    client_item_id: cId,
     work_item_id: work_item_id ? Number(work_item_id) : null,
     work_content: String(work_content || '').trim(),
     log_time: log_time ? String(log_time).trim() : null,
     quantity_done: Number(quantity_done || 0),
     unit: String(unit || '').trim(),
+    version: 1, // S-32: Phiên bản khởi tạo
     created_at: new Date().toISOString()
   };
   inMemorySiteDiaryItems.push(newItem);
@@ -726,6 +842,7 @@ function updateSiteDiaryItem(itemId, updateData = {}) {
   if (updateData.log_time !== undefined) item.log_time = updateData.log_time ? String(updateData.log_time).trim() : null;
   if (updateData.quantity_done !== undefined) item.quantity_done = Number(updateData.quantity_done || 0);
   if (updateData.unit !== undefined) item.unit = String(updateData.unit || '').trim();
+  item.version = (item.version || 1) + 1; // S-32: Tăng phiên bản khi cập nhật
   item.updated_at = new Date().toISOString();
   return item;
 }
@@ -742,7 +859,11 @@ function deleteSiteDiaryItem(itemId) {
 
 function clearSiteDiaryItems(diaryId) {
   const dId = Number(diaryId);
-  inMemorySiteDiaryItems = inMemorySiteDiaryItems.filter(i => Number(i.diary_id) !== dId);
+  for (let i = inMemorySiteDiaryItems.length - 1; i >= 0; i--) {
+    if (Number(inMemorySiteDiaryItems[i].diary_id) === dId) {
+      inMemorySiteDiaryItems.splice(i, 1);
+    }
+  }
 }
 
 // ==========================================
@@ -1075,7 +1196,41 @@ function deleteTaskData(id) {
   return true;
 }
 
+// ==========================================
+// BÁO CÁO KHỐI LƯỢNG NGÀY CỦA ĐỘI (S-26 / SCRUM-118)
+// ==========================================
+let inMemoryTeamDailyProgress = [];
+
+function getTeamDailyProgress(taskId = null, teamId = null, projectId = null) {
+  return inMemoryTeamDailyProgress.filter(p => {
+    if (projectId && Number(p.project_id) !== Number(projectId)) return false;
+    if (taskId && Number(p.task_id) !== Number(taskId)) return false;
+    if (teamId && Number(p.team_id) !== Number(teamId)) return false;
+    return true;
+  });
+}
+
+function saveTeamDailyProgress({ project_id, task_id, team_id, report_date, reported_quantity, notes, created_by }) {
+  const newId = inMemoryTeamDailyProgress.length > 0 ? Math.max(...inMemoryTeamDailyProgress.map(p => p.id)) + 1 : 1;
+  const entry = {
+    id: newId,
+    project_id: Number(project_id),
+    task_id: Number(task_id),
+    team_id: Number(team_id),
+    report_date: String(report_date),
+    reported_quantity: Number(reported_quantity),
+    notes: notes ? String(notes).trim() : null,
+    created_by: Number(created_by || 1),
+    created_at: new Date().toISOString()
+  };
+  inMemoryTeamDailyProgress.push(entry);
+  return entry;
+}
+
 module.exports = {
+  inMemoryTeamDailyProgress,
+  getTeamDailyProgress,
+  saveTeamDailyProgress,
   SEED_ROLES,
   findUserByEmail,
   updateUser,
@@ -1104,6 +1259,15 @@ module.exports = {
   getSiteDiaryByDate,
   saveSiteDiaryEntry,
   lockSiteDiary,
+  unlockSiteDiary,
+  inMemoryAuditLogs,
+  logAudit,
+  getAuditLogs,
+  inMemoryDiaryConflicts,
+  saveDiaryConflict,
+  getDiaryConflicts,
+  getDiaryConflictById,
+  resolveDiaryConflict,
   inMemorySiteDiaryPhotos,
   getSiteDiaryPhotos,
   saveSiteDiaryPhoto,
