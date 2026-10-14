@@ -396,6 +396,262 @@
     }
     .table-tasks tr:last-child td { border-bottom: none; }
 
+    /* ========================================================
+       S-21: KỸ SƯ GIÁM SÁT GHI MỤC NHẬT KÝ HẰNG NGÀY GẮN HẠNG MỤC
+       NFR: Giao diện dùng được bằng một tay dưới nắng; chữ và nút đủ lớn
+       ======================================================== */
+    .s21-section {
+      background: #ffffff;
+      border: 2px solid var(--border-card);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .s21-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 14px;
+    }
+    .s21-titles h3 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-title);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .s21-titles p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    /* Chế độ Dưới Nắng Chói (High Contrast Outdoor Sun Mode) */
+    body.sun-mode {
+      --bg-canvas: #ffffff !important;
+      --card-bg: #ffffff !important;
+      --border-card: #000000 !important;
+      --text-title: #000000 !important;
+      --text-body: #000000 !important;
+      --text-muted: #1e293b !important;
+    }
+    body.sun-mode .s21-section,
+    body.sun-mode .section-card,
+    body.sun-mode .day-card,
+    body.sun-mode .metric-card,
+    body.sun-mode .diary-item-card {
+      border: 3px solid #000000 !important;
+      background: #ffffff !important;
+      color: #000000 !important;
+      box-shadow: none !important;
+    }
+    body.sun-mode .form-input,
+    body.sun-mode .form-select,
+    body.sun-mode .form-textarea,
+    body.sun-mode .one-hand-input,
+    body.sun-mode .one-hand-select,
+    body.sun-mode .one-hand-textarea {
+      border: 3px solid #000000 !important;
+      color: #000000 !important;
+      font-weight: 800 !important;
+      font-size: 16px !important;
+      background: #ffffff !important;
+    }
+    body.sun-mode .btn-one-hand-primary {
+      background: #000000 !important;
+      color: #ffffff !important;
+      border: 3px solid #000000 !important;
+      font-weight: 900 !important;
+    }
+    body.sun-mode .item-badge-time {
+      background: #000000 !important;
+      color: #ffffff !important;
+      border: 1px solid #000000 !important;
+    }
+    body.sun-mode .item-work-badge {
+      background: #e2e8f0 !important;
+      color: #000000 !important;
+      border: 2px solid #000000 !important;
+    }
+
+    /* NFR: Thao tác 1 tay & nút to (Thumb Zone Ergonomics) */
+    .btn-one-hand-primary {
+      min-height: 52px;
+      padding: 14px 22px;
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+      color: #ffffff;
+      border: 2px solid #1e40af;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 14px rgba(29, 78, 216, 0.25);
+      transition: all 0.15s ease;
+      touch-action: manipulation;
+      width: 100%;
+    }
+    .btn-one-hand-primary:hover {
+      background: #1e40af;
+      transform: translateY(-1px);
+    }
+    .btn-one-hand-primary:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 6px rgba(29, 78, 216, 0.2);
+    }
+
+    .btn-sun-toggle {
+      background: #fef08a;
+      border: 2px solid #ca8a04;
+      color: #854d0e;
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s;
+    }
+    .btn-sun-toggle:hover {
+      background: #fde047;
+    }
+
+    .one-hand-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .one-hand-grid { grid-template-columns: 1fr; }
+    }
+
+    .one-hand-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .one-hand-field label {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-title);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .one-hand-input, .one-hand-select, .one-hand-textarea {
+      min-height: 48px;
+      font-size: 14.5px;
+      font-weight: 600;
+      padding: 10px 14px;
+      border: 2px solid var(--border-card);
+      border-radius: 10px;
+      outline: none;
+      background: #ffffff;
+      color: var(--text-title);
+      transition: border-color 0.15s;
+    }
+    .one-hand-input:focus, .one-hand-select:focus, .one-hand-textarea:focus {
+      border-color: var(--brand-blue);
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
+    }
+    .one-hand-input.error, .one-hand-select.error {
+      border-color: var(--danger) !important;
+      background: var(--danger-bg) !important;
+    }
+
+    /* Filter Toolbar (AC 2) */
+    .diary-filter-bar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #f8fafc;
+      border: 1.5px solid var(--border-card);
+      border-radius: 12px;
+    }
+    .filter-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-title);
+    }
+
+    /* Item Card List (AC 1 & AC 2) */
+    .diary-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 6px;
+      max-height: 520px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .diary-item-card {
+      background: #ffffff;
+      border: 1.5px solid var(--border-card);
+      border-left: 6px solid var(--brand-blue);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02);
+      transition: all 0.15s;
+    }
+    .diary-item-card:hover {
+      border-color: var(--brand-blue);
+      box-shadow: 0 4px 12px rgba(29, 78, 216, 0.08);
+    }
+    .item-badge-time {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #eff6ff;
+      border: 1.5px solid #bfdbfe;
+      color: #1d4ed8;
+      font-weight: 800;
+      font-size: 12.5px;
+      padding: 4px 9px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .item-work-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+      font-weight: 800;
+      font-size: 12.5px;
+      padding: 4px 9px;
+      border-radius: 8px;
+    }
+    .item-content-text {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--text-body);
+      line-height: 1.5;
+      margin-top: 8px;
+      white-space: pre-wrap;
+    }
+
     /* RESPONSIVE CSS - NFR PHONE EXCELLENCE */
     @media (max-width: 1024px) {
       .content-grid { grid-template-columns: 1fr; }
@@ -409,6 +665,9 @@
       .page-header { flex-direction: column; align-items: flex-start; }
       .week-navigator { width: 100%; justify-content: space-between; }
       .input-date-nav { flex-grow: 1; }
+      .diary-filter-bar { flex-direction: column; align-items: stretch; }
+      .filter-item { width: 100%; flex-direction: column; align-items: stretch; }
+      .btn-one-hand-primary { min-height: 56px; font-size: 17px; }
     }
   </style>
   <script src="/js/backgroundPhotoQueue.js"></script>
@@ -421,7 +680,7 @@
       <div class="brand-icon">🌧️</div>
       <div class="brand-info">
         <h1>QUẢN LÝ THI CÔNG</h1>
-        <span>S-22 / TASK T51: NHẬT KÝ THỜI TIẾT & NGÀY MƯA</span>
+        <span>S-21 & S-22: NHẬT KÝ THI CÔNG GẮN HẠNG MỤC & ĐÁNH DẤU NGÀY MƯA</span>
       </div>
     </div>
 
@@ -502,6 +761,140 @@
         <p id="impact-desc">Đang tải dữ liệu đối chiếu...</p>
       </div>
     </div>
+
+    <!-- ========================================================
+         S-21 (SCRUM-113): KỸ SƯ GIÁM SÁT GHI MỤC NHẬT KÝ HẰNG NGÀY GẮN HẠNG MỤC
+         AC 1: Ghi mục nhật ký với hạng mục, nội dung công việc và giờ -> hiện ngay trong danh sách nhật ký của ngày hôm đó.
+         AC 2: Lọc theo hạng mục hoặc theo ngày -> chỉ thấy mục khớp.
+         AC 3: Để trống hạng mục -> bị chặn (mục nhật ký nào cũng phải gắn được vào hạng mục để tra hồ sơ).
+         NFR: Giao diện dùng được bằng một tay dưới nắng; chữ và nút đủ lớn.
+         ======================================================== -->
+    <section class="s21-section" id="s21-supervisor-section">
+      <div class="s21-header">
+        <div class="s21-titles">
+          <h3>📱 S-21: Kỹ Sư Giám Sát Ghi Mục Nhật Ký Hằng Ngày Gắn Hạng Mục</h3>
+          <p>Ghi chép công việc trên điện thoại ngay tại công trường, gắn hạng mục WBS để lưu trữ và tra cứu hồ sơ sau này.</p>
+        </div>
+        <button type="button" class="btn-sun-toggle" id="btn-toggle-sun-mode" onclick="toggleSunlightMode()">
+          ☀️ Bật Chế Độ Dưới Nắng Chói (Tương Phản Cao)
+        </button>
+      </div>
+
+      <!-- S-21 Alerts -->
+      <div class="toast-msg toast-success" id="s21-toast-success" style="display:none;">
+        <span>✅</span>
+        <span id="s21-toast-success-text">Đã ghi mục nhật ký thành công!</span>
+      </div>
+      <div class="toast-msg toast-error" id="s21-toast-error" style="display:none;">
+        <span>🚫</span>
+        <span id="s21-toast-error-text">Hạng mục không được để trống!</span>
+      </div>
+
+      <div class="one-hand-grid">
+        <!-- Cột Trái: Form ghi nhanh dùng 1 tay (One-Hand Ergonomic Field Form) -->
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <h4 style="font-size: 15px; font-weight: 800; color: var(--text-title); display: flex; align-items: center; gap: 6px;">
+            📝 Ghi Nhanh Mục Công Việc (Tại Chỗ)
+          </h4>
+
+          <form id="s21-quick-form" onsubmit="handleS21ItemSubmit(event)" style="display: flex; flex-direction: column; gap: 12px;">
+            
+            <!-- Ngày & Giờ ghi nhận -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="one-hand-field">
+                <label for="s21-item-date">Ngày ghi nhận <span class="req">*</span></label>
+                <input type="date" class="one-hand-input" id="s21-item-date" required onchange="onS21DateChange()">
+              </div>
+
+              <div class="one-hand-field">
+                <label for="s21-item-time">
+                  <span>Giờ ghi <span class="req">*</span></span>
+                  <a href="javascript:void(0)" onclick="setCurrentTimeForS21()" style="font-size: 11.5px; font-weight: 700; color: var(--brand-blue); text-decoration: underline;">
+                    ⏰ Lấy giờ này
+                  </a>
+                </label>
+                <input type="time" class="one-hand-input" id="s21-item-time" required>
+              </div>
+            </div>
+
+            <!-- Hạng mục thi công (AC 3: Bắt buộc chọn hạng mục) -->
+            <div class="one-hand-field">
+              <label for="select-s21-work-item">
+                <span>Hạng mục thi công (WBS) <span class="req">*</span></span>
+                <span style="font-size: 11px; font-weight: 700; color: var(--brand-blue);">(Bắt buộc để tra cứu hồ sơ)</span>
+              </label>
+              <select class="one-hand-select" id="select-s21-work-item" required onchange="onS21WorkItemChange()">
+                <option value="">-- Vui lòng chọn hạng mục (Bắt buộc) --</option>
+              </select>
+              <span id="s21-item-error-msg" style="display:none; color: var(--danger); font-size: 12px; font-weight: 700;">
+                ⚠️ Mục nhật ký nào cũng phải gắn được vào hạng mục để sau này tra hồ sơ.
+              </span>
+            </div>
+
+            <!-- Nội dung công việc -->
+            <div class="one-hand-field">
+              <label for="s21-item-content">Nội dung công việc thực hiện <span class="req">*</span></label>
+              <textarea class="one-hand-textarea" id="s21-item-content" rows="3" required placeholder="Nhập tóm tắt công việc đang thi công tại chỗ (VD: Đang đổ bê tông lót đáy móng trụ T1 dày 100mm, giám sát cốt thép)..."></textarea>
+            </div>
+
+            <!-- Khối lượng & Đơn vị -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="one-hand-field">
+                <label for="s21-item-quantity">Khối lượng hoàn thành</label>
+                <input type="number" step="any" min="0" class="one-hand-input" id="s21-item-quantity" placeholder="0">
+              </div>
+              <div class="one-hand-field">
+                <label for="s21-item-unit">Đơn vị tính</label>
+                <input type="text" class="one-hand-input" id="s21-item-unit" placeholder="m³, m², tấn...">
+              </div>
+            </div>
+
+            <!-- Nút bấm to dùng 1 tay (NFR) -->
+            <button type="submit" class="btn-one-hand-primary" id="btn-submit-s21-item">
+              <span>💾 GHI MỤC NHẬT KÝ (LƯU TẠI CHỖ)</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Cột Phải: Danh Sách Mục & Bộ Lọc Tra Cứu (AC 1 & AC 2) -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <h4 style="font-size: 15px; font-weight: 800; color: var(--text-title); display: flex; align-items: center; gap: 6px;">
+              📋 Sổ Nhật Ký Theo Hạng Mục & Bộ Lọc Tra Cứu
+            </h4>
+            <span id="s21-items-count-badge" style="font-size: 12px; font-weight: 800; padding: 4px 8px; border-radius: 6px; background: #eff6ff; color: #1d4ed8;">
+              0 mục
+            </span>
+          </div>
+
+          <!-- Bộ lọc theo Hạng mục và theo Ngày (AC 2) -->
+          <div class="diary-filter-bar">
+            <div class="filter-item">
+              <span>📅 Ngày:</span>
+              <input type="date" class="form-input" id="filter-s21-date" style="padding: 6px 10px; font-size: 12.5px;" onchange="filterS21Items()">
+            </div>
+
+            <div class="filter-item" style="flex-grow: 1;">
+              <span>🌲 Hạng mục:</span>
+              <select class="form-select" id="filter-s21-work-item" style="padding: 6px 10px; font-size: 12.5px;" onchange="filterS21Items()">
+                <option value="">-- Tất cả hạng mục --</option>
+              </select>
+            </div>
+
+            <button type="button" class="btn-nav" onclick="clearS21Filter()" style="padding: 6px 12px; font-size: 12px;">
+              🧹 Xóa lọc
+            </button>
+          </div>
+
+          <!-- Danh sách các mục nhật ký khớp điều kiện lọc (AC 1 & AC 2) -->
+          <div class="diary-items-list" id="s21-items-container">
+            <div style="text-align: center; color: var(--text-muted); padding: 30px 10px;">
+              Đang tải danh sách mục nhật ký...
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- Split Grid: Weekly Grid vs Form -->
     <div class="content-grid">
@@ -752,6 +1145,331 @@
     let projectTasks = [];
     let selectedPhotos = []; // { id, file, caption, previewUrl }
     let existingPhotos = []; // { id, file_name, url, file_size, caption, created_at }
+
+    // ========================================================
+    // S-21: KỸ SƯ GIÁM SÁT GHI MỤC NHẬT KÝ HẰNG NGÀY GẮN HẠNG MỤC
+    // ========================================================
+    let s21WorkItems = [];
+    let s21AllItems = [];
+
+    function toggleSunlightMode() {
+      const isSun = document.body.classList.toggle('sun-mode');
+      const btn = document.getElementById('btn-toggle-sun-mode');
+      if (btn) {
+        btn.innerHTML = isSun
+          ? '🕶️ Tắt Chế Độ Dưới Nắng Chói'
+          : '☀️ Bật Chế Độ Dưới Nắng Chói (Tương Phản Cao)';
+      }
+    }
+
+    function setCurrentTimeForS21() {
+      const timeInput = document.getElementById('s21-item-time');
+      if (timeInput) {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        timeInput.value = `${hh}:${mm}`;
+      }
+    }
+
+    function onS21WorkItemChange() {
+      const selectEl = document.getElementById('select-s21-work-item');
+      const errorMsg = document.getElementById('s21-item-error-msg');
+      if (selectEl && selectEl.value) {
+        selectEl.classList.remove('error');
+        if (errorMsg) errorMsg.style.display = 'none';
+      }
+    }
+
+    function onS21DateChange() {
+      const dateVal = document.getElementById('s21-item-date').value;
+      if (dateVal) {
+        document.getElementById('filter-s21-date').value = dateVal;
+        filterS21Items();
+      }
+    }
+
+    function showS21SuccessToast(msg) {
+      const el = document.getElementById('s21-toast-success');
+      const text = document.getElementById('s21-toast-success-text');
+      if (el && text) {
+        text.innerText = msg;
+        el.style.display = 'flex';
+        setTimeout(() => { el.style.display = 'none'; }, 4000);
+      }
+    }
+
+    function showS21ErrorToast(msg) {
+      const el = document.getElementById('s21-toast-error');
+      const text = document.getElementById('s21-toast-error-text');
+      if (el && text) {
+        text.innerText = msg;
+        el.style.display = 'flex';
+        setTimeout(() => { el.style.display = 'none'; }, 5000);
+      }
+    }
+
+    async function loadS21WorkItems() {
+      try {
+        const token = localStorage.getItem('quanly_token');
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        let items = [];
+        // Ưu tiên nạp danh sách hạng mục WBS
+        const res = await fetch(`/api/projects/${PROJECT_ID}/work-items`, { headers });
+        if (res.ok) {
+          const json = await res.json();
+          items = Array.isArray(json) ? json : (json.data || []);
+        }
+
+        // Nếu WBS chưa có mục nào, fallback sang danh sách công việc tasks
+        if (!items || items.length === 0) {
+          const tRes = await fetch(`/api/projects/${PROJECT_ID}/tasks`, { headers });
+          if (tRes.ok) {
+            const tJson = await tRes.json();
+            items = Array.isArray(tJson) ? tJson : (tJson.data || tJson.tasks || []);
+          }
+        }
+
+        s21WorkItems = items || [];
+
+        // Nạp vào dropdown form nhập S-21
+        const selectS21 = document.getElementById('select-s21-work-item');
+        if (selectS21) {
+          selectS21.innerHTML = '<option value="">-- Vui lòng chọn hạng mục (Bắt buộc) --</option>' +
+            s21WorkItems.map(item => `
+              <option value="${item.id}">[${escapeHtml(item.code || 'HM-' + item.id)}] ${escapeHtml(item.name)}</option>
+            `).join('');
+        }
+
+        // Nạp vào dropdown bộ lọc tra cứu S-21 (AC 2)
+        const filterS21 = document.getElementById('filter-s21-work-item');
+        if (filterS21) {
+          filterS21.innerHTML = '<option value="">-- Tất cả hạng mục --</option>' +
+            s21WorkItems.map(item => `
+              <option value="${item.id}">[${escapeHtml(item.code || 'HM-' + item.id)}] ${escapeHtml(item.name)}</option>
+            `).join('');
+        }
+      } catch (e) {
+        console.warn('Lỗi khi tải danh sách hạng mục WBS:', e);
+      }
+    }
+
+    async function loadS21ItemsList(filterDate = '', filterWorkItemId = '') {
+      const container = document.getElementById('s21-items-container');
+      if (!container) return;
+
+      try {
+        const token = localStorage.getItem('quanly_token');
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        let query = `/api/projects/${PROJECT_ID}/diary-items`;
+        const params = [];
+        if (filterDate) params.push(`date=${encodeURIComponent(filterDate)}`);
+        if (filterWorkItemId) params.push(`work_item_id=${encodeURIComponent(filterWorkItemId)}`);
+        if (params.length > 0) query += '?' + params.join('&');
+
+        const res = await fetch(query, { headers });
+        if (!res.ok) {
+          container.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 20px;">Lỗi tải danh sách mục nhật ký (${res.status})</div>`;
+          return;
+        }
+
+        const json = await res.json();
+        const items = json.data || [];
+        s21AllItems = items;
+        renderS21ItemsList(items);
+      } catch (err) {
+        console.error('Lỗi nạp danh sách mục S-21:', err);
+        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">Không thể kết nối đến máy chủ.</div>`;
+      }
+    }
+
+    function renderS21ItemsList(items = []) {
+      const container = document.getElementById('s21-items-container');
+      const countBadge = document.getElementById('s21-items-count-badge');
+      if (countBadge) countBadge.innerText = `${items.length} mục`;
+      if (!container) return;
+
+      if (!items || items.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); padding: 26px 14px; background: #f8fafc; border: 1px dashed var(--border-card); border-radius: 10px;">
+            <div style="font-size: 26px; margin-bottom: 6px;">📂</div>
+            <div style="font-weight: 700; font-size: 14px;">Không có mục nhật ký nào khớp với bộ lọc</div>
+            <div style="font-size: 12px; margin-top: 3px;">Hãy chọn ngày khác hoặc chọn hạng mục khác để tra cứu.</div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = items.map(item => {
+        const timeDisplay = item.log_time || '--:--';
+        const workItemCode = item.work_item_code || ('HM-' + item.work_item_id);
+        const workItemName = item.work_item_name || 'Hạng mục #' + item.work_item_id;
+        const dateDisplay = formatDateDisplay(item.diary_date);
+        const qtyDisplay = (item.quantity_done && Number(item.quantity_done) > 0)
+          ? ` • <strong>Khối lượng:</strong> ${item.quantity_done} ${escapeHtml(item.unit || '')}`
+          : '';
+
+        return `
+          <div class="diary-item-card" id="diary-item-card-${item.id}">
+            <div style="flex-grow: 1; min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span class="item-badge-time">⏰ ${escapeHtml(timeDisplay)}</span>
+                <span class="item-work-badge">🌲 [${escapeHtml(workItemCode)}] ${escapeHtml(workItemName)}</span>
+                <span style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-left: auto;">
+                  📅 ${escapeHtml(dateDisplay)}
+                </span>
+              </div>
+              <div class="item-content-text">${escapeHtml(item.work_content)}</div>
+              ${qtyDisplay ? `<div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">${qtyDisplay}</div>` : ''}
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;">
+              <button type="button" class="btn-nav" onclick="deleteS21Item(${item.id})" style="padding: 6px 10px; font-size: 12px; color: var(--danger);" title="Xóa mục này">
+                🗑️
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // AC 1 & AC 3: Kỹ sư giám sát ghi mục nhật ký hằng ngày gắn hạng mục
+    async function handleS21ItemSubmit(event) {
+      event.preventDefault();
+      const selectWorkItem = document.getElementById('select-s21-work-item');
+      const errorMsg = document.getElementById('s21-item-error-msg');
+      const workItemId = selectWorkItem ? selectWorkItem.value : '';
+
+      // AC 3: Giả sử tôi để trống hạng mục, khi lưu, thì bị chặn — mục nhật ký nào cũng phải gắn được vào hạng mục để sau này tra hồ sơ
+      if (!workItemId || Number(workItemId) <= 0) {
+        if (selectWorkItem) selectWorkItem.classList.add('error');
+        if (errorMsg) errorMsg.style.display = 'block';
+        showS21ErrorToast('⚠️ Hạng mục không được để trống! Mục nhật ký nào cũng phải gắn được vào hạng mục để sau này tra hồ sơ.');
+        if (selectWorkItem) selectWorkItem.focus();
+        return;
+      }
+
+      if (selectWorkItem) selectWorkItem.classList.remove('error');
+      if (errorMsg) errorMsg.style.display = 'none';
+
+      const dateInput = document.getElementById('s21-item-date');
+      const timeInput = document.getElementById('s21-item-time');
+      const contentInput = document.getElementById('s21-item-content');
+      const qtyInput = document.getElementById('s21-item-quantity');
+      const unitInput = document.getElementById('s21-item-unit');
+      const submitBtn = document.getElementById('btn-submit-s21-item');
+
+      const diaryDate = (dateInput && dateInput.value) ? dateInput.value : currentSelectedDate;
+      const logTime = (timeInput && timeInput.value) ? timeInput.value : new Date().toTimeString().substring(0, 5);
+      const workContent = contentInput ? contentInput.value.trim() : '';
+      const quantityDone = (qtyInput && qtyInput.value) ? Number(qtyInput.value) : 0;
+      const unit = unitInput ? unitInput.value.trim() : '';
+
+      if (!workContent) {
+        showS21ErrorToast('Vui lòng nhập nội dung công việc thực hiện!');
+        if (contentInput) contentInput.focus();
+        return;
+      }
+
+      const payload = {
+        diary_date: diaryDate,
+        work_item_id: Number(workItemId),
+        work_content: workContent,
+        log_time: logTime,
+        quantity_done: quantityDone,
+        unit: unit
+      };
+
+      try {
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span>⏳ Đang lưu mục nhật ký...</span>';
+        }
+
+        const token = localStorage.getItem('quanly_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`/api/projects/${PROJECT_ID}/diary-items`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload)
+        });
+
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+          showS21SuccessToast(`✅ Đã lưu mục nhật ký lúc ${logTime} gắn hạng mục thành công!`);
+
+          // AC 1: Hiện ngay trong danh sách nhật ký của ngày hôm đó
+          const filterDateInput = document.getElementById('filter-s21-date');
+          if (filterDateInput) filterDateInput.value = diaryDate;
+
+          // Làm mới nội dung ô nhập để tiếp tục ghi mục tiếp theo
+          if (contentInput) contentInput.value = '';
+          if (qtyInput) qtyInput.value = '';
+          setCurrentTimeForS21();
+
+          // Nạp lại danh sách để mục hiện ngay lập tức
+          await loadS21ItemsList(diaryDate, '');
+          // Đồng bộ lại form chi tiết ngày nếu đang mở đúng ngày này
+          if (diaryDate === currentSelectedDate) {
+            await loadFormWithDate(diaryDate);
+          }
+        } else {
+          showS21ErrorToast(json.message || 'Không thể lưu mục nhật ký.');
+        }
+      } catch (err) {
+        console.error('Lỗi khi gửi mục nhật ký:', err);
+        showS21ErrorToast('Lỗi kết nối máy chủ: ' + err.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>💾 GHI MỤC NHẬT KÝ (LƯU TẠI CHỖ)</span>';
+        }
+      }
+    }
+
+    // AC 2: Khi lọc theo hạng mục hoặc theo ngày, thì chỉ thấy mục khớp
+    function filterS21Items() {
+      const filterDate = document.getElementById('filter-s21-date')?.value || '';
+      const filterWorkItemId = document.getElementById('filter-s21-work-item')?.value || '';
+      loadS21ItemsList(filterDate, filterWorkItemId);
+    }
+
+    function clearS21Filter() {
+      const dateEl = document.getElementById('filter-s21-date');
+      const workItemEl = document.getElementById('filter-s21-work-item');
+      if (dateEl) dateEl.value = '';
+      if (workItemEl) workItemEl.value = '';
+      loadS21ItemsList('', '');
+    }
+
+    async function deleteS21Item(itemId) {
+      if (!confirm('Bạn có chắc chắn muốn xóa mục nhật ký này?')) return;
+      try {
+        const token = localStorage.getItem('quanly_token');
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`/api/projects/${PROJECT_ID}/diary-items/${itemId}`, {
+          method: 'DELETE',
+          headers
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          showS21SuccessToast('Đã xóa mục nhật ký.');
+          filterS21Items();
+        } else {
+          showS21ErrorToast(json.message || 'Không thể xóa mục nhật ký.');
+        }
+      } catch (e) {
+        showS21ErrorToast('Lỗi khi xóa: ' + e.message);
+      }
+    }
 
     const DAY_NAMES = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
     const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -1049,6 +1767,12 @@
     async function loadFormWithDate(dateStr) {
       document.getElementById('input-diary-date').value = dateStr;
       document.getElementById('form-day-name').innerText = `(${getDayOfWeekName(dateStr)})`;
+
+      const s21DateEl = document.getElementById('s21-item-date');
+      const filterDateEl = document.getElementById('filter-s21-date');
+      if (s21DateEl && !s21DateEl.value) s21DateEl.value = dateStr;
+      if (filterDateEl && !filterDateEl.value) filterDateEl.value = dateStr;
+      loadS21ItemsList(filterDateEl?.value || dateStr, document.getElementById('filter-s21-work-item')?.value || '');
 
       // Reset danh sách ảnh chờ tải lên
       clearSelectedPhotos();
@@ -1642,8 +2366,17 @@
     window.addEventListener('DOMContentLoaded', () => {
       initUser();
       loadProjectTasks();
+      loadS21WorkItems();
       initPhotoDropzone();
       selectToday();
+
+      const today = new Date().toISOString().split('T')[0];
+      const s21DateEl = document.getElementById('s21-item-date');
+      const filterDateEl = document.getElementById('filter-s21-date');
+      if (s21DateEl) s21DateEl.value = today;
+      if (filterDateEl) filterDateEl.value = today;
+      setCurrentTimeForS21();
+      loadS21ItemsList(today, '');
     });
   </script>
 

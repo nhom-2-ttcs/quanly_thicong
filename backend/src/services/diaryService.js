@@ -3,16 +3,22 @@ const {
   getSiteDiaryByDate,
   saveSiteDiaryEntry,
   lockSiteDiary,
+  inMemorySiteDiaries,
   inMemorySiteDiaryPhotos,
   getSiteDiaryPhotos,
   saveSiteDiaryPhoto,
   updateSiteDiaryPhoto,
   registerPendingSiteDiaryPhotos,
   deleteSiteDiaryPhoto,
+  inMemorySiteDiaryItems,
   getSiteDiaryItems,
+  getSiteDiaryItemById,
   saveSiteDiaryItem,
+  updateSiteDiaryItem,
+  deleteSiteDiaryItem,
   clearSiteDiaryItems,
-  inMemoryTasks
+  inMemoryTasks,
+  inMemoryWorkItems
 } = require('../models/store');
 
 const DAY_NAMES = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
@@ -68,15 +74,22 @@ class DiaryService {
       } catch (e) {}
     }
 
-    if (items.length === 0 && entryData.work_item_id) {
+    if (items.length === 0 && (entryData.work_item_id || entryData.work_content)) {
       items = [{
-        work_item_id: Number(entryData.work_item_id),
+        work_item_id: entryData.work_item_id ? Number(entryData.work_item_id) : null,
         work_content: String(entryData.work_content || entryData.work_notes || '').trim(),
+        log_time: entryData.log_time ? String(entryData.log_time).trim() : null,
         quantity_done: Number(entryData.quantity_done || 0),
         unit: String(entryData.unit || '').trim()
       }];
     }
-    return items;
+    return items.map(it => ({
+      work_item_id: it.work_item_id ? Number(it.work_item_id) : null,
+      work_content: String(it.work_content || it.content || it.name || '').trim(),
+      log_time: it.log_time ? String(it.log_time).trim() : null,
+      quantity_done: Number(it.quantity_done || it.quantity || 0),
+      unit: String(it.unit || '').trim()
+    }));
   }
 
   validateEntry(data) {
@@ -197,7 +210,7 @@ class DiaryService {
       });
     }
 
-    // Lấy danh sách công việc chi tiết (T51/T52)
+    // Lấy danh sách công việc chi tiết (T51/T52/S-21)
     let items = [];
     if (this.pool?.query) {
       try {
@@ -205,15 +218,29 @@ class DiaryService {
           `SELECT i.*, w.name as work_item_name, w.code as work_item_code
            FROM site_diary_items i
            LEFT JOIN work_items w ON i.work_item_id = w.id
-           WHERE i.diary_id = ? ORDER BY i.id ASC`,
+           WHERE i.diary_id = ? ORDER BY i.log_time ASC, i.id ASC`,
           [diary.id]
         );
         items = iRows || [];
       } catch (e) {
-        items = getSiteDiaryItems(diary.id);
+        items = getSiteDiaryItems(diary.id).map(it => {
+          const wi = inMemoryWorkItems.find(w => Number(w.id) === Number(it.work_item_id));
+          return {
+            ...it,
+            work_item_name: wi?.name || null,
+            work_item_code: wi?.code || null
+          };
+        });
       }
     } else {
-      items = getSiteDiaryItems(diary.id);
+      items = getSiteDiaryItems(diary.id).map(it => {
+        const wi = inMemoryWorkItems.find(w => Number(w.id) === Number(it.work_item_id));
+        return {
+          ...it,
+          work_item_name: wi?.name || null,
+          work_item_code: wi?.code || null
+        };
+      });
     }
 
     diary.photos = photos;
@@ -360,12 +387,13 @@ class DiaryService {
         for (const it of items) {
           const wId = it.work_item_id ? Number(it.work_item_id) : null;
           const content = String(it.work_content || it.content || it.name || '').trim();
+          const logTime = it.log_time ? String(it.log_time).trim() : null;
           const qty = Number(it.quantity_done || it.quantity || 0);
           const unit = String(it.unit || '').trim();
           if (content || wId) {
             await this.pool.query(
-              'INSERT INTO site_diary_items (diary_id, work_item_id, work_content, quantity_done, unit) VALUES (?, ?, ?, ?, ?)',
-              [diaryId, wId, content || 'Hoàn thành hạng mục', qty, unit]
+              'INSERT INTO site_diary_items (diary_id, work_item_id, work_content, log_time, quantity_done, unit) VALUES (?, ?, ?, ?, ?, ?)',
+              [diaryId, wId, content || 'Hoàn thành hạng mục', logTime, qty, unit]
             );
           }
         }
@@ -441,6 +469,7 @@ class DiaryService {
           diary_id: diaryId,
           work_item_id: it.work_item_id ? Number(it.work_item_id) : null,
           work_content: String(it.work_content || it.content || it.name || '').trim(),
+          log_time: it.log_time ? String(it.log_time).trim() : null,
           quantity_done: Number(it.quantity_done || it.quantity || 0),
           unit: String(it.unit || '').trim()
         });
@@ -800,6 +829,419 @@ class DiaryService {
         possibleDelayNote: workdayRainCount > 0 ? `Bị ảnh hưởng gián đoạn do ${workdayRainCount} ngày mưa trong tuần` : 'Đang thực hiện bình thường'
       }))
     };
+  }
+
+  // ========================================================
+  // S-21 / SCRUM-113: KỸ SƯ GIÁM SÁT GHI MỤC NHẬT KÝ HẰNG NGÀY GẮN HẠNG MỤC
+  // Acceptance Criteria:
+  // AC 1: Ghi mục nhật ký với hạng mục, nội dung công việc và giờ -> hiện ngay trong danh sách nhật ký của ngày hôm đó.
+  // AC 2: Mở nhật ký, lọc theo hạng mục hoặc theo ngày -> chỉ thấy mục khớp.
+  // AC 3: Để trống hạng mục -> bị chặn (mục nhật ký nào cũng phải gắn được vào hạng mục để tra hồ sơ).
+  // ========================================================
+
+  validateDiaryItem(itemData) {
+    if (!itemData || typeof itemData !== 'object') {
+      const err = new Error('Dữ liệu mục nhật ký không hợp lệ');
+      err.status = 400;
+      throw err;
+    }
+
+    // AC 3: Ràng buộc bắt buộc hạng mục (work_item_id)
+    const workItemId = itemData.work_item_id !== undefined && itemData.work_item_id !== null && itemData.work_item_id !== ''
+      ? Number(itemData.work_item_id)
+      : null;
+
+    if (!workItemId || !Number.isInteger(workItemId) || workItemId <= 0) {
+      const err = new Error('Hạng mục không được để trống. Mục nhật ký nào cũng phải gắn được vào hạng mục để sau này tra hồ sơ.');
+      err.status = 400;
+      throw err;
+    }
+
+    // Bắt buộc nội dung công việc
+    const workContent = String(itemData.work_content || '').trim();
+    if (!workContent) {
+      const err = new Error('Nội dung công việc không được để trống.');
+      err.status = 400;
+      throw err;
+    }
+
+    return {
+      work_item_id: workItemId,
+      work_content: workContent,
+      log_time: itemData.log_time ? String(itemData.log_time).trim() : null,
+      quantity_done: Number(itemData.quantity_done || 0),
+      unit: String(itemData.unit || '').trim()
+    };
+  }
+
+  async addDiaryItem(projectId, diaryDate, itemData, userId = 1) {
+    const pId = Number(projectId);
+    if (!Number.isInteger(pId) || pId <= 0) {
+      const err = new Error('projectId không hợp lệ');
+      err.status = 400;
+      throw err;
+    }
+
+    const dateStr = diaryDate || new Date().toISOString().split('T')[0];
+    if (!isValidDateString(dateStr)) {
+      const err = new Error('Ngày nhật ký không hợp lệ (YYYY-MM-DD)');
+      err.status = 400;
+      throw err;
+    }
+
+    // AC 3: Kiểm tra hợp lệ (chặn nếu để trống hạng mục)
+    const validated = this.validateDiaryItem(itemData);
+
+    // Chuẩn hóa giờ ghi nhận (giờ)
+    let logTime = validated.log_time;
+    if (!logTime) {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      logTime = `${hh}:${mm}`;
+    }
+
+    // Đảm bảo bản ghi nhật ký ngày đã tồn tại
+    let diary = await this.getDiaryByDate(pId, dateStr);
+    if (!diary) {
+      diary = await this.saveDiary(pId, { diary_date: dateStr }, userId);
+    }
+
+    if (diary.is_locked === 1) {
+      const err = new Error('Nhật ký của ngày này đã bị khóa sổ, không thể ghi thêm mục.');
+      err.status = 423;
+      throw err;
+    }
+
+    let createdItem = null;
+    let dayItems = [];
+
+    if (this.pool?.query) {
+      const [insertRes] = await this.pool.query(
+        `INSERT INTO site_diary_items (diary_id, work_item_id, work_content, log_time, quantity_done, unit)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [diary.id, validated.work_item_id, validated.work_content, logTime, validated.quantity_done, validated.unit]
+      );
+      const itemId = insertRes.insertId;
+
+      const [rows] = await this.pool.query(
+        `SELECT i.*, w.name as work_item_name, w.code as work_item_code, d.diary_date, d.is_locked
+         FROM site_diary_items i
+         JOIN site_diaries d ON i.diary_id = d.id
+         LEFT JOIN work_items w ON i.work_item_id = w.id
+         WHERE i.id = ?`,
+        [itemId]
+      );
+      createdItem = rows[0] || null;
+
+      const [dRows] = await this.pool.query(
+        `SELECT i.*, w.name as work_item_name, w.code as work_item_code, d.diary_date, d.is_locked
+         FROM site_diary_items i
+         JOIN site_diaries d ON i.diary_id = d.id
+         LEFT JOIN work_items w ON i.work_item_id = w.id
+         WHERE i.diary_id = ?
+         ORDER BY i.log_time ASC, i.id ASC`,
+        [diary.id]
+      );
+      dayItems = dRows || [];
+    } else {
+      const saved = saveSiteDiaryItem({
+        diary_id: diary.id,
+        work_item_id: validated.work_item_id,
+        work_content: validated.work_content,
+        log_time: logTime,
+        quantity_done: validated.quantity_done,
+        unit: validated.unit
+      });
+
+      const wi = inMemoryWorkItems.find(w => Number(w.id) === validated.work_item_id);
+      createdItem = {
+        ...saved,
+        work_item_name: wi?.name || null,
+        work_item_code: wi?.code || null,
+        diary_date: dateStr,
+        is_locked: diary.is_locked || 0
+      };
+
+      dayItems = getSiteDiaryItems(diary.id).map(it => {
+        const w = inMemoryWorkItems.find(x => Number(x.id) === Number(it.work_item_id));
+        return {
+          ...it,
+          work_item_name: w?.name || null,
+          work_item_code: w?.code || null,
+          diary_date: dateStr,
+          is_locked: diary.is_locked || 0
+        };
+      }).sort((a, b) => String(a.log_time || '').localeCompare(String(b.log_time || '')) || (a.id - b.id));
+    }
+
+    return {
+      success: true,
+      message: 'Ghi mục nhật ký thành công',
+      item: createdItem,
+      dayItems
+    };
+  }
+
+  /**
+   * AC 2: Lọc mục nhật ký theo hạng mục hoặc theo ngày
+   */
+  async getDiaryItems(projectId, { date, work_item_id, start_date, end_date } = {}) {
+    const pId = Number(projectId);
+    if (!Number.isInteger(pId) || pId <= 0) {
+      const err = new Error('projectId không hợp lệ');
+      err.status = 400;
+      throw err;
+    }
+
+    if (this.pool?.query) {
+      let query = `
+        SELECT 
+          i.id, i.diary_id, i.work_item_id, i.work_content, i.log_time, i.quantity_done, i.unit, i.created_at, i.updated_at,
+          d.diary_date, d.weather_condition, d.is_locked,
+          w.name as work_item_name, w.code as work_item_code
+        FROM site_diary_items i
+        JOIN site_diaries d ON i.diary_id = d.id
+        LEFT JOIN work_items w ON i.work_item_id = w.id
+        WHERE d.project_id = ?
+      `;
+      const params = [pId];
+
+      if (date) {
+        query += ' AND d.diary_date = ?';
+        params.push(date);
+      }
+      if (work_item_id !== undefined && work_item_id !== null && work_item_id !== '') {
+        query += ' AND i.work_item_id = ?';
+        params.push(Number(work_item_id));
+      }
+      if (start_date && end_date) {
+        query += ' AND d.diary_date >= ? AND d.diary_date <= ?';
+        params.push(start_date, end_date);
+      }
+
+      query += ' ORDER BY d.diary_date DESC, i.log_time ASC, i.id ASC';
+      const [rows] = await this.pool.query(query, params);
+      return (rows || []).map(r => {
+        if (r.diary_date instanceof Date) {
+          const y = r.diary_date.getFullYear();
+          const m = String(r.diary_date.getMonth() + 1).padStart(2, '0');
+          const d = String(r.diary_date.getDate()).padStart(2, '0');
+          r.diary_date = `${y}-${m}-${d}`;
+        }
+        return r;
+      });
+    }
+
+    // In-memory fallback
+    const result = [];
+    const targetWorkItemId = (work_item_id !== undefined && work_item_id !== null && work_item_id !== '')
+      ? Number(work_item_id)
+      : null;
+
+    for (const item of inMemorySiteDiaryItems) {
+      const d = inMemorySiteDiaries.find(x => Number(x.id) === Number(item.diary_id) && Number(x.project_id) === pId);
+      if (!d) continue;
+
+      if (date && d.diary_date !== date) continue;
+      if (targetWorkItemId !== null && Number(item.work_item_id) !== targetWorkItemId) continue;
+      if (start_date && d.diary_date < start_date) continue;
+      if (end_date && d.diary_date > end_date) continue;
+
+      const wi = inMemoryWorkItems.find(w => Number(w.id) === Number(item.work_item_id));
+      result.push({
+        ...item,
+        work_item_name: wi?.name || null,
+        work_item_code: wi?.code || null,
+        diary_date: d.diary_date,
+        weather_condition: d.weather_condition,
+        is_locked: d.is_locked || 0
+      });
+    }
+
+    result.sort((a, b) => {
+      if (a.diary_date !== b.diary_date) {
+        return b.diary_date.localeCompare(a.diary_date);
+      }
+      return String(a.log_time || '').localeCompare(String(b.log_time || '')) || (a.id - b.id);
+    });
+
+    return result;
+  }
+
+  async updateDiaryItem(projectId, itemId, updateData = {}) {
+    const pId = Number(projectId);
+    const iId = Number(itemId);
+    if (!Number.isInteger(pId) || pId <= 0 || !Number.isInteger(iId) || iId <= 0) {
+      const err = new Error('projectId hoặc itemId không hợp lệ');
+      err.status = 400;
+      throw err;
+    }
+
+    if (this.pool?.query) {
+      const [rows] = await this.pool.query(
+        `SELECT i.*, d.project_id, d.is_locked
+         FROM site_diary_items i
+         JOIN site_diaries d ON i.diary_id = d.id
+         WHERE i.id = ? AND d.project_id = ? LIMIT 1`,
+        [iId, pId]
+      );
+      if (!rows || rows.length === 0) {
+        const err = new Error('Không tìm thấy mục nhật ký');
+        err.status = 404;
+        throw err;
+      }
+      if (rows[0].is_locked === 1) {
+        const err = new Error('Nhật ký đã bị khóa sổ, không thể chỉnh sửa.');
+        err.status = 423;
+        throw err;
+      }
+
+      const updates = [];
+      const params = [];
+      if (updateData.work_item_id !== undefined) {
+        const wId = Number(updateData.work_item_id);
+        if (!wId || wId <= 0) {
+          const err = new Error('Hạng mục không được để trống. Mục nhật ký nào cũng phải gắn được vào hạng mục để sau này tra hồ sơ.');
+          err.status = 400;
+          throw err;
+        }
+        updates.push('work_item_id = ?');
+        params.push(wId);
+      }
+      if (updateData.work_content !== undefined) {
+        const content = String(updateData.work_content).trim();
+        if (!content) {
+          const err = new Error('Nội dung công việc không được để trống.');
+          err.status = 400;
+          throw err;
+        }
+        updates.push('work_content = ?');
+        params.push(content);
+      }
+      if (updateData.log_time !== undefined) {
+        updates.push('log_time = ?');
+        params.push(updateData.log_time ? String(updateData.log_time).trim() : null);
+      }
+      if (updateData.quantity_done !== undefined) {
+        updates.push('quantity_done = ?');
+        params.push(Number(updateData.quantity_done || 0));
+      }
+      if (updateData.unit !== undefined) {
+        updates.push('unit = ?');
+        params.push(String(updateData.unit || '').trim());
+      }
+
+      if (updates.length > 0) {
+        params.push(iId);
+        await this.pool.query(`UPDATE site_diary_items SET ${updates.join(', ')} WHERE id = ?`, params);
+      }
+
+      const [updatedRows] = await this.pool.query(
+        `SELECT i.*, w.name as work_item_name, w.code as work_item_code, d.diary_date, d.is_locked
+         FROM site_diary_items i
+         JOIN site_diaries d ON i.diary_id = d.id
+         LEFT JOIN work_items w ON i.work_item_id = w.id
+         WHERE i.id = ?`,
+        [iId]
+      );
+      return updatedRows[0];
+    }
+
+    // In-memory
+    const existing = inMemorySiteDiaryItems.find(i => Number(i.id) === iId);
+    if (!existing) {
+      const err = new Error('Không tìm thấy mục nhật ký');
+      err.status = 404;
+      throw err;
+    }
+    const diary = inMemorySiteDiaries.find(d => Number(d.id) === Number(existing.diary_id) && Number(d.project_id) === pId);
+    if (!diary) {
+      const err = new Error('Không tìm thấy mục nhật ký thuộc dự án');
+      err.status = 404;
+      throw err;
+    }
+    if (diary.is_locked === 1) {
+      const err = new Error('Nhật ký đã bị khóa sổ, không thể chỉnh sửa.');
+      err.status = 423;
+      throw err;
+    }
+
+    if (updateData.work_item_id !== undefined) {
+      const wId = Number(updateData.work_item_id);
+      if (!wId || wId <= 0) {
+        const err = new Error('Hạng mục không được để trống. Mục nhật ký nào cũng phải gắn được vào hạng mục để sau này tra hồ sơ.');
+        err.status = 400;
+        throw err;
+      }
+    }
+    if (updateData.work_content !== undefined && !String(updateData.work_content).trim()) {
+      const err = new Error('Nội dung công việc không được để trống.');
+      err.status = 400;
+      throw err;
+    }
+
+    const updated = updateSiteDiaryItem(iId, updateData);
+    const wi = inMemoryWorkItems.find(w => Number(w.id) === Number(updated.work_item_id));
+    return {
+      ...updated,
+      work_item_name: wi?.name || null,
+      work_item_code: wi?.code || null,
+      diary_date: diary.diary_date,
+      is_locked: diary.is_locked || 0
+    };
+  }
+
+  async deleteDiaryItem(projectId, itemId) {
+    const pId = Number(projectId);
+    const iId = Number(itemId);
+    if (!Number.isInteger(pId) || pId <= 0 || !Number.isInteger(iId) || iId <= 0) {
+      const err = new Error('projectId hoặc itemId không hợp lệ');
+      err.status = 400;
+      throw err;
+    }
+
+    if (this.pool?.query) {
+      const [rows] = await this.pool.query(
+        `SELECT i.*, d.project_id, d.is_locked
+         FROM site_diary_items i
+         JOIN site_diaries d ON i.diary_id = d.id
+         WHERE i.id = ? AND d.project_id = ? LIMIT 1`,
+        [iId, pId]
+      );
+      if (!rows || rows.length === 0) {
+        const err = new Error('Không tìm thấy mục nhật ký');
+        err.status = 404;
+        throw err;
+      }
+      if (rows[0].is_locked === 1) {
+        const err = new Error('Nhật ký đã bị khóa sổ, không thể xóa mục.');
+        err.status = 423;
+        throw err;
+      }
+      await this.pool.query('DELETE FROM site_diary_items WHERE id = ?', [iId]);
+      return true;
+    }
+
+    // In-memory
+    const existing = inMemorySiteDiaryItems.find(i => Number(i.id) === iId);
+    if (!existing) {
+      const err = new Error('Không tìm thấy mục nhật ký');
+      err.status = 404;
+      throw err;
+    }
+    const diary = inMemorySiteDiaries.find(d => Number(d.id) === Number(existing.diary_id) && Number(d.project_id) === pId);
+    if (!diary) {
+      const err = new Error('Không tìm thấy mục nhật ký thuộc dự án');
+      err.status = 404;
+      throw err;
+    }
+    if (diary.is_locked === 1) {
+      const err = new Error('Nhật ký đã bị khóa sổ, không thể xóa mục.');
+      err.status = 423;
+      throw err;
+    }
+    return deleteSiteDiaryItem(iId);
   }
 
   async lockDiary(projectId, dateStr, userId = 1) {

@@ -672,10 +672,16 @@ function getSiteDiaryItems(diaryId) {
   return inMemorySiteDiaryItems.filter(i => Number(i.diary_id) === dId);
 }
 
+function getSiteDiaryItemById(itemId) {
+  const iId = Number(itemId);
+  return inMemorySiteDiaryItems.find(i => Number(i.id) === iId) || null;
+}
+
 function saveSiteDiaryItem({
   diary_id,
   work_item_id = null,
   work_content,
+  log_time = null,
   quantity_done = 0,
   unit = ''
 }) {
@@ -686,12 +692,35 @@ function saveSiteDiaryItem({
     diary_id: dId,
     work_item_id: work_item_id ? Number(work_item_id) : null,
     work_content: String(work_content || '').trim(),
+    log_time: log_time ? String(log_time).trim() : null,
     quantity_done: Number(quantity_done || 0),
     unit: String(unit || '').trim(),
     created_at: new Date().toISOString()
   };
   inMemorySiteDiaryItems.push(newItem);
   return newItem;
+}
+
+function updateSiteDiaryItem(itemId, updateData = {}) {
+  const item = getSiteDiaryItemById(itemId);
+  if (!item) return null;
+  if (updateData.work_item_id !== undefined) item.work_item_id = updateData.work_item_id ? Number(updateData.work_item_id) : null;
+  if (updateData.work_content !== undefined) item.work_content = String(updateData.work_content).trim();
+  if (updateData.log_time !== undefined) item.log_time = updateData.log_time ? String(updateData.log_time).trim() : null;
+  if (updateData.quantity_done !== undefined) item.quantity_done = Number(updateData.quantity_done || 0);
+  if (updateData.unit !== undefined) item.unit = String(updateData.unit || '').trim();
+  item.updated_at = new Date().toISOString();
+  return item;
+}
+
+function deleteSiteDiaryItem(itemId) {
+  const iId = Number(itemId);
+  const idx = inMemorySiteDiaryItems.findIndex(i => Number(i.id) === iId);
+  if (idx !== -1) {
+    inMemorySiteDiaryItems.splice(idx, 1);
+    return true;
+  }
+  return false;
 }
 
 function clearSiteDiaryItems(diaryId) {
@@ -1066,7 +1095,10 @@ module.exports = {
   deleteSiteDiaryPhoto,
   inMemorySiteDiaryItems,
   getSiteDiaryItems,
+  getSiteDiaryItemById,
   saveSiteDiaryItem,
+  updateSiteDiaryItem,
+  deleteSiteDiaryItem,
   clearSiteDiaryItems,
   getTasks,
   createTaskData,

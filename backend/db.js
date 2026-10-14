@@ -569,15 +569,24 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
         diary_id INT NOT NULL,
         work_item_id INT NULL,
         work_content TEXT NOT NULL,
+        log_time VARCHAR(10) NULL,
         quantity_done DECIMAL(12, 2) DEFAULT 0,
         unit VARCHAR(50) NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (diary_id) REFERENCES site_diaries(id) ON DELETE CASCADE,
         FOREIGN KEY (work_item_id) REFERENCES work_items(id) ON DELETE SET NULL,
-        INDEX idx_item_diary (diary_id)
+        INDEX idx_item_diary (diary_id),
+        INDEX idx_diary_item_work_item (work_item_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // Migration S-21: Bổ sung trường log_time và chỉ mục nếu bảng đã tồn tại từ trước
+    try {
+      await pool.query('ALTER TABLE site_diary_items ADD COLUMN IF NOT EXISTS log_time VARCHAR(10) NULL AFTER work_content');
+      await pool.query('ALTER TABLE site_diary_items ADD INDEX IF NOT EXISTS idx_diary_item_work_item (work_item_id)');
+    } catch (_) {}
+
 
     // 12. Tạo bảng site_diary_photos (TASK T52 / S-23 & S-33: Ảnh đính kèm & Hàng đợi tải nền)
     await pool.query(`
