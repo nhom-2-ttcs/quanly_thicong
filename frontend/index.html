@@ -818,6 +818,9 @@
     </div>
   </header>
 
+  <!-- S-31 / T-55 / T-56: Thanh trạng thái đồng bộ ngoại tuyến trên thiết bị -->
+  <div id="sync-status-bar-container"></div>
+
   <!-- THÂN TRANG -->
   <main class="main-content">
     
@@ -1666,6 +1669,18 @@
     window.addEventListener('pageshow', (event) => {
       if (event.persisted || !localStorage.getItem('quanly_token')) {
         initUser();
+      }
+    });
+  </script>
+
+  <!-- S-31 / T-55 / T-56: Nạp module quản lý đồng bộ ngoại tuyến và thanh trạng thái trên thiết bị -->
+  <script type="module" src="js/offlineDiaryStorage.js"></script>
+  <script src="js/offlineUploadQueue.js"></script>
+  <script src="js/syncStatusBarComponent.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.SyncStatusBar) {
+        window.SyncStatusBar.init({ containerId: 'sync-status-bar-container' });
       }
     });
   </script>

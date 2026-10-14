@@ -92,6 +92,11 @@
 
     entries.push(entry);
     saveQueue(entries);
+    if (root.dispatchEvent && typeof root.CustomEvent === 'function') {
+      root.dispatchEvent(new root.CustomEvent('sync-status-changed', {
+        detail: { action: 'photo-enqueued', entry: Object.assign({}, entry, { fileDataUrl: undefined }) }
+      }));
+    }
     return Object.assign({}, entry, { fileDataUrl: undefined });
   }
 
@@ -118,6 +123,11 @@
       const result = await uploadFn(file, entry.metadata);
       entries.splice(index, 1);
       saveQueue(entries);
+      if (root.dispatchEvent && typeof root.CustomEvent === 'function') {
+        root.dispatchEvent(new root.CustomEvent('sync-status-changed', {
+          detail: { action: 'photo-uploaded', id }
+        }));
+      }
       return result;
     } catch (error) {
       entry.lastError = error && error.message
@@ -197,5 +207,18 @@
     return listElement;
   }
 
-  return { enqueue, list, retry, uploadOrQueue, render };
+  function count() {
+    return readQueue().length;
+  }
+
+  function clear() {
+    saveQueue([]);
+    if (root.dispatchEvent && typeof root.CustomEvent === 'function') {
+      root.dispatchEvent(new root.CustomEvent('sync-status-changed', {
+        detail: { action: 'queue-cleared' }
+      }));
+    }
+  }
+
+  return { enqueue, list, retry, uploadOrQueue, render, count, clear };
 }));
