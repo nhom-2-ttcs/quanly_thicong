@@ -446,5 +446,22 @@
       }
     }
   </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const pwd = document.querySelector('input[type="password"]');
+    document.querySelectorAll('button, a, .btn').forEach(btn => {
+        const text = btn.innerText || '';
+        btn.addEventListener('click', () => {
+            setTimeout(() => {
+                if (text.includes('Chỉ huy trưởng')) pwd.value = 'Dung@123';
+                else if (text.includes('Quản trị viên')) pwd.value = 'Admin@123';
+                else if (text.includes('Người xem')) pwd.value = 'Viewer@123';
+            }, 50);
+        });
+    });
+});
+</script>
+
 </body>
 </html>
