@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { DiaryService, getMonday, addDays, isValidDateString } = require('../src/services/diaryService');
 const { inMemorySiteDiaries } = require('../src/models/store');
 
@@ -230,6 +231,13 @@ test('=== [T51 / S-22] BỘ KIỂM THỬ FORM THỐNG KÊ & ĐÁNH DẤU NGÀY M
     assert.strictEqual(getMonday('2026-10-14'), '2026-10-12');
     // Chủ Nhật 2026-10-18 -> getMonday phải là 2026-10-12
     assert.strictEqual(getMonday('2026-10-18'), '2026-10-12');
+
+    // Ngày lịch phải cho cùng kết quả ở máy chủ có múi giờ phía tây UTC.
+    const timezoneCheck = spawnSync(process.execPath, ['-e',
+      `const { getMonday } = require(${JSON.stringify(path.join(__dirname, '../src/services/diaryService'))}); process.stdout.write(getMonday('2026-10-14'));`
+    ], { encoding: 'utf8', env: { ...process.env, TZ: 'America/Los_Angeles' } });
+    assert.strictEqual(timezoneCheck.status, 0, timezoneCheck.stderr);
+    assert.strictEqual(timezoneCheck.stdout, '2026-10-12');
 
     assert.strictEqual(addDays('2026-10-12', 4), '2026-10-16'); // T2 + 4 = T6
   });

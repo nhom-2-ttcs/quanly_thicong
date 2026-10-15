@@ -17,6 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/common-nav.css">
 
   <style>
     :root {
@@ -295,27 +296,86 @@
       border-color: var(--brand-blue); background: #eff6ff;
     }
     .photo-preview-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 10px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+      gap: 10px;
       margin-top: 10px;
+      width: 100%;
+      box-sizing: border-box;
     }
     .photo-card {
-      border: 1px solid var(--border-card); border-radius: 8px; overflow: hidden;
-      background: #ffffff; display: flex; flex-direction: column; position: relative;
+      border: 1px solid var(--border-card);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      position: relative;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
     }
     .photo-thumb-wrap {
-      width: 100%; height: 75px; position: relative; overflow: hidden; background: #f1f5f9;
+      width: 100%;
+      height: 80px;
+      position: relative;
+      overflow: hidden;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .photo-thumb-wrap img {
-      width: 100%; height: 100%; object-fit: cover; cursor: pointer;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      cursor: pointer;
+      display: block;
     }
     .photo-remove-btn {
-      position: absolute; top: 4px; right: 4px; background: rgba(220, 38, 38, 0.9);
-      color: #ffffff; border: none; width: 22px; height: 22px; border-radius: 50%;
-      font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: background 0.15s; line-height: 1;
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: rgba(220, 38, 38, 0.9);
+      color: #ffffff;
+      border: none;
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
+      min-height: 24px;
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+      line-height: 1;
+      z-index: 2;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
-    .photo-remove-btn:hover { background: #dc2626; transform: scale(1.05); }
+    .photo-remove-btn:hover {
+      background: #dc2626;
+      transform: scale(1.1);
+    }
+    @media (max-width: 480px) {
+      .photo-preview-grid {
+        grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+        gap: 8px;
+      }
+      .photo-thumb-wrap {
+        height: 70px;
+      }
+      .photo-remove-btn {
+        width: 26px;
+        height: 26px;
+        font-size: 14px;
+        top: 3px;
+        right: 3px;
+      }
+    }
     .photo-meta-info {
       padding: 6px; display: flex; flex-direction: column; gap: 4px; font-size: 10.5px;
     }
@@ -669,8 +729,10 @@
     @media (max-width: 768px) {
       .topbar { padding: 0 16px; height: auto; flex-direction: column; gap: 10px; padding-bottom: 12px; }
       .nav-dock { width: 100%; overflow-x: auto; justify-content: flex-start; }
-      .main-container { padding: 14px; gap: 16px; }
-      .week-days-container { grid-template-columns: repeat(5, 160px); }
+      .main-container { padding: 14px; gap: 16px; max-width: 100%; overflow-x: hidden; }
+      .s21-section { max-width: 100%; overflow-x: hidden; padding: 14px; }
+      .one-hand-grid { grid-template-columns: 1fr; width: 100%; }
+      .week-days-container { grid-template-columns: repeat(5, 160px); overflow-x: auto; max-width: 100%; }
       .weather-options { grid-template-columns: 1fr; }
       .page-header { flex-direction: column; align-items: flex-start; }
       .week-navigator { width: 100%; justify-content: space-between; }
@@ -697,13 +759,13 @@
 
     <!-- Navigation Dock -->
     <nav class="nav-dock">
-      <a href="/index.html" class="nav-item">📊 Tổng quan</a>
-      <a href="/wbs.html" class="nav-item">🌲 WBS & Mốc</a>
-      <a href="/schedule.html" class="nav-item">📅 Bảng tiến độ</a>
-      <a href="/gantt.html" class="nav-item">📈 Sơ đồ Gantt</a>
-      <a href="/diary.html" class="nav-item active">🌧️ Nhật ký & Ngày mưa</a>
-      <a href="/calendar.html" class="nav-item">⚙️ Lịch làm việc</a>
-      <a href="/teams.html" class="nav-item">👷‍♂️ Đội & Giao việc</a>
+      <a href="/index.html" class="nav-item">Tổng quan</a>
+      <a href="/wbs.html" class="nav-item">WBS</a>
+      <a href="/schedule.html" class="nav-item">CPM</a>
+      <a href="/gantt.html" class="nav-item">Gantt</a>
+      <a href="/calendar.html" class="nav-item">Lịch</a>
+      <a href="/diary.html" class="nav-item active">Nhật ký</a>
+      <a href="/teams.html" class="nav-item">Đội & Giao việc</a>
     </nav>
 
     <!-- User Information -->
@@ -713,6 +775,7 @@
         <span class="user-name" id="display-user-name">Trần Mạnh Dũng</span>
         <span class="user-role" id="display-user-role">Chỉ huy trưởng công trình</span>
       </div>
+      <button class="btn-logout" id="btnLogout" onclick="handleLogout()" title="Đăng xuất">Đăng xuất</button>
     </div>
   </header>
 
@@ -1150,7 +1213,8 @@
   </div>
 
   <script>
-    const PROJECT_ID = 1;
+    const urlParams = new URLSearchParams(window.location.search);
+    const PROJECT_ID = parseInt(urlParams.get('projectId') || urlParams.get('id') || '1', 10);
     let currentSelectedDate = new Date().toISOString().split('T')[0];
     let currentWeekData = null;
     let currentUser = null;
@@ -2007,6 +2071,11 @@
       container.style.display = 'block';
       countEl.innerText = `${existingPhotos.length} ảnh`;
 
+      const isLocked = Boolean(currentDiaryStatus && currentDiaryStatus.is_locked);
+      const isViewer = (typeof currentUserRole !== 'undefined' && currentUserRole === 'Viewer') ||
+                       (currentUser && currentUser.role === 'Viewer');
+      const canDelete = !isLocked && !isViewer;
+
       grid.innerHTML = existingPhotos.map(p => {
         const isPending = p.upload_status === 'pending' || p.upload_status === 'uploading' || !p.url;
 
@@ -2018,6 +2087,7 @@
               <div class="photo-placeholder-wrap">
                 <span class="photo-placeholder-spin">⏳</span>
                 <span class="photo-placeholder-badge">Đang tải nền...</span>
+                ${canDelete ? `<button type="button" class="photo-remove-btn" onclick="deleteExistingPhoto('${p.id || clientKey}')" title="Hủy ảnh chờ tải">✕</button>` : ''}
               </div>
               <div class="photo-meta-info">
                 <span style="font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(p.caption || p.file_name || 'Ảnh hiện trường')}">
@@ -2035,7 +2105,7 @@
           <div class="photo-card" id="existing-photo-${p.id}">
             <div class="photo-thumb-wrap">
               <img src="${p.url || '/uploads/diaries/' + p.file_name}" alt="${escapeHtml(p.caption || p.file_name)}" onclick="openLightbox('${p.url || '/uploads/diaries/' + p.file_name}', '${escapeHtml(p.caption || p.file_name)}', 'Đã lưu • ${formatFileSize(p.file_size)}')">
-              <button type="button" class="photo-remove-btn" onclick="deleteExistingPhoto(${p.id})" title="Xóa ảnh trên server">✕</button>
+              ${canDelete ? `<button type="button" class="photo-remove-btn" onclick="deleteExistingPhoto(${p.id})" title="Xóa ảnh đính kèm">✕</button>` : ''}
             </div>
             <div class="photo-meta-info">
               <span style="font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(p.caption || p.file_name)}">
@@ -2049,33 +2119,63 @@
     }
 
     async function deleteExistingPhoto(photoId) {
+      const isLocked = Boolean(currentDiaryStatus && currentDiaryStatus.is_locked);
+      const isViewer = (typeof currentUserRole !== 'undefined' && currentUserRole === 'Viewer') ||
+                       (currentUser && currentUser.role === 'Viewer');
+
+      if (isLocked) {
+        showErrorToast('Nhật ký đã bị khóa sổ, không thể xóa ảnh.');
+        return;
+      }
+      if (isViewer) {
+        showErrorToast('Tài khoản chỉ có quyền xem, không thể xóa ảnh.');
+        return;
+      }
+
       const confirmed = confirm('Bạn có chắc chắn muốn xóa ảnh đính kèm này khỏi nhật ký?');
       if (!confirmed) return;
+
+      // Nếu là ảnh chờ ở client queue chưa lên máy chủ
+      if (typeof photoId === 'string' && photoId.startsWith('client_')) {
+        existingPhotos = existingPhotos.filter(p => (p.client_photo_id !== photoId && p.id !== photoId));
+        renderExistingPhotos();
+        showSuccessToast('Đã hủy ảnh chờ tải');
+        return;
+      }
+
+      const numId = Number(photoId);
+      if (!numId) {
+        existingPhotos = existingPhotos.filter(p => p.id !== photoId && p.client_photo_id !== photoId);
+        renderExistingPhotos();
+        return;
+      }
 
       try {
         const token = localStorage.getItem('quanly_token');
         const headers = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const res = await fetch(`/api/projects/${PROJECT_ID}/diaries/photos/${photoId}`, {
+        const res = await fetch(`/api/projects/${PROJECT_ID}/diaries/photos/${numId}`, {
           method: 'DELETE',
           headers
         });
         const data = await res.json();
 
         if (res.ok && data.success) {
-          showSuccessToast('Đã xóa ảnh đính kèm thành công');
-          existingPhotos = existingPhotos.filter(p => p.id !== photoId);
+          showSuccessToast(data.message || 'Đã xóa ảnh đính kèm thành công');
+          existingPhotos = existingPhotos.filter(p => p.id !== numId);
           renderExistingPhotos();
           // Cập nhật lại số lượng ảnh trên dashboard
           if (currentSelectedDate) {
             await loadWeekData(currentSelectedDate);
           }
         } else {
-          showErrorToast(data.message || 'Xóa ảnh thất bại');
+          // Lỗi từ máy chủ: giữ nguyên ảnh trên giao diện, hiển thị thông báo lỗi rõ ràng
+          showErrorToast(data.message || 'Không thể xóa ảnh đính kèm');
         }
       } catch (e) {
-        showErrorToast('Lỗi khi xóa ảnh: ' + e.message);
+        // Lỗi kết nối: không gỡ ảnh, hiển thị thông báo lỗi để người dùng thử lại
+        showErrorToast('Lỗi kết nối khi xóa ảnh: ' + e.message);
       }
     }
 
@@ -2596,6 +2696,11 @@
     inputs.forEach(el => {
       el.disabled = isReadOnly;
     });
+    const removeBtns = document.querySelectorAll('.photo-remove-btn');
+    removeBtns.forEach(btn => {
+      btn.disabled = isReadOnly;
+      btn.style.display = isReadOnly ? 'none' : 'flex';
+    });
   }
 
   function handleLockDiary() {
@@ -2737,5 +2842,6 @@
     </button>
   </div>
 
+  <script src="/js/app-navbar.js"></script>
 </body>
 </html>

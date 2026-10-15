@@ -22,6 +22,7 @@ const APP_SHELL_ASSETS = [
   '/register.html',
   '/offline.html',
   '/manifest.json',
+  '/css/common-nav.css',
   '/js/pwa-register.js',
   '/js/app-navbar.js',
   '/icons/icon.svg',

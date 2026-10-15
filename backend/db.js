@@ -142,6 +142,16 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
       ON DUPLICATE KEY UPDATE name = VALUES(name);
     `);
 
+    // S-01: Ngày khởi công dự án (NULL với dữ liệu cũ; không gán ngày giả)
+    try {
+      const [projCols] = await pool.query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'projects' AND COLUMN_NAME = 'start_date'");
+      if (!projCols || projCols.length === 0) {
+        await pool.query('ALTER TABLE projects ADD COLUMN start_date DATE NULL AFTER description');
+      }
+    } catch (migErr) {
+      console.warn('[DB] Lưu ý khi thêm cột start_date bảng projects:', migErr.message);
+    }
+
     // 4. Tạo bảng work_items (Cơ cấu công việc WBS)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS work_items (
@@ -665,6 +675,29 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    // 13. Tạo bảng project_teams & task_assignments (S-25 / SCRUM-125 / T-50: Đội thi công & Giao việc)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS project_teams (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        code VARCHAR(50) NULL,
+        leader_id INT NULL,
+        leader_name VARCHAR(100) NULL,
+        phone VARCHAR(20) NULL,
+        specialty VARCHAR(100) NULL,
+        member_count INT NOT NULL DEFAULT 10,
+        max_parallel_tasks INT NOT NULL DEFAULT 3,
+        status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (leader_id) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_teams_project (project_id),
+        INDEX idx_teams_leader (leader_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
     // S-26: Bảng team_daily_progress (Báo cáo khối lượng hằng ngày của đội thi công)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS team_daily_progress (
@@ -707,29 +740,6 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
         INDEX idx_conflict_entity (entity_type, entity_id),
         INDEX idx_conflict_status (project_id, status)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    `);
-
-    // 13. Tạo bảng project_teams & task_assignments (S-25 / SCRUM-125 / T-50: Đội thi công & Giao việc)
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS project_teams (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        project_id INT NOT NULL,
-        name VARCHAR(255) NOT NULL,
-        code VARCHAR(50) NULL,
-        leader_id INT NULL,
-        leader_name VARCHAR(100) NULL,
-        phone VARCHAR(20) NULL,
-        specialty VARCHAR(100) NULL,
-        member_count INT NOT NULL DEFAULT 10,
-        max_parallel_tasks INT NOT NULL DEFAULT 3,
-        status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-        FOREIGN KEY (leader_id) REFERENCES users(id) ON DELETE SET NULL,
-        INDEX idx_teams_project (project_id),
-        INDEX idx_teams_leader (leader_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 

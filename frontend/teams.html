@@ -17,6 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/common-nav.css">
   <style>
     :root {
       --primary: #1e40af;
@@ -49,15 +50,16 @@
       flex-direction: column;
     }
 
-    /* Topbar Navigation Dock */
+    /* Topbar Navigation Dock - Sáng chuẩn */
     .topbar {
-      background: #0f172a;
-      color: #ffffff;
+      background: #ffffff;
+      color: #0f172a;
       padding: 10px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      border-bottom: 1px solid var(--border-card);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -67,12 +69,12 @@
       align-items: center;
       gap: 12px;
       text-decoration: none;
-      color: #ffffff;
+      color: #0f172a;
     }
     .topbar-logo {
       width: 36px;
       height: 36px;
-      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
       border-radius: 9px;
       display: flex;
       align-items: center;
@@ -84,64 +86,88 @@
       font-weight: 800;
       letter-spacing: -0.3px;
       font-family: 'Outfit', sans-serif;
+      color: #0f172a;
     }
     .topbar-title span {
       font-size: 11px;
-      color: #94a3b8;
+      color: #64748b;
     }
 
     .nav-dock {
       display: flex;
       align-items: center;
-      gap: 5px;
-      background: rgba(255,255,255,0.06);
-      padding: 4px 6px;
+      gap: 3px;
+      background: #f1f5f9;
+      padding: 3px;
       border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid #e2e8f0;
     }
     .nav-item {
-      color: #cbd5e1;
+      color: #334155;
       text-decoration: none;
       font-size: 12.5px;
       font-weight: 600;
-      padding: 6px 12px;
+      padding: 6px 11px;
       border-radius: 7px;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
     }
     .nav-item:hover {
-      color: #ffffff;
-      background: rgba(255,255,255,0.12);
+      color: #0f172a;
+      background: #e2e8f0;
     }
     .nav-item.active {
-      background: #2563eb;
-      color: #ffffff;
-      box-shadow: 0 2px 8px rgba(37,99,235,0.35);
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      font-weight: 700;
+      box-shadow: 0 1px 2px rgba(37,99,235,0.08);
     }
 
     .user-profile {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 9px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 4px 10px 4px 6px;
+    }
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .user-info-text {
-      text-align: right;
-      line-height: 1.25;
+      text-align: left;
+      line-height: 1.2;
     }
-    .user-name { font-size: 13px; font-weight: 700; color: #f8fafc; }
-    .user-role { font-size: 11px; color: #93c5fd; }
+    .user-name { font-size: 12px; font-weight: 700; color: #0f172a; }
+    .user-role { font-size: 10.5px; font-weight: 600; color: #64748b; }
     .btn-logout {
-      background: rgba(239,68,68,0.15);
-      border: 1px solid rgba(239,68,68,0.35);
-      color: #fca5a5;
-      padding: 6px 12px;
-      border-radius: 7px;
-      font-size: 12px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      padding: 4px 9px;
+      border-radius: 6px;
+      font-size: 11.5px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s ease;
+    }
+    .btn-logout:hover {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #f87171;
     }
     .btn-logout:hover {
       background: #dc2626;
@@ -738,30 +764,31 @@
 
   <!-- Topbar Portal Thống Nhất -->
   <header class="topbar">
-    <a href="index.html" class="topbar-brand">
+    <a href="/index.html" class="topbar-brand">
       <div class="topbar-logo">🏗️</div>
       <div class="topbar-title">
         <h1>QUẢN LÝ THI CÔNG</h1>
-        <span>S-25: Chỉ Huy Trưởng Giao Việc Cho Đội</span>
+        <span>S-25: CHỈ HUY TRƯỞNG GIAO VIỆC CHO ĐỘI</span>
       </div>
     </a>
 
     <nav class="nav-dock">
-      <a href="index.html" class="nav-item">📊 Tổng quan</a>
-      <a href="wbs.html" class="nav-item">🌳 WBS</a>
-      <a href="schedule.html" class="nav-item">⚡ CPM</a>
-      <a href="gantt.html" class="nav-item">📈 Gantt</a>
-      <a href="calendar.html" class="nav-item">📅 Lịch</a>
-      <a href="diary.html" class="nav-item">📖 Nhật ký</a>
-      <a href="teams.html" class="nav-item active">👷‍♂️ Đội & Giao việc</a>
+      <a href="/index.html" class="nav-item">Tổng quan</a>
+      <a href="/wbs.html" class="nav-item">WBS</a>
+      <a href="/schedule.html" class="nav-item">CPM</a>
+      <a href="/gantt.html" class="nav-item">Gantt</a>
+      <a href="/calendar.html" class="nav-item">Lịch</a>
+      <a href="/diary.html" class="nav-item">Nhật ký</a>
+      <a href="/teams.html" class="nav-item active">Đội & Giao việc</a>
     </nav>
 
-    <div class="user-profile">
-      <div class="user-info-text">
-        <div class="user-name" id="user-display-name">Trần Mạnh Dũng</div>
-        <div class="user-role" id="user-display-role">Chỉ huy trưởng công trình</div>
+    <div class="user-profile user-pill" id="userPill">
+      <div class="user-avatar" id="avatar-letter">D</div>
+      <div class="user-meta user-info-text">
+        <span class="user-name" id="user-display-name">Trần Mạnh Dũng</span>
+        <span class="user-role" id="user-display-role">Chỉ huy trưởng công trình</span>
       </div>
-      <button class="btn-logout" onclick="handleLogout()">Đăng xuất</button>
+      <button class="btn-logout" id="btnLogout" onclick="handleLogout()" title="Đăng xuất">Đăng xuất</button>
     </div>
   </header>
 
@@ -1889,5 +1916,6 @@
     // Chạy khi trang sẵn sàng
     document.addEventListener('DOMContentLoaded', initApp);
   </script>
+  <script src="/js/app-navbar.js"></script>
 </body>
 </html>

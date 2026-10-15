@@ -29,6 +29,10 @@ jobs:
           cd backend
           npm run lint
 
+      - name: Install Chromium for S-34 browser test
+        run: npx playwright-core install --with-deps chromium
+        working-directory: backend
+
       - name: 3. Start Docker Compose Stack
         env:
           FRONTEND_PORT: 8081
@@ -75,6 +79,7 @@ jobs:
         env:
           BACKEND_BASE_URL: http://localhost:5000
           FRONTEND_BASE_URL: http://localhost:5000
+          REQUIRE_S34_BROWSER: 'true'
         run: |
           cd backend
           npm test
@@ -83,6 +88,7 @@ jobs:
         env:
           BACKEND_BASE_URL: http://localhost:5000
           FRONTEND_BASE_URL: http://localhost:5000
+          REQUIRE_S34_BROWSER: 'true'
         run: |
           cd backend
           npm run test:s34

@@ -1,6 +1,7 @@
 const express = require('express');
 const { SchedulerService } = require('../domain/scheduling/schedulerService');
 const { checkProjectReadAccess, checkViewerForbidden } = require('../utils/rbac');
+const { getProjectStartDate } = require('../utils/projectStartDate');
 
 module.exports = (db) => {
   const router = express.Router();
@@ -45,6 +46,8 @@ module.exports = (db) => {
         criticalOnly,
         forceRecalculate
       });
+      // S-01: mốc ngày khởi công thật của dự án để quy đổi offset CPM sang ngày lịch
+      result.projectStartDate = await getProjectStartDate(db, projectId);
       return res.status(result.hasCycle ? 422 : 200).json(result);
     } catch (error) {
       const validation = /không hợp lệ|không tồn tại|thiếu|trùng|phải là/.test(error.message);

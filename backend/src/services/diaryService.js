@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const {
   getSiteDiaries,
   getSiteDiaryByDate,
@@ -39,14 +41,19 @@ function isValidDateString(dateStr) {
 }
 
 function getMonday(dateInput) {
-  const d = new Date(dateInput);
-  const day = d.getDay();
+  // Dates such as YYYY-MM-DD are calendar dates, not local timestamps. Parse
+  // and calculate them in UTC so servers in UTC- timezones don't shift a day.
+  const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(String(dateInput))
+    ? `${dateInput}T00:00:00Z`
+    : dateInput);
+  if (Number.isNaN(d.getTime())) return null;
+  const day = d.getUTCDay();
   // Chủ Nhật (0) -> lùi 6 ngày về Thứ Hai tuần trước; Thứ 2 (1) -> lùi 0; Thứ 3 (2) -> lùi 1...
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(d.setDate(diff));
-  const y = monday.getFullYear();
-  const m = String(monday.getMonth() + 1).padStart(2, '0');
-  const dayNum = String(monday.getDate()).padStart(2, '0');
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setUTCDate(d.getUTCDate() + diff);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dayNum = String(d.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${dayNum}`;
 }
 
@@ -748,13 +755,20 @@ class DiaryService {
 
   async deletePhoto(projectId, photoId) {
     const phId = Number(photoId);
+    const pId = Number(projectId);
+    if (!phId || !pId) {
+      const err = new Error('projectId hoặc photoId không hợp lệ');
+      err.status = 400;
+      throw err;
+    }
+
     if (this.pool?.query) {
       const [rows] = await this.pool.query(
         `SELECT p.*, d.is_locked, d.project_id
          FROM site_diary_photos p
          JOIN site_diaries d ON p.diary_id = d.id
-         WHERE p.id = ? LIMIT 1`,
-        [phId]
+         WHERE p.id = ? AND d.project_id = ? LIMIT 1`,
+        [phId, pId]
       );
       if (!rows || rows.length === 0) {
         const err = new Error('Không tìm thấy ảnh đính kèm');
@@ -766,11 +780,68 @@ class DiaryService {
         err.status = 423;
         throw err;
       }
+      const fileName = rows[0].file_name;
       await this.pool.query('DELETE FROM site_diary_photos WHERE id = ?', [phId]);
+
+      // Kiểm tra file vật lý có còn được bản ghi khác dùng chung không trước khi xóa
+      if (fileName) {
+        const [sharedRows] = await this.pool.query(
+          'SELECT COUNT(*) as cnt FROM site_diary_photos WHERE file_name = ?',
+          [fileName]
+        );
+        if (sharedRows && sharedRows[0] && Number(sharedRows[0].cnt) === 0) {
+          const uploadsDir = path.join(__dirname, '../../uploads/diaries');
+          const filePath = path.join(uploadsDir, fileName);
+          try {
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+            }
+          } catch (e) {
+            console.warn('Không thể xóa file vật lý:', e.message);
+          }
+        }
+      }
       return true;
     }
 
-    return deleteSiteDiaryPhoto(phId);
+    // In-memory store (kiểm thử hoặc fallback)
+    const photo = inMemorySiteDiaryPhotos.find(p => p.id === phId);
+    if (!photo) {
+      const err = new Error('Không tìm thấy ảnh đính kèm');
+      err.status = 404;
+      throw err;
+    }
+    const diary = inMemorySiteDiaries.find(d => d.id === photo.diary_id);
+    if (!diary || Number(diary.project_id) !== pId) {
+      const err = new Error('Không tìm thấy ảnh đính kèm');
+      err.status = 404;
+      throw err;
+    }
+    if (diary.is_locked === 1) {
+      const err = new Error('Nhật ký đã bị khóa sổ, không thể xóa ảnh.');
+      err.status = 423;
+      throw err;
+    }
+
+    const fileName = photo.file_name;
+    deleteSiteDiaryPhoto(phId);
+
+    // Kiểm tra xem file vật lý có còn được bản ghi khác trong in-memory dùng chung không
+    if (fileName) {
+      const isShared = inMemorySiteDiaryPhotos.some(p => p.file_name === fileName);
+      if (!isShared) {
+        const uploadsDir = path.join(__dirname, '../../uploads/diaries');
+        const filePath = path.join(uploadsDir, fileName);
+        try {
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+        } catch (e) {
+          console.warn('Không thể xóa file vật lý in-memory:', e.message);
+        }
+      }
+    }
+    return true;
   }
 
   /**
