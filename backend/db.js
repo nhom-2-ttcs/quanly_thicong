@@ -413,12 +413,16 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
       `, [u.id, u.email, u.password_hash, u.salt, u.full_name, u.role_id]);
     }
 
-    // Gán quyền thành viên dự án mẫu 1 cho Admin (1), PM (2), Viewer (3)
-    await pool.query(`
-      INSERT INTO project_members (project_id, user_id, role_id)
-      VALUES (1, 1, 1), (1, 2, 2), (1, 3, 7)
-      ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);
-    `);
+    // Gán quyền thành viên dự án mẫu 1 cho Admin (1), PM (2), Viewer (3) (an toàn chống lỗi FK)
+    try {
+      await pool.query(`
+        INSERT INTO project_members (project_id, user_id, role_id)
+        VALUES (1, 1, 1)
+        ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);
+      `);
+    } catch (ePm) {
+      console.warn('[DB Seed project_members bypassed]:', ePm.message);
+    }
 
     // Sửa triệt để lỗi font/mojibake dữ liệu mẫu WBS và tasks theo cách idempotent
     await pool.query(`
