@@ -119,6 +119,10 @@ app.get('/teams', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/teams.html'));
 });
 
+app.get('/acceptance', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/acceptance.html'));
+});
+
 // Middleware xác thực token phiên
 const { authenticate } = require('./src/utils/rbac');
 app.use(authenticate);
@@ -151,6 +155,10 @@ app.use("/api", diaryRoutes(db));
 // S-25 / SCRUM-125 / T-50: Đội thi công & Chỉ huy trưởng giao việc
 const teamRoutes = require("./src/routes/teamRoutes");
 app.use("/api", teamRoutes(db));
+
+// S-36 / SCRUM-165: Lập phiếu nghiệm thu theo đợt & tự tính khối lượng phát sinh
+const acceptanceRoutes = require("./src/routes/acceptanceRoutes");
+app.use("/api", acceptanceRoutes(db));
 
 // ==========================================
 // CÁC ENDPOINT CHO SAO LƯU & KHÔI PHỤC CSDL (S-20, T-46, T-47)

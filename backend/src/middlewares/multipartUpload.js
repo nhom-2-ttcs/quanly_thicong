@@ -275,6 +275,40 @@ function handleMultipartUpload(req, res, next) {
           message: err.message || 'Lỗi khi xử lý ảnh Base64'
         });
       }
+    } else if (req.body && (req.body.buffer || req.body.data)) {
+      // Hỗ trợ tải 1 ảnh qua JSON Base64 (ví dụ upload-single của S-33/S-40)
+      try {
+        ensureUploadDir();
+        const projectId = req.params?.projectId || req.body?.project_id || 1;
+        const rawData = req.body.buffer || req.body.data;
+        if (typeof rawData === 'string') {
+          const matches = rawData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+          const mimeType = matches ? matches[1] : (req.body.mime_type || req.body.mimetype || 'image/jpeg');
+          const base64Data = matches ? matches[2] : rawData;
+          const buffer = Buffer.from(base64Data, 'base64');
+
+          const safeFilename = generateSafeFilename(projectId, req.body.file_name || req.body.filename || 'photo.jpg');
+          const targetPath = path.join(UPLOAD_DIR, safeFilename);
+          fs.writeFileSync(targetPath, buffer);
+
+          req.files.push({
+            fieldname: 'photo',
+            originalname: req.body.file_name || req.body.filename || 'photo.jpg',
+            filename: safeFilename,
+            path: targetPath,
+            size: buffer.length,
+            mimetype: mimeType,
+            caption: req.body.caption || '',
+            url: `/uploads/diaries/${safeFilename}`,
+            buffer
+          });
+        }
+      } catch (err) {
+        return res.status(err.status || 400).json({
+          success: false,
+          message: err.message || 'Lỗi khi giải mã dữ liệu ảnh Base64'
+        });
+      }
     }
     next();
   }

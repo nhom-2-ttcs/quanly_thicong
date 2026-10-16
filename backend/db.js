@@ -619,13 +619,19 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    // S-33 / T-60 & S-30: Bổ sung các cột cho hàng đợi tải ảnh nền và ràng buộc unique idempotency
+    // S-33 / T-60 & S-30 & S-40: Bổ sung các cột cho hàng đợi tải ảnh nền, unique idempotency và siêu dữ liệu EXIF
     try {
       await pool.query(`
         ALTER TABLE site_diary_photos
         ADD COLUMN IF NOT EXISTS upload_status ENUM('pending', 'uploading', 'completed', 'failed') NOT NULL DEFAULT 'completed' AFTER caption,
         ADD COLUMN IF NOT EXISTS client_photo_id VARCHAR(100) NULL AFTER upload_status,
-        ADD COLUMN IF NOT EXISTS temp_path VARCHAR(500) NULL AFTER client_photo_id;
+        ADD COLUMN IF NOT EXISTS temp_path VARCHAR(500) NULL AFTER client_photo_id,
+        ADD COLUMN IF NOT EXISTS taken_at DATETIME NULL AFTER temp_path,
+        ADD COLUMN IF NOT EXISTS latitude DECIMAL(10, 7) NULL AFTER taken_at,
+        ADD COLUMN IF NOT EXISTS longitude DECIMAL(10, 7) NULL AFTER latitude,
+        ADD COLUMN IF NOT EXISTS altitude DECIMAL(8, 2) NULL AFTER longitude,
+        ADD COLUMN IF NOT EXISTS has_metadata BOOLEAN NOT NULL DEFAULT FALSE AFTER altitude,
+        ADD COLUMN IF NOT EXISTS raw_metadata JSON NULL AFTER has_metadata;
       `);
       // Thêm UNIQUE index cho client_photo_id (S-30)
       const [pIndexes] = await pool.query(`SHOW INDEX FROM site_diary_photos WHERE Key_name = 'uq_photo_client_id'`);
@@ -806,7 +812,74 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
       UPDATE tasks SET team_id = 1, assigned_by = 2, assigned_at = '2026-10-04 08:00:00' WHERE id = 2 AND project_id = 1 AND (team_id IS NULL OR team_id = 1);
     `);
 
-    console.log(`[DB] Đã đồng bộ ${inMemoryUsers.length} tài khoản người dùng, schema calendars (S-17), milestones (T-43), alerts (T-44), site_diaries (T-50/51), photos (T-52) và project_teams (S-25/T-50) sẵn sàng.`);
+    // 14. Tạo bảng acceptance_sheets, acceptance_sheet_items, acceptance_sheet_photos (S-36 / SCRUM-165 / T-70..T-73)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS acceptance_sheets (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        sheet_code VARCHAR(50) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        period_number INT NOT NULL DEFAULT 1,
+        from_date DATE NOT NULL,
+        to_date DATE NOT NULL,
+        status ENUM('draft', 'submitted', 'approved', 'rejected') NOT NULL DEFAULT 'draft',
+        notes TEXT NULL,
+        created_by INT NOT NULL,
+        approved_by INT NULL,
+        approved_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT,
+        FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL,
+        UNIQUE KEY uq_project_sheet_code (project_id, sheet_code),
+        INDEX idx_acceptance_project_period (project_id, period_number),
+        INDEX idx_acceptance_status (project_id, status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS acceptance_sheet_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sheet_id INT NOT NULL,
+        work_item_id INT NULL,
+        task_id INT NULL,
+        item_name VARCHAR(255) NOT NULL,
+        unit VARCHAR(50) NOT NULL DEFAULT 'm3',
+        previous_approved_quantity DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+        cumulative_quantity DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+        period_quantity DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+        team_reported_quantity DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+        difference DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+        notes TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (sheet_id) REFERENCES acceptance_sheets(id) ON DELETE CASCADE,
+        FOREIGN KEY (work_item_id) REFERENCES work_items(id) ON DELETE SET NULL,
+        FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE SET NULL,
+        INDEX idx_asi_sheet (sheet_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS acceptance_sheet_photos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sheet_id INT NOT NULL,
+        file_name VARCHAR(255) NOT NULL,
+        file_path VARCHAR(500) NOT NULL,
+        file_size INT NOT NULL DEFAULT 0,
+        mime_type VARCHAR(100) NOT NULL DEFAULT 'image/jpeg',
+        caption VARCHAR(255) NULL,
+        taken_at DATETIME NULL,
+        latitude DECIMAL(10, 7) NULL,
+        longitude DECIMAL(10, 7) NULL,
+        has_metadata BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (sheet_id) REFERENCES acceptance_sheets(id) ON DELETE CASCADE,
+        INDEX idx_asp_sheet (sheet_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    console.log(`[DB] Đã đồng bộ ${inMemoryUsers.length} tài khoản người dùng, schema calendars (S-17), milestones (T-43), alerts (T-44), site_diaries (T-50/51), photos & EXIF (S-40), project_teams (S-25) và acceptance_sheets (S-36) sẵn sàng.`);
     return;
   } catch (err) {
     if (attempt < maxRetries) {

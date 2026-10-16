@@ -58,11 +58,29 @@ test('Frontend UI Consistency & Responsiveness across all 7 pages and 4 viewport
     return;
   }
 
-  // 1. Lấy token đăng nhập thật từ hệ thống backend
+  let ephemeralServer = null;
+  let activeBaseUrl = BASE_URL;
+  try {
+    const probe = await fetch(`${BASE_URL}/login.html`, { signal: AbortSignal.timeout(800) });
+    if (!probe.ok && probe.status !== 200) throw new Error('Unhealthy');
+  } catch (_) {
+    const express = require('express');
+    const path = require('path');
+    const app = express();
+    app.use(express.json());
+    app.use('/api/auth/me', (req, res) => res.json({ success: true, user: { id: 1, full_name: 'Nguyễn Quản Trị', role_name: 'admin', role_display_name: 'Quản trị viên' } }));
+    app.use('/api/auth/login', (req, res) => res.json({ success: true, token: 'mock_test_token_admin', user: { id: 1, full_name: 'Nguyễn Quản Trị', role_name: 'admin', role_display_name: 'Quản trị viên' } }));
+    app.use('/api/projects/:id', (req, res) => res.json({ success: true, project: { id: 1, name: 'Dự án mẫu Cầu Vàm Cỏ', code: 'DA-01' } }));
+    app.use(express.static(path.join(__dirname, '../../frontend')));
+    ephemeralServer = app.listen(0);
+    activeBaseUrl = `http://localhost:${ephemeralServer.address().port}`;
+  }
+
+  // 1. Lấy token đăng nhập thật từ hệ thống backend (nếu có)
   let realToken = '';
   let realUser = null;
   try {
-    const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
+    const loginRes = await fetch(`${activeBaseUrl}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'admin@thicong.vn', password: 'Admin@123' })
@@ -73,7 +91,7 @@ test('Frontend UI Consistency & Responsiveness across all 7 pages and 4 viewport
       realUser = loginData.user;
     }
   } catch (err) {
-    console.error('Không thể lấy token đăng nhập tự động:', err.message);
+    // Static server mode
   }
 
   const browser = await chromium.launch({ executablePath, headless: true });
@@ -81,21 +99,22 @@ test('Frontend UI Consistency & Responsiveness across all 7 pages and 4 viewport
   const page = await context.newPage();
 
   // Khởi tạo trước phiên đăng nhập hợp lệ cho LocalStorage
-  if (realToken && realUser) {
-    await page.addInitScript(({ token, user }) => {
-      localStorage.setItem('quanly_token', token);
-      localStorage.setItem('quanly_user', JSON.stringify(user));
-    }, { token: realToken, user: realUser });
-  }
+  const testUser = realUser || { id: 1, full_name: 'Nguyễn Quản Trị', role_name: 'admin', role_display_name: 'Quản trị viên' };
+  const testToken = realToken || 'mock_test_token_admin';
+  await page.addInitScript(({ token, user }) => {
+    localStorage.setItem('quanly_token', token);
+    localStorage.setItem('quanly_user', JSON.stringify(user));
+  }, { token: testToken, user: testUser });
 
-  for (const pageConfig of PAGES) {
-    await t.test(`Kiểm tra trang ${pageConfig.file}`, async (st) => {
-      for (const vp of VIEWPORTS) {
-        await st.test(`Hiển thị tại độ phân giải ${vp.name}`, async () => {
-          await page.setViewportSize({ width: vp.width, height: vp.height });
-          const targetUrl = `${BASE_URL}/${pageConfig.file}?projectId=1`;
-          await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
-          await page.waitForTimeout(250);
+  try {
+    for (const pageConfig of PAGES) {
+      await t.test(`Kiểm tra trang ${pageConfig.file}`, async (st) => {
+        for (const vp of VIEWPORTS) {
+          await st.test(`Hiển thị tại độ phân giải ${vp.name}`, async () => {
+            await page.setViewportSize({ width: vp.width, height: vp.height });
+            const targetUrl = `${activeBaseUrl}/${pageConfig.file}?projectId=1`;
+            await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
+            await page.waitForTimeout(250);
 
           // 1. Kiểm tra 7 mục điều hướng theo đúng thứ tự
           const navLinks = await page.$$eval('.nav-dock a, .module-nav a', els =>
@@ -154,6 +173,12 @@ test('Frontend UI Consistency & Responsiveness across all 7 pages and 4 viewport
       }
     });
   }
-
-  await browser.close();
+  } finally {
+    try {
+      await browser.close();
+    } catch (_) {}
+    if (ephemeralServer) {
+      ephemeralServer.close();
+    }
+  }
 });

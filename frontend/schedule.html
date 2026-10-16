@@ -778,21 +778,33 @@
         window.location.href = '/login.html';
         return;
       }
+      const userStr = localStorage.getItem('quanly_user');
+      if (userStr) {
+        try {
+          currentUser = JSON.parse(userStr);
+          renderUserInfo();
+        } catch (_) {}
+      }
       try {
         const res = await fetch('/api/auth/me', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
           localStorage.removeItem('quanly_token');
           localStorage.removeItem('quanly_user');
           window.location.href = '/login.html';
           return;
         }
-        const data = await res.json();
-        currentUser = data.user;
-        renderUserInfo();
+        if (res.ok) {
+          const data = await res.json();
+          currentUser = data.user;
+          localStorage.setItem('quanly_user', JSON.stringify(currentUser));
+          renderUserInfo();
+        }
       } catch (err) {
-        window.location.href = '/login.html';
+        if (!currentUser) {
+          window.location.href = '/login.html';
+        }
       }
     }
 

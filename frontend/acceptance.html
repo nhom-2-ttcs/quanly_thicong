@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phiếu Nghiệm Thu Đợt & Tự Tính Khối Lượng Phát Sinh (S-36) | Quản Lý Thi Công</title>
+  
+  <meta name="theme-color" content="#1d4ed8">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/common-nav.css">
+
+  <style>
+    :root {
+      --bg-canvas: #f8fafc;
+      --card-bg: #ffffff;
+      --border-card: #e2e8f0;
+      --border-outer: #94a3b8;
+      --brand-blue: #1d4ed8;
+      --brand-blue-hover: #1e40af;
+      --brand-blue-soft: #eff6ff;
+      --emerald-bg: #ecfdf5;
+      --emerald-border: #a7f3d0;
+      --emerald-text: #065f46;
+      --amber-bg: #fef3c7;
+      --amber-border: #f59e0b;
+      --amber-text: #92400e;
+      --danger: #dc2626;
+      --danger-bg: #fee2e2;
+      --danger-border: #f87171;
+      --danger-text: #991b1b;
+      --text-title: #0f172a;
+      --text-body: #1e293b;
+      --text-muted: #64748b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; }
+    body { background-color: var(--bg-canvas); color: var(--text-body); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* Topbar Navigation Dock */
+    .topbar {
+      height: 68px; background: #ffffff; border-bottom: 2px solid var(--border-card);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; position: sticky; top: 0; z-index: 50;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+    .brand-group { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 40px; height: 40px; background: linear-gradient(135deg, #0284c7 0%, #1d4ed8 100%);
+      border-radius: 9px; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3); border: 1px solid rgba(255,255,255,0.3);
+      flex-shrink: 0; font-size: 20px;
+    }
+    .brand-info h1 { font-size: 16px; font-weight: 800; color: var(--text-title); line-height: 1.2; }
+    .brand-info span { font-size: 10px; font-weight: 800; color: var(--brand-blue); letter-spacing: 0.6px; text-transform: uppercase; }
+
+    .nav-dock {
+      display: flex; align-items: center; gap: 4px; background: #f1f5f9;
+      padding: 4px; border-radius: 10px; border: 1px solid var(--border-card);
+    }
+    .nav-item {
+      padding: 7px 14px; font-size: 13px; font-weight: 700; color: var(--text-muted);
+      text-decoration: none; border-radius: 7px; transition: all 0.15s ease;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .nav-item:hover { color: var(--text-title); background: #ffffff; }
+    .nav-item.active { background: #ffffff; color: var(--brand-blue); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+    .user-pill {
+      display: flex; align-items: center; gap: 10px;
+      padding: 5px 12px 5px 6px; background: #f8fafc;
+      border: 1.5px solid var(--border-card); border-radius: 9999px;
+    }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, #0284c7, #1d4ed8);
+      color: #ffffff; font-weight: 800; font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .user-meta { display: flex; flex-direction: column; text-align: left; }
+    .user-name { font-size: 12px; font-weight: 700; color: var(--text-title); line-height: 1.2; }
+    .user-role { font-size: 10px; color: var(--text-muted); font-weight: 600; }
+    .btn-logout {
+      border: none; background: #fee2e2; color: #dc2626; border-radius: 6px;
+      padding: 5px 10px; font-size: 11px; font-weight: 700; cursor: pointer;
+      margin-left: 6px; transition: background 0.15s ease;
+    }
+    .btn-logout:hover { background: #fecaca; }
+
+    /* Main Container */
+    .main-container {
+      max-width: 1400px; width: 100%; margin: 0 auto;
+      padding: 24px; display: flex; flex-direction: column; gap: 24px;
+    }
+
+    /* Page Header */
+    .page-header {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px; background: #ffffff; padding: 20px 24px;
+      border-radius: 14px; border: 1px solid var(--border-card);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    }
+    .page-title-box h2 {
+      font-size: 20px; font-weight: 800; color: var(--text-title);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .page-title-box p {
+      font-size: 13px; color: var(--text-muted); margin-top: 4px;
+    }
+    .header-actions {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: #ffffff; border: none; padding: 10px 18px; border-radius: 8px;
+      font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex;
+      align-items: center; gap: 8px; transition: all 0.2s;
+      box-shadow: 0 2px 6px rgba(29, 78, 216, 0.25);
+    }
+    .btn-primary:hover {
+      background: #1e40af; transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: #ffffff; color: var(--text-body); border: 1.5px solid var(--border-card);
+      padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+      transition: all 0.15s;
+    }
+    .btn-secondary:hover { background: #f1f5f9; border-color: var(--border-outer); }
+
+    /* Metrics Strip */
+    .metrics-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .metric-card {
+      background: #ffffff; border-radius: 12px; padding: 16px 20px;
+      border: 1px solid var(--border-card); box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .metric-card .label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .metric-card .value { font-size: 26px; font-weight: 800; color: var(--text-title); font-family: 'JetBrains Mono', monospace; }
+    .metric-card .sub { font-size: 11.5px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+
+    /* Filter Bar */
+    .filter-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap; background: #ffffff; padding: 14px 20px;
+      border-radius: 12px; border: 1px solid var(--border-card);
+    }
+    .filter-tabs { display: flex; align-items: center; gap: 6px; }
+    .filter-tab {
+      padding: 6px 14px; font-size: 12.5px; font-weight: 700; border-radius: 7px;
+      border: 1px solid transparent; background: transparent; color: var(--text-muted);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .filter-tab:hover { background: #f1f5f9; color: var(--text-body); }
+    .filter-tab.active { background: var(--brand-blue-soft); color: var(--brand-blue); border-color: #bfdbfe; }
+
+    /* Table Styles */
+    .table-card {
+      background: #ffffff; border-radius: 14px; border: 1px solid var(--border-card);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04); overflow: hidden;
+    }
+    .table-responsive { width: 100%; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th {
+      background: #f8fafc; color: var(--text-muted); font-size: 11.5px;
+      font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 12px 16px; border-bottom: 2px solid var(--border-card);
+      white-space: nowrap;
+    }
+    td {
+      padding: 14px 16px; border-bottom: 1px solid var(--border-card);
+      font-size: 13px; color: var(--text-body); vertical-align: middle;
+    }
+    tr:hover td { background-color: #f8fafc; }
+
+    /* Status Badges */
+    .badge-status {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 9999px; font-size: 11.5px;
+      font-weight: 800; letter-spacing: 0.2px; text-transform: uppercase;
+    }
+    .badge-draft { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+    .badge-approved { background: var(--emerald-bg); color: var(--emerald-text); border: 1px solid var(--emerald-border); }
+    .badge-rejected { background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); }
+
+    /* Difference Indicators */
+    .diff-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 6px; font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; font-weight: 700;
+    }
+    .diff-match { background: #f1f5f9; color: #475569; }
+    .diff-under { background: var(--emerald-bg); color: var(--emerald-text); }
+    .diff-over { background: var(--amber-bg); color: var(--amber-text); }
+    .diff-severe { background: var(--danger-bg); color: var(--danger-text); }
+
+    /* Photo EXIF Pill (S-40) */
+    .photo-exif-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 3px 8px; border-radius: 6px; font-size: 11px;
+      font-weight: 700; margin-top: 4px;
+    }
+    .photo-exif-pill.has-exif { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .photo-exif-pill.no-exif { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    /* Modal Overlay & Card */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(4px); display: none; align-items: center;
+      justify-content: center; z-index: 1000; padding: 20px;
+    }
+    .modal-card {
+      background: #ffffff; border-radius: 16px; width: 100%;
+      max-width: 1050px; max-height: 90vh; display: flex; flex-direction: column;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15); overflow: hidden;
+      animation: modalFadeIn 0.2s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .modal-header {
+      padding: 18px 24px; background: #f8fafc; border-bottom: 1.5px solid var(--border-card);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-header h3 { font-size: 16px; font-weight: 800; color: var(--text-title); display: flex; align-items: center; gap: 8px; }
+    .btn-close-modal { background: none; border: none; font-size: 22px; color: var(--text-muted); cursor: pointer; line-height: 1; }
+    .btn-close-modal:hover { color: var(--danger); }
+    .modal-body { padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+    .modal-footer {
+      padding: 16px 24px; background: #f8fafc; border-top: 1.5px solid var(--border-card);
+      display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+    }
+
+    /* Form Grid */
+    .form-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 12px; font-weight: 700; color: var(--text-title); }
+    .form-control {
+      padding: 9px 12px; border-radius: 8px; border: 1.5px solid var(--border-card);
+      font-size: 13px; color: var(--text-body); background: #ffffff;
+      outline: none; transition: border-color 0.15s;
+    }
+    .form-control:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1); }
+    .form-control[readonly] { background: #f1f5f9; cursor: not-allowed; }
+
+    /* Work Items Table inside Form */
+    .items-table-box {
+      border: 1.5px solid var(--border-card); border-radius: 10px;
+      overflow: hidden; background: #ffffff;
+    }
+    .input-qty {
+      width: 110px; padding: 6px 10px; border-radius: 6px;
+      border: 1.5px solid var(--border-card); font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; font-weight: 700; text-align: right;
+    }
+    .input-qty:focus { border-color: var(--brand-blue); }
+    .calc-qty-cell {
+      font-family: 'JetBrains Mono', monospace; font-size: 13px;
+      font-weight: 800; color: var(--brand-blue); text-align: right;
+    }
+
+    /* Photos Section */
+    .photo-upload-zone {
+      border: 2px dashed #cbd5e1; border-radius: 12px; padding: 24px;
+      text-align: center; background: #f8fafc; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .photo-upload-zone:hover { border-color: var(--brand-blue); background: #eff6ff; }
+    .photos-preview-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px; margin-top: 12px;
+    }
+    .photo-preview-card {
+      border: 1px solid var(--border-card); border-radius: 8px;
+      overflow: hidden; background: #ffffff; display: flex; flex-direction: column;
+    }
+    .photo-preview-card img { width: 100%; height: 110px; object-fit: cover; }
+    .photo-meta-box { padding: 8px; font-size: 11px; display: flex; flex-direction: column; gap: 4px; }
+
+    /* Toast Notification */
+    #toast-msg {
+      position: fixed; bottom: 24px; right: 24px; z-index: 2000;
+      padding: 12px 20px; border-radius: 9px; font-size: 13px; font-weight: 700;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15); display: none; align-items: center; gap: 8px;
+    }
+    .toast-success { background: #065f46; color: #ffffff; }
+    .toast-error { background: #991b1b; color: #ffffff; }
+
+    @media (max-width: 900px) {
+      .topbar { padding: 0 16px; height: auto; flex-wrap: wrap; gap: 10px; padding-top: 10px; padding-bottom: 10px; }
+      .nav-dock { overflow-x: auto; max-width: 100%; }
+      .main-container { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="brand-group">
+      <div class="brand-icon">📋</div>
+      <div class="brand-info">
+        <h1>Nghiệm Thu Khối Lượng Đợt</h1>
+        <span>Phân hệ Nghiệm thu & Thanh toán (S-36)</span>
+      </div>
+    </div>
+
+    <!-- Navigation Dock -->
+    <nav class="nav-dock">
+      <a href="index.html" class="nav-item">📊 Tổng quan</a>
+      <a href="wbs.html" class="nav-item">🏗️ WBS</a>
+      <a href="schedule.html" class="nav-item">⏱️ CPM</a>
+      <a href="gantt.html" class="nav-item">📈 Gantt</a>
+      <a href="calendar.html" class="nav-item">📅 Lịch</a>
+      <a href="diary.html" class="nav-item">📝 Nhật ký</a>
+      <a href="teams.html" class="nav-item">👷 Đội & Giao việc</a>
+      <a href="acceptance.html" class="nav-item active">📋 Nghiệm thu</a>
+    </nav>
+
+    <!-- User Pill -->
+    <div class="user-pill" id="user-info-pill">
+      <div class="user-avatar" id="avatar-letter">Q</div>
+      <div class="user-meta">
+        <span class="user-name" id="display-user-name">Kỹ sư Giám sát</span>
+        <span class="user-role" id="display-user-role">Site Supervisor</span>
+      </div>
+      <button class="btn-logout" id="btnLogout" onclick="logout()">Đăng xuất</button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-container">
+    
+    <!-- Header with Actions -->
+    <div class="page-header">
+      <div class="page-title-box">
+        <h2>📋 Quản Lý Phiếu Nghiệm Thu Theo Đợt (S-36)</h2>
+        <p>Tự động tính khối lượng phát sinh trong đợt bằng luỹ kế hiện tại trừ luỹ kế đợt trước đã duyệt, đối chiếu số đội báo ở S-26 và đính kèm ảnh hiện trường (S-40).</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-secondary" onclick="reloadAcceptanceList()">
+          🔄 Làm mới dữ liệu
+        </button>
+        <button class="btn-primary" id="btnOpenCreateModal" onclick="openCreateModal()">
+          ➕ Lập Phiếu Nghiệm Thu Mới (T-72)
+        </button>
+      </div>
+    </div>
+
+    <!-- Metrics Strip -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <span class="label">Tổng số đợt nghiệm thu</span>
+        <span class="value" id="metric-total-sheets">0</span>
+        <span class="sub">📑 Toàn bộ dự án hiện tại</span>
+      </div>
+      <div class="metric-card">
+        <span class="label">Đã phê duyệt thanh toán</span>
+        <span class="value" id="metric-approved-sheets" style="color: #059669;">0</span>
+        <span class="sub">✅ Đã chốt số liệu căn cứ thanh toán</span>
+      </div>
+      <div class="metric-card">
+        <span class="label">Bản nháp đang xử lý</span>
+        <span class="value" id="metric-draft-sheets" style="color: #d97706;">0</span>
+        <span class="sub">⏳ Chờ Chỉ huy trưởng kiểm tra & duyệt</span>
+      </div>
+      <div class="metric-card">
+        <span class="label">Ảnh hiện trường đính kèm</span>
+        <span class="value" id="metric-total-photos" style="color: #2563eb;">0</span>
+        <span class="sub">📸 Tự động đọc toạ độ & ngày chụp (S-40)</span>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">Tất cả phiếu</button>
+        <button class="filter-tab" data-filter="draft" onclick="setFilter('draft')">⏳ Bản nháp (Draft)</button>
+        <button class="filter-tab" data-filter="approved" onclick="setFilter('approved')">✅ Đã duyệt (Approved)</button>
+      </div>
+      <div style="font-size: 13px; color: var(--text-muted);" id="tableSummaryText">
+        Đang hiển thị danh sách phiếu nghiệm thu
+      </div>
+    </div>
+
+    <!-- Acceptance Sheets Table -->
+    <div class="table-card">
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Mã phiếu</th>
+              <th>Tên đợt nghiệm thu</th>
+              <th>Đợt số</th>
+              <th>Ngày chốt đợt</th>
+              <th>Trạng thái</th>
+              <th>Hạng mục</th>
+              <th>Ảnh hiện trường</th>
+              <th>Người lập</th>
+              <th style="text-align: right;">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="acceptanceTableBody">
+            <tr>
+              <td colspan="9" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                Đang tải danh sách phiếu nghiệm thu...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: LẬP PHIẾU NGHIỆM THU MỚI (T-71 / T-72) -->
+  <div class="modal-overlay" id="createSheetModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📝 Lập Phiếu Nghiệm Thu Theo Đợt (T-72)</h3>
+        <button class="btn-close-modal" onclick="closeCreateModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Header Info -->
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Mã phiếu nghiệm thu *</label>
+            <input type="text" id="inputSheetCode" class="form-control" placeholder="Ví dụ: NT-D01-2026" required>
+          </div>
+          <div class="form-group">
+            <label>Tên đợt nghiệm thu *</label>
+            <input type="text" id="inputSheetTitle" class="form-control" placeholder="Ví dụ: Nghiệm thu khối lượng Đợt 1" required>
+          </div>
+          <div class="form-group">
+            <label>Đợt số</label>
+            <input type="number" id="inputPeriodNumber" class="form-control" min="1" value="1" readonly>
+          </div>
+          <div class="form-group">
+            <label>Ngày chốt khối lượng (Cut-off Date) *</label>
+            <input type="date" id="inputCutoffDate" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Ghi chú đợt nghiệm thu</label>
+          <input type="text" id="inputSheetNote" class="form-control" placeholder="Căn cứ hợp đồng, biên bản kiểm tra hiện trường...">
+        </div>
+
+        <!-- Work items Table -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
+          <div>
+            <h4 style="font-size: 14px; font-weight: 800; color: var(--text-title);">
+              📋 Bảng Khối Lượng Tự Tính & Đối Chiếu Số Đội Báo (AC 1, AC 2, AC 3)
+            </h4>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+              Khối lượng đợt = Luỹ kế hiện tại - Luỹ kế đợt trước đã duyệt. Số đội báo ở S-26 hiện bên cạnh để đối chiếu.
+            </p>
+          </div>
+          <button type="button" class="btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="loadPrefillData()">
+            ⚡ Tự động tải lại điền sẵn (T-70)
+          </button>
+        </div>
+
+        <div class="items-table-box">
+          <table style="font-size: 12.5px;">
+            <thead>
+              <tr>
+                <th style="width: 25%;">Hạng mục công việc</th>
+                <th style="width: 8%;">ĐVT</th>
+                <th style="width: 14%; text-align: right;">Luỹ kế trước đã duyệt</th>
+                <th style="width: 15%; text-align: right;">Luỹ kế thời điểm này *</th>
+                <th style="width: 14%; text-align: right;">Khối lượng đợt này (AC 2)</th>
+                <th style="width: 12%; text-align: right;">Số đội báo S-26 (AC 3)</th>
+                <th style="width: 12%; text-align: center;">Đối chiếu</th>
+              </tr>
+            </thead>
+            <tbody id="createSheetItemsBody">
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                  Đang tải danh mục hạng mục và số liệu đối chiếu...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Photos Attachment (AC 4 & S-40) -->
+        <div>
+          <h4 style="font-size: 14px; font-weight: 800; color: var(--text-title); margin-bottom: 4px;">
+            📸 Đính Kèm Ảnh Hiện Trường (AC 4) & Trích Xuất Siêu Dữ Liệu EXIF / GPS (S-40)
+          </h4>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+            Ảnh hiện trường không bắt buộc (theo NFR refinement). Hệ thống tự động đọc toạ độ GPS và thời gian chụp từ ảnh gốc.
+          </p>
+
+          <div class="photo-upload-zone" onclick="document.getElementById('filePhotoInput').click()">
+            <div style="font-size: 28px; margin-bottom: 6px;">📷</div>
+            <div style="font-size: 13px; font-weight: 700; color: var(--text-title);">
+              Bấm vào đây để chọn ảnh hoặc kéo thả ảnh hiện trường
+            </div>
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+              Hỗ trợ JPG, PNG, WEBP. Ảnh có GPS sẽ tự động trích xuất toạ độ.
+            </div>
+            <input type="file" id="filePhotoInput" multiple accept="image/*" style="display: none;" onchange="handleSelectedPhotos(event)">
+          </div>
+
+          <div class="photos-preview-grid" id="photosPreviewGrid"></div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeCreateModal()">Hủy bỏ</button>
+        <button type="button" class="btn-primary" id="btnSubmitCreateSheet" onclick="submitCreateSheet()">
+          💾 Lưu Phiếu Nghiệm Thu (Bản Nháp)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: XEM CHI TIẾT & PHÊ DUYỆT PHIẾU (T-73) -->
+  <div class="modal-overlay" id="detailSheetModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="detailModalTitle">📄 Chi Tiết Phiếu Nghiệm Thu</h3>
+        <button class="btn-close-modal" onclick="closeDetailModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="detailModalBody">
+        Đang tải chi tiết phiếu nghiệm thu...
+      </div>
+      <div class="modal-footer" id="detailModalFooter">
+        <button type="button" class="btn-secondary" onclick="closeDetailModal()">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-msg"></div>
+
+  <script src="/js/app-navbar.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = Number(urlParams.get('projectId') || 1);
+    let allAcceptanceSheets = [];
+    let currentFilter = 'all';
+    let currentPrefill = null;
+    let selectedFilesToUpload = [];
+
+    // Lấy thông tin user đăng nhập
+    function getCurrentUser() {
+      try {
+        const u = localStorage.getItem('quanly_user');
+        return u ? JSON.parse(u) : { id: 1, full_name: 'Kỹ sư Giám sát', role_id: 3, role_name: 'site_manager' };
+      } catch {
+        return { id: 1, full_name: 'Kỹ sư Giám sát', role_id: 3, role_name: 'site_manager' };
+      }
+    }
+
+    function getToken() {
+      return localStorage.getItem('quanly_token') || '';
+    }
+
+    function showToast(msg, isSuccess = true) {
+      const el = document.getElementById('toast-msg');
+      el.className = isSuccess ? 'toast-success' : 'toast-error';
+      el.innerHTML = (isSuccess ? '✅ ' : '⚠️ ') + msg;
+      el.style.display = 'flex';
+      setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+
+    function logout() {
+      localStorage.removeItem('quanly_token');
+      localStorage.removeItem('quanly_user');
+      window.location.href = '/login.html';
+    }
+
+    // Khởi tạo trang
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('inputCutoffDate').value = new Date().toISOString().slice(0, 10);
+      loadAcceptanceSheets();
+    });
+
+    // 1. Tải danh sách phiếu nghiệm thu
+    async function loadAcceptanceSheets() {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/acceptance-sheets`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          allAcceptanceSheets = data.data;
+          updateMetrics();
+          renderAcceptanceTable();
+        } else {
+          document.getElementById('acceptanceTableBody').innerHTML = `
+            <tr><td colspan="9" style="text-align: center; color: var(--danger); padding: 30px;">
+              ${data.message || 'Không thể tải danh sách phiếu nghiệm thu.'}
+            </td></tr>
+          `;
+        }
+      } catch (err) {
+        document.getElementById('acceptanceTableBody').innerHTML = `
+          <tr><td colspan="9" style="text-align: center; color: var(--danger); padding: 30px;">
+            Lỗi kết nối máy chủ: ${err.message}
+          </td></tr>
+        `;
+      }
+    }
+
+    function reloadAcceptanceList() {
+      loadAcceptanceSheets();
+      showToast('Đã làm mới danh sách phiếu nghiệm thu');
+    }
+
+    // Cập nhật thống kê
+    function updateMetrics() {
+      document.getElementById('metric-total-sheets').innerText = allAcceptanceSheets.length;
+      const approved = allAcceptanceSheets.filter(s => String(s.status).toLowerCase() === 'approved').length;
+      document.getElementById('metric-approved-sheets').innerText = approved;
+      const draft = allAcceptanceSheets.filter(s => String(s.status).toLowerCase() === 'draft').length;
+      document.getElementById('metric-draft-sheets').innerText = draft;
+      const totalPhotos = allAcceptanceSheets.reduce((sum, s) => sum + (s.photos_count || 0), 0);
+      document.getElementById('metric-total-photos').innerText = totalPhotos;
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-tab').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-filter') === filter);
+      });
+      renderAcceptanceTable();
+    }
+
+    // Render bảng phiếu nghiệm thu
+    function renderAcceptanceTable() {
+      const tbody = document.getElementById('acceptanceTableBody');
+      let filtered = allAcceptanceSheets;
+      if (currentFilter === 'draft') {
+        filtered = allAcceptanceSheets.filter(s => String(s.status).toLowerCase() === 'draft');
+      } else if (currentFilter === 'approved') {
+        filtered = allAcceptanceSheets.filter(s => String(s.status).toLowerCase() === 'approved');
+      }
+
+      document.getElementById('tableSummaryText').innerText = `Hiển thị ${filtered.length} / ${allAcceptanceSheets.length} phiếu`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr><td colspan="9" style="text-align: center; padding: 40px; color: var(--text-muted);">
+            Chưa có phiếu nghiệm thu nào trong mục này. Bấm <b>"Lập Phiếu Nghiệm Thu Mới"</b> để tạo đợt nghiệm thu đầu tiên.
+          </td></tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(s => {
+        const isApproved = String(s.status).toLowerCase() === 'approved';
+        const badgeClass = isApproved ? 'badge-approved' : 'badge-draft';
+        const badgeText = isApproved ? '✅ ĐÃ DUYỆT' : '⏳ BẢN NHÁP';
+
+        return `
+          <tr>
+            <td><strong style="font-family: 'JetBrains Mono', monospace; color: var(--brand-blue);">${s.sheet_code}</strong></td>
+            <td><strong>${s.name}</strong></td>
+            <td><span style="font-weight: 800; font-family: 'JetBrains Mono';">Đợt ${s.period_number}</span></td>
+            <td>${s.to_date || s.cutoff_date || '—'}</td>
+            <td><span class="badge-status ${badgeClass}">${badgeText}</span></td>
+            <td><span style="font-weight: 700;">${s.items_count || 0}</span> mục</td>
+            <td>
+              <span style="font-weight: 700;">${s.photos_count || 0}</span> ảnh
+              ${s.photos_count > 0 ? '<span title="Đã đính kèm ảnh hiện trường">📸</span>' : ''}
+            </td>
+            <td><span style="font-size: 12px; color: var(--text-muted);">${s.created_by_name || 'Kỹ sư giám sát'}</span></td>
+            <td style="text-align: right; white-space: nowrap;">
+              <button class="btn-secondary" style="font-size: 12px; padding: 5px 10px;" onclick="viewSheetDetail(${s.id})">
+                👁️ Xem chi tiết
+              </button>
+              ${!isApproved ? `
+                <button class="btn-primary" style="font-size: 12px; padding: 5px 10px; margin-left: 4px;" onclick="approveSheet(${s.id})">
+                  ✔️ Duyệt
+                </button>
+              ` : ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 2. Mở Modal Lập phiếu & Tải dữ liệu điền sẵn (T-70)
+    async function openCreateModal() {
+      document.getElementById('createSheetModal').style.display = 'flex';
+      selectedFilesToUpload = [];
+      document.getElementById('photosPreviewGrid').innerHTML = '';
+      await loadPrefillData();
+    }
+
+    function closeCreateModal() {
+      document.getElementById('createSheetModal').style.display = 'none';
+    }
+
+    async function loadPrefillData() {
+      const tbody = document.getElementById('createSheetItemsBody');
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px;">Đang tải dữ liệu luỹ kế đợt trước và số đội báo...</td></tr>`;
+
+      try {
+        const toDate = document.getElementById('inputCutoffDate').value;
+        const res = await fetch(`/api/projects/${projectId}/acceptance-sheets/prefill?to_date=${toDate}`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        const data = await res.json();
+        if (data.success && data.data) {
+          currentPrefill = data.data;
+          document.getElementById('inputPeriodNumber').value = currentPrefill.suggested_period_number || 1;
+          if (!document.getElementById('inputSheetCode').value) {
+            document.getElementById('inputSheetCode').value = `NT-D0${currentPrefill.suggested_period_number}-2026`;
+          }
+          if (!document.getElementById('inputSheetTitle').value) {
+            document.getElementById('inputSheetTitle').value = `Nghiệm thu khối lượng Đợt ${currentPrefill.suggested_period_number}`;
+          }
+          renderCreateSheetItems(currentPrefill.items);
+        } else {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger);">${data.message || 'Lỗi tải dữ liệu điền sẵn'}</td></tr>`;
+        }
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger);">Lỗi kết nối: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderCreateSheetItems(items) {
+      const tbody = document.getElementById('createSheetItemsBody');
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px;">Dự án chưa có hạng mục nào.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map((it, idx) => {
+        const prevApproved = Number(it.previous_approved_quantity || 0);
+        const teamReported = Number(it.team_reported_quantity || 0);
+        // Ban đầu khởi tạo luỹ kế hiện tại bằng luỹ kế đợt trước
+        const initCumulative = prevApproved;
+        const periodQty = 0;
+        const diff = periodQty - teamReported;
+
+        return `
+          <tr data-item-idx="${idx}" data-work-item-id="${it.work_item_id || ''}">
+            <td>
+              <strong style="color: var(--text-title);">${it.item_name}</strong>
+              <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono';">${it.code || ''}</div>
+            </td>
+            <td><span style="font-size: 12px; color: var(--text-muted);">${it.unit || 'm3'}</span></td>
+            <td style="text-align: right; font-family: 'JetBrains Mono'; font-weight: 700; color: #475569;">
+              <span id="prev_qty_${idx}">${prevApproved}</span>
+            </td>
+            <td style="text-align: right;">
+              <input type="number" step="0.01" min="${prevApproved}" class="input-qty"
+                id="cumulative_qty_${idx}" value="${initCumulative}"
+                oninput="onCumulativeQtyChanged(${idx}, ${prevApproved}, ${teamReported})">
+            </td>
+            <td class="calc-qty-cell" id="period_qty_${idx}">
+              ${periodQty.toFixed(2)}
+            </td>
+            <td style="text-align: right; font-family: 'JetBrains Mono'; font-weight: 700; color: #2563eb;">
+              ${teamReported}
+            </td>
+            <td style="text-align: center;" id="diff_container_${idx}">
+              ${renderDiffBadge(diff)}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Tự động tính khối lượng đợt khi nhập luỹ kế (AC 2)
+    function onCumulativeQtyChanged(idx, prevApproved, teamReported) {
+      const inputEl = document.getElementById(`cumulative_qty_${idx}`);
+      const val = parseFloat(inputEl.value) || 0;
+      const periodCell = document.getElementById(`period_qty_${idx}`);
+      const diffContainer = document.getElementById(`diff_container_${idx}`);
+
+      if (val < prevApproved) {
+        inputEl.style.borderColor = 'var(--danger)';
+        periodCell.innerText = 'LỖI SỐ ÂM';
+        periodCell.style.color = 'var(--danger)';
+        diffContainer.innerHTML = '<span class="diff-badge diff-severe">⚠️ < Luỹ kế trước</span>';
+        return;
+      }
+
+      inputEl.style.borderColor = 'var(--border-card)';
+      const periodQty = Number((val - prevApproved).toFixed(2));
+      periodCell.innerText = periodQty.toFixed(2);
+      periodCell.style.color = 'var(--brand-blue)';
+
+      const diff = Number((periodQty - teamReported).toFixed(2));
+      diffContainer.innerHTML = renderDiffBadge(diff);
+    }
+
+    function renderDiffBadge(diff) {
+      if (diff === 0) {
+        return `<span class="diff-badge diff-match">0 (Khớp)</span>`;
+      } else if (diff < 0) {
+        return `<span class="diff-badge diff-under">${diff} (Ít hơn đội)</span>`;
+      } else {
+        return `<span class="diff-badge diff-over">+${diff} (Vượt đội)</span>`;
+      }
+    }
+
+    // Xử lý chọn ảnh và xem trước (AC 4 & S-40)
+    function handleSelectedPhotos(e) {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+
+      const previewGrid = document.getElementById('photosPreviewGrid');
+      files.forEach(file => {
+        selectedFilesToUpload.push(file);
+
+        const card = document.createElement('div');
+        card.className = 'photo-preview-card';
+
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          card.innerHTML = `
+            <img src="${re.target.result}" alt="${file.name}">
+            <div class="photo-meta-box">
+              <strong style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</strong>
+              <span class="photo-exif-pill no-exif" id="pill_${selectedFilesToUpload.length}">
+                ⚠️ Đang kiểm tra siêu dữ liệu EXIF...
+              </span>
+            </div>
+          `;
+          previewGrid.appendChild(card);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // 3. Gửi tạo phiếu nghiệm thu (T-71)
+    async function submitCreateSheet() {
+      const sheetCode = document.getElementById('inputSheetCode').value.trim();
+      const title = document.getElementById('inputSheetTitle').value.trim();
+      const periodNumber = Number(document.getElementById('inputPeriodNumber').value || 1);
+      const cutoffDate = document.getElementById('inputCutoffDate').value;
+      const note = document.getElementById('inputSheetNote').value.trim();
+
+      if (!sheetCode || !title) {
+        showToast('Vui lòng nhập mã phiếu và tên đợt nghiệm thu', false);
+        return;
+      }
+
+      // Thu thập items
+      const items = [];
+      let hasError = false;
+
+      currentPrefill.items.forEach((it, idx) => {
+        const inputEl = document.getElementById(`cumulative_qty_${idx}`);
+        const cumulative = parseFloat(inputEl.value) || 0;
+        const prevApproved = Number(it.previous_approved_quantity || 0);
+
+        if (cumulative < prevApproved) {
+          hasError = true;
+          inputEl.focus();
+        }
+
+        items.push({
+          work_item_id: it.work_item_id,
+          item_name: it.item_name,
+          unit: it.unit,
+          previous_approved_quantity: prevApproved,
+          cumulative_quantity: cumulative,
+          team_reported_quantity: it.team_reported_quantity
+        });
+      });
+
+      if (hasError) {
+        showToast('Có hạng mục có khối lượng luỹ kế nhỏ hơn đợt trước! Vui lòng kiểm tra lại.', false);
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmitCreateSheet');
+      btn.disabled = true;
+      btn.innerText = '⏳ Đang lưu phiếu...';
+
+      try {
+        const res = await fetch(`/api/projects/${projectId}/acceptance-sheets`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getToken()}`
+          },
+          body: JSON.stringify({
+            sheet_code: sheetCode,
+            title,
+            period_number: periodNumber,
+            cutoff_date: cutoffDate,
+            note,
+            items
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          const sheetId = data.data.id;
+
+          // Nếu có ảnh hiện trường được chọn -> tải lên kèm phiếu (AC 4 & S-40)
+          if (selectedFilesToUpload.length > 0) {
+            await uploadPhotosForSheet(sheetId, selectedFilesToUpload);
+          }
+
+          showToast(`Đã lập thành công phiếu nghiệm thu "${sheetCode}"!`);
+          closeCreateModal();
+          loadAcceptanceSheets();
+        } else {
+          showToast(data.message || 'Không thể tạo phiếu nghiệm thu', false);
+        }
+      } catch (err) {
+        showToast(`Lỗi gửi yêu cầu: ${err.message}`, false);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '💾 Lưu Phiếu Nghiệm Thu (Bản Nháp)';
+      }
+    }
+
+    async function uploadPhotosForSheet(sheetId, files) {
+      for (const file of files) {
+        const base64Data = await new Promise(r => {
+          const fr = new FileReader();
+          fr.onload = () => r(fr.result);
+          fr.readAsDataURL(file);
+        });
+
+        await fetch(`/api/projects/${projectId}/acceptance-sheets/${sheetId}/photos`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getToken()}`
+          },
+          body: JSON.stringify({
+            photos: [{
+              file_name: file.name,
+              file_size: file.size,
+              mime_type: file.type,
+              data: base64Data
+            }]
+          })
+        });
+      }
+    }
+
+    // 4. Xem chi tiết phiếu nghiệm thu & Phê duyệt (T-73)
+    async function viewSheetDetail(sheetId) {
+      document.getElementById('detailSheetModal').style.display = 'flex';
+      const body = document.getElementById('detailModalBody');
+      const footer = document.getElementById('detailModalFooter');
+      body.innerHTML = 'Đang tải thông tin chi tiết phiếu nghiệm thu...';
+
+      try {
+        const res = await fetch(`/api/projects/${projectId}/acceptance-sheets/${sheetId}`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        const data = await res.json();
+        if (!data.success || !data.data) {
+          body.innerHTML = `<div style="color: var(--danger);">${data.message || 'Lỗi tải chi tiết'}</div>`;
+          return;
+        }
+
+        const sheet = data.data;
+        document.getElementById('detailModalTitle').innerHTML = `📄 ${sheet.sheet_code} — ${sheet.name}`;
+        const isApproved = String(sheet.status).toLowerCase() === 'approved';
+
+        body.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px 16px; border-radius: 8px;">
+            <div>
+              <span class="badge-status ${isApproved ? 'badge-approved' : 'badge-draft'}">
+                ${isApproved ? '✅ ĐÃ PHÊ DUYỆT' : '⏳ BẢN NHÁP (CHỜ DUYỆT)'}
+              </span>
+              <span style="margin-left: 10px; font-size: 13px; color: var(--text-muted);">
+                Đợt: <strong>${sheet.period_number}</strong> | Ngày chốt: <strong>${sheet.to_date || sheet.cutoff_date || '—'}</strong>
+              </span>
+            </div>
+            ${sheet.approved_at ? `<div style="font-size: 12px; color: #059669; font-weight: 700;">Duyệt lúc: ${sheet.approved_at}</div>` : ''}
+          </div>
+
+          <h4 style="font-size: 14px; font-weight: 800; margin-top: 10px;">📋 Chi Tiết Khối Lượng Phát Sinh Trong Đợt (AC 1 & AC 2)</h4>
+          <div class="items-table-box">
+            <table>
+              <thead>
+                <tr>
+                  <th>Hạng mục</th>
+                  <th>ĐVT</th>
+                  <th style="text-align: right;">Luỹ kế trước duyệt</th>
+                  <th style="text-align: right;">Luỹ kế đợt này</th>
+                  <th style="text-align: right;">Khối lượng đợt (AC 2)</th>
+                  <th style="text-align: right;">Số đội báo S-26 (AC 3)</th>
+                  <th style="text-align: center;">Chênh lệch</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(sheet.items || []).map(it => `
+                  <tr>
+                    <td><strong>${it.item_name}</strong></td>
+                    <td>${it.unit}</td>
+                    <td style="text-align: right; font-family: 'JetBrains Mono';">${it.previous_approved_quantity}</td>
+                    <td style="text-align: right; font-family: 'JetBrains Mono'; font-weight: 700;">${it.cumulative_quantity}</td>
+                    <td style="text-align: right; font-family: 'JetBrains Mono'; font-weight: 800; color: var(--brand-blue);">${it.period_quantity}</td>
+                    <td style="text-align: right; font-family: 'JetBrains Mono'; font-weight: 700; color: #2563eb;">${it.team_reported_quantity}</td>
+                    <td style="text-align: center;">${renderDiffBadge(Number(it.difference))}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <h4 style="font-size: 14px; font-weight: 800; margin-top: 10px;">
+            📸 Ảnh Hiện Trường Đính Kèm (${(sheet.photos || []).length} ảnh) — S-40
+          </h4>
+          ${(sheet.photos && sheet.photos.length > 0) ? `
+            <div class="photos-preview-grid">
+              ${sheet.photos.map(p => {
+                const hasExif = Boolean(p.has_metadata);
+                return `
+                  <div class="photo-preview-card">
+                    <img src="${p.file_path || p.url || '/icons/icon.svg'}" alt="${p.file_name}" onclick="window.open(this.src, '_blank')">
+                    <div class="photo-meta-box">
+                      <strong style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.file_name}</strong>
+                      ${hasExif ? `
+                        <div class="photo-exif-pill has-exif">
+                          📍 ${p.latitude ? `${Number(p.latitude).toFixed(4)}, ${Number(p.longitude).toFixed(4)}` : ''}
+                          ${p.taken_at ? `| 🕒 ${p.taken_at}` : ''}
+                        </div>
+                        ${p.latitude ? `<a href="https://www.google.com/maps?q=${p.latitude},${p.longitude}" target="_blank" style="font-size: 11px; color: #1d4ed8; font-weight: 700;">🗺️ Xem bản đồ</a>` : ''}
+                      ` : `
+                        <div class="photo-exif-pill no-exif">
+                          ⚠️ Không có siêu dữ liệu
+                        </div>
+                      `}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          ` : `
+            <div style="font-size: 13px; color: var(--text-muted); font-style: italic;">
+              Không có ảnh hiện trường đính kèm cho phiếu này (không bắt buộc theo NFR).
+            </div>
+          `}
+        `;
+
+        // Footer buttons
+        footer.innerHTML = `
+          <button type="button" class="btn-secondary" onclick="closeDetailModal()">Đóng</button>
+          ${!isApproved ? `
+            <button type="button" class="btn-primary" onclick="approveSheet(${sheet.id})">
+              ✔️ Phê Duyệt Phiếu Nghiệm Thu Này
+            </button>
+          ` : ''}
+        `;
+      } catch (err) {
+        body.innerHTML = `<div style="color: var(--danger);">Lỗi kết nối: ${err.message}</div>`;
+      }
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detailSheetModal').style.display = 'none';
+    }
+
+    // 5. Phê duyệt phiếu (Chỉ huy trưởng / PM)
+    async function approveSheet(sheetId) {
+      if (!confirm('Bạn có chắc chắn muốn phê duyệt phiếu nghiệm thu này? Sau khi duyệt, số liệu luỹ kế sẽ trở thành căn cứ thanh toán và làm mốc luỹ kế cho đợt tiếp theo.')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/projects/${projectId}/acceptance-sheets/${sheetId}/approve`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getToken()}`
+          }
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(data.message || 'Đã phê duyệt phiếu nghiệm thu thành công!');
+          closeDetailModal();
+          loadAcceptanceSheets();
+        } else {
+          showToast(data.message || 'Không thể phê duyệt phiếu', false);
+        }
+      } catch (err) {
+        showToast(`Lỗi: ${err.message}`, false);
+      }
+    }
+  </script>
+</body>
+</html>

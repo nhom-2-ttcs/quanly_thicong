@@ -24,8 +24,28 @@ const {
   inMemoryWorkItems
 } = require('../models/store');
 const { DIARY_CONFIG, getAllowedWeatherConditions } = require('../config/diaryConfig');
+const { parseExifMetadata } = require('../utils/exifParser');
 
 const DAY_NAMES = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+
+function extractPhotoExif(file) {
+  let exif = { has_metadata: false, taken_at: null, latitude: null, longitude: null, altitude: null, raw_metadata: null };
+  try {
+    const buf = file?.buffer || (file?.path && fs.existsSync(file.path) ? fs.readFileSync(file.path) : null);
+    if (buf) {
+      exif = parseExifMetadata(buf);
+    }
+  } catch (_) {}
+
+  const takenAt = file?.taken_at || exif.taken_at || null;
+  const latitude = (file?.latitude !== undefined && file?.latitude !== null) ? Number(file.latitude) : exif.latitude;
+  const longitude = (file?.longitude !== undefined && file?.longitude !== null) ? Number(file.longitude) : exif.longitude;
+  const altitude = (file?.altitude !== undefined && file?.altitude !== null) ? Number(file.altitude) : exif.altitude;
+  const hasMetadata = Boolean(exif.has_metadata || takenAt || (latitude !== null && latitude !== undefined));
+  const rawMetadata = exif.raw_metadata || null;
+
+  return { takenAt, latitude, longitude, altitude, hasMetadata, rawMetadata };
+}
 
 function isValidDateString(dateStr) {
   if (!dateStr || typeof dateStr !== 'string') return false;
@@ -188,44 +208,38 @@ class DiaryService {
 
     if (!diary) return null;
 
-    // Lấy danh sách ảnh đính kèm (T52 & S-33 T-60)
+    // Lấy danh sách ảnh đính kèm (T52, S-33 T-60 & S-40 EXIF)
     let photos = [];
+    const mapPhotoObj = p => {
+      const status = p.upload_status || 'completed';
+      const isPending = status === 'pending' || status === 'uploading';
+      const hasMeta = Boolean(p.has_metadata || p.taken_at || (p.latitude !== null && p.latitude !== undefined));
+      return {
+        ...p,
+        upload_status: status,
+        url: isPending ? null : (p.file_name ? `/uploads/diaries/${p.file_name}` : null),
+        taken_at: p.taken_at || null,
+        latitude: p.latitude !== null && p.latitude !== undefined ? Number(p.latitude) : null,
+        longitude: p.longitude !== null && p.longitude !== undefined ? Number(p.longitude) : null,
+        altitude: p.altitude !== null && p.altitude !== undefined ? Number(p.altitude) : null,
+        has_metadata: hasMeta,
+        raw_metadata: p.raw_metadata || null,
+        metadata_status_text: hasMeta ? 'Đã có siêu dữ liệu' : 'Không có siêu dữ liệu (không có GPS/thời gian chụp)'
+      };
+    };
+
     if (this.pool?.query) {
       try {
         const [pRows] = await this.pool.query(
-          'SELECT id, diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id, created_at FROM site_diary_photos WHERE diary_id = ? ORDER BY id ASC',
+          'SELECT id, diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id, taken_at, latitude, longitude, altitude, has_metadata, raw_metadata, created_at FROM site_diary_photos WHERE diary_id = ? ORDER BY id ASC',
           [diary.id]
         );
-        photos = (pRows || []).map(p => {
-          const status = p.upload_status || 'completed';
-          const isPending = status === 'pending' || status === 'uploading';
-          return {
-            ...p,
-            upload_status: status,
-            url: isPending ? null : (p.file_name ? `/uploads/diaries/${p.file_name}` : null)
-          };
-        });
+        photos = (pRows || []).map(mapPhotoObj);
       } catch (e) {
-        photos = getSiteDiaryPhotos(diary.id).map(p => {
-          const status = p.upload_status || 'completed';
-          const isPending = status === 'pending' || status === 'uploading';
-          return {
-            ...p,
-            upload_status: status,
-            url: isPending ? null : (p.file_name ? `/uploads/diaries/${p.file_name}` : null)
-          };
-        });
+        photos = getSiteDiaryPhotos(diary.id).map(mapPhotoObj);
       }
     } else {
-      photos = getSiteDiaryPhotos(diary.id).map(p => {
-        const status = p.upload_status || 'completed';
-        const isPending = status === 'pending' || status === 'uploading';
-        return {
-          ...p,
-          upload_status: status,
-          url: isPending ? null : (p.file_name ? `/uploads/diaries/${p.file_name}` : null)
-        };
-      });
+      photos = getSiteDiaryPhotos(diary.id).map(mapPhotoObj);
     }
 
     // Lấy danh sách công việc chi tiết (T51/T52/S-21)
@@ -417,7 +431,7 @@ class DiaryService {
         }
       }
 
-      // 4. Lưu ảnh đính kèm hoàn chỉnh (photos)
+      // 4. Lưu ảnh đính kèm hoàn chỉnh (photos - S-40 EXIF)
       if (Array.isArray(files) && files.length > 0) {
         for (const file of files) {
           const fileName = file.filename || file.file_name || file.name;
@@ -425,10 +439,12 @@ class DiaryService {
           const fileSize = Number(file.size || file.file_size || 0);
           const mimeType = file.mimetype || file.mime_type || 'image/jpeg';
           const caption = file.caption ? String(file.caption).trim() : null;
+          const meta = extractPhotoExif(file);
 
           await this.pool.query(
-            'INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [diaryId, fileName, filePath, fileSize, mimeType, caption, 'completed']
+            `INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, taken_at, latitude, longitude, altitude, has_metadata, raw_metadata)
+             VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?)`,
+            [diaryId, fileName, filePath, fileSize, mimeType, caption, meta.takenAt, meta.latitude, meta.longitude, meta.altitude, meta.hasMetadata, meta.rawMetadata]
           );
         }
       }
@@ -514,9 +530,10 @@ class DiaryService {
       });
     }
 
-    // Lưu photos in-memory
+    // Lưu photos in-memory (S-40 EXIF)
     if (Array.isArray(files) && files.length > 0) {
       files.forEach(f => {
+        const meta = extractPhotoExif(f);
         saveSiteDiaryPhoto({
           diary_id: diaryId,
           file_name: f.filename || f.file_name || f.name,
@@ -525,7 +542,13 @@ class DiaryService {
           mime_type: f.mimetype || f.mime_type || 'image/jpeg',
           caption: f.caption ? String(f.caption).trim() : null,
           upload_status: f.upload_status || 'completed',
-          client_photo_id: f.client_photo_id || null
+          client_photo_id: f.client_photo_id || null,
+          taken_at: meta.takenAt,
+          latitude: meta.latitude,
+          longitude: meta.longitude,
+          altitude: meta.altitude,
+          has_metadata: meta.hasMetadata,
+          raw_metadata: meta.rawMetadata
         });
       });
     }
@@ -575,14 +598,17 @@ class DiaryService {
         const fileSize = Number(file.size || 0);
         const mimeType = file.mimetype || 'image/jpeg';
         const caption = file.caption || null;
+        const meta = extractPhotoExif(file);
 
         await this.pool.query(
-          'INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [diary.id, fileName, filePath, fileSize, mimeType, caption, 'completed']
+          `INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, taken_at, latitude, longitude, altitude, has_metadata, raw_metadata)
+           VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?)`,
+          [diary.id, fileName, filePath, fileSize, mimeType, caption, meta.takenAt, meta.latitude, meta.longitude, meta.altitude, meta.hasMetadata, meta.rawMetadata]
         );
       }
     } else {
       files.forEach(f => {
+        const meta = extractPhotoExif(f);
         saveSiteDiaryPhoto({
           diary_id: diary.id,
           file_name: f.filename || f.file_name,
@@ -590,7 +616,13 @@ class DiaryService {
           file_size: Number(f.size || 0),
           mime_type: f.mimetype || 'image/jpeg',
           caption: f.caption || null,
-          upload_status: 'completed'
+          upload_status: 'completed',
+          taken_at: meta.takenAt,
+          latitude: meta.latitude,
+          longitude: meta.longitude,
+          altitude: meta.altitude,
+          has_metadata: meta.hasMetadata,
+          raw_metadata: meta.rawMetadata
         });
       });
     }
@@ -686,6 +718,8 @@ class DiaryService {
     const photoCaption = caption || file.caption || null;
     const clientId = client_photo_id || null;
 
+    const meta = extractPhotoExif(file);
+
     if (this.pool?.query) {
       let existingId = null;
       if (clientId) {
@@ -702,15 +736,16 @@ class DiaryService {
         await this.pool.query(
           `UPDATE site_diary_photos
            SET file_name = ?, file_path = ?, file_size = ?, mime_type = ?,
-               caption = COALESCE(?, caption), upload_status = 'completed'
+               caption = COALESCE(?, caption), upload_status = 'completed',
+               taken_at = ?, latitude = ?, longitude = ?, altitude = ?, has_metadata = ?, raw_metadata = ?
            WHERE id = ?`,
-          [fileName, filePath, fileSize, mimeType, photoCaption, existingId]
+          [fileName, filePath, fileSize, mimeType, photoCaption, meta.takenAt, meta.latitude, meta.longitude, meta.altitude, meta.hasMetadata, meta.rawMetadata, existingId]
         );
       } else {
         await this.pool.query(
-          `INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id)
-           VALUES (?, ?, ?, ?, ?, ?, 'completed', ?)`,
-          [diary.id, fileName, filePath, fileSize, mimeType, photoCaption, clientId]
+          `INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id, taken_at, latitude, longitude, altitude, has_metadata, raw_metadata)
+           VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?, ?)`,
+          [diary.id, fileName, filePath, fileSize, mimeType, photoCaption, clientId, meta.takenAt, meta.latitude, meta.longitude, meta.altitude, meta.hasMetadata, meta.rawMetadata]
         );
       }
     } else {
@@ -722,7 +757,13 @@ class DiaryService {
           file_size: fileSize,
           mime_type: mimeType,
           caption: photoCaption || existing.caption,
-          upload_status: 'completed'
+          upload_status: 'completed',
+          taken_at: meta.takenAt,
+          latitude: meta.latitude,
+          longitude: meta.longitude,
+          altitude: meta.altitude,
+          has_metadata: meta.hasMetadata,
+          raw_metadata: meta.rawMetadata
         });
       } else {
         saveSiteDiaryPhoto({
@@ -733,7 +774,13 @@ class DiaryService {
           mime_type: mimeType,
           caption: photoCaption,
           upload_status: 'completed',
-          client_photo_id: clientId
+          client_photo_id: clientId,
+          taken_at: meta.takenAt,
+          latitude: meta.latitude,
+          longitude: meta.longitude,
+          altitude: meta.altitude,
+          has_metadata: meta.hasMetadata,
+          raw_metadata: meta.rawMetadata
         });
       }
     }
@@ -748,7 +795,14 @@ class DiaryService {
         url: `/uploads/diaries/${fileName}`,
         caption: photoCaption,
         upload_status: 'completed',
-        client_photo_id: clientId
+        client_photo_id: clientId,
+        taken_at: meta.takenAt,
+        latitude: meta.latitude,
+        longitude: meta.longitude,
+        altitude: meta.altitude,
+        has_metadata: meta.hasMetadata,
+        raw_metadata: meta.rawMetadata,
+        metadata_status_text: meta.hasMetadata ? 'Đã có siêu dữ liệu' : 'Không có siêu dữ liệu (không có GPS/thời gian chụp)'
       }
     };
   }
