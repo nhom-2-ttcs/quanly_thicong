@@ -123,6 +123,10 @@ app.get('/acceptance', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/acceptance.html'));
 });
 
+app.get('/payment', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/payment.html'));
+});
+
 // Middleware xác thực token phiên
 const { authenticate } = require('./src/utils/rbac');
 app.use(authenticate);
@@ -160,6 +164,10 @@ app.use("/api", teamRoutes(db));
 // S-36 / SCRUM-165: Lập phiếu nghiệm thu theo đợt & tự tính khối lượng phát sinh
 const acceptanceRoutes = require("./src/routes/acceptanceRoutes");
 app.use("/api", acceptanceRoutes(db));
+
+// S-45 / SCRUM-E08: Khấu trừ tiền tạm giữ hợp đồng trên đề nghị thanh toán
+const paymentRoutes = require("./src/routes/paymentRoutes");
+app.use("/api", paymentRoutes(db));
 
 // ==========================================
 // CÁC ENDPOINT CHO SAO LƯU & KHÔI PHỤC CSDL (S-20, T-46, T-47)

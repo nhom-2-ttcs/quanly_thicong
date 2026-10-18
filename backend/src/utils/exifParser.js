@@ -67,6 +67,9 @@ function parseExifMetadata(buffer) {
     result.has_metadata = true;
   }
 
+  // Trích xuất kích thước ảnh (width, height) từ JPEG
+  extractJpegDimensions(buffer, result);
+
   return result;
 }
 
@@ -238,7 +241,151 @@ function formatExifDate(str) {
   return null;
 }
 
+/**
+ * Trích xuất kích thước Width/Height từ JPEG markers (SOF0..SOF2)
+ */
+function extractJpegDimensions(buffer, targetResult = null) {
+  const result = targetResult || {};
+  if (!buffer || buffer.length < 10) return result;
+  try {
+    let offset = 2;
+    const len = buffer.length;
+    while (offset < len - 8) {
+      if (buffer[offset] !== 0xFF) {
+        offset++;
+        continue;
+      }
+      const marker = buffer[offset + 1];
+      if (marker === 0xDA || marker === 0xD9) break; // SOS / EOI
+
+      const blockLength = buffer.readUInt16BE(offset + 2);
+      if (blockLength < 2 || offset + 2 + blockLength > len) break;
+
+      // SOF0 (0xC0), SOF1 (0xC1), SOF2 (0xC2)
+      if (marker === 0xC0 || marker === 0xC1 || marker === 0xC2) {
+        result.height = buffer.readUInt16BE(offset + 5);
+        result.width = buffer.readUInt16BE(offset + 7);
+        if (result.width && result.height) {
+          result.aspect_ratio = Number((Math.max(result.width, result.height) / Math.min(result.width, result.height)).toFixed(3));
+        }
+        break;
+      }
+      offset += 2 + blockLength;
+    }
+  } catch (_) {}
+  return result;
+}
+
+/**
+ * SCRUM-E07 / S-42: Phát hiện dấu hiệu ảnh chụp lại màn hình hoặc thiếu siêu dữ liệu
+ * AC: Ảnh thiếu siêu dữ liệu máy ảnh, có kích thước đúng bằng màn hình điện thoại,
+ * hoặc thời điểm chụp cách ngày nghiệm thu quá xa thì bị đánh dấu để người duyệt xem kỹ.
+ * NFR: Đây là phát hiện theo dấu hiệu, không phải bằng chứng chắc chắn; phải ghi rõ mức độ tin cậy.
+ */
+function evaluatePhotoSuspicion({
+  metadata = null,
+  fileName = '',
+  width = null,
+  height = null,
+  inspectionDate = null
+} = {}) {
+  const reasons = [];
+  const details = [];
+
+  const meta = metadata || {};
+  const photoWidth = width || meta.width || null;
+  const photoHeight = height || meta.height || null;
+  const photoName = String(fileName || '').toLowerCase();
+
+  // 1. Dấu hiệu: Thiếu siêu dữ liệu máy ảnh (Camera Make/Model) hoặc thiếu toàn bộ EXIF
+  const hasCameraInfo = Boolean(meta.camera_make || meta.camera_model || meta.make || meta.model);
+  if (!hasCameraInfo && !meta.has_metadata) {
+    reasons.push('missing_camera_metadata');
+    details.push('Ảnh thiếu toàn bộ siêu dữ liệu EXIF máy ảnh');
+  } else if (!hasCameraInfo) {
+    reasons.push('missing_camera_metadata');
+    details.push('Ảnh không có thông tin hãng/kiểu máy ảnh (Make/Model)');
+  }
+
+  // 2. Dấu hiệu: Kích thước hoặc tỷ lệ khung hình đúng bằng màn hình điện thoại (Screenshot)
+  const PHONE_RESOLUTIONS = [
+    [1080, 2400], [1080, 2340], [1080, 2408], [1080, 2460],
+    [1170, 2532], [1284, 2778], [1290, 2796], [1179, 2556],
+    [390, 844],   [393, 852],   [414, 896],   [430, 932],
+    [750, 1334],  [1242, 2688], [1080, 1920], [720, 1600],
+    [720, 1560],  [720, 1520],  [1440, 3120], [1440, 3200], [1440, 3088]
+  ];
+
+  let isPhoneScreenSize = false;
+  if (photoWidth && photoHeight) {
+    const minDim = Math.min(photoWidth, photoHeight);
+    const maxDim = Math.max(photoWidth, photoHeight);
+    isPhoneScreenSize = PHONE_RESOLUTIONS.some(([w, h]) =>
+      (minDim === Math.min(w, h) && maxDim === Math.max(w, h))
+    );
+
+    const ratio = maxDim / minDim;
+    // Tỷ lệ màn hình điện thoại phổ biến: 19.5:9 (~2.167), 20:9 (~2.222), 20.5:9 (~2.278)
+    const isScreenRatio = (ratio >= 2.05 && ratio <= 2.35);
+
+    if (isPhoneScreenSize || (isScreenRatio && !hasCameraInfo)) {
+      reasons.push('screenshot_detected');
+      details.push(`Kích thước ảnh (${photoWidth}x${photoHeight}) hoặc tỷ lệ ${ratio.toFixed(2)}:1 khớp đặc trưng chụp lại màn hình điện thoại`);
+    }
+  }
+
+  // Kiểm tra tên file có chứa từ khóa chụp màn hình
+  const isScreenshotFilename = /(screenshot|screen_shot|screen-shot|capture|chup_man_hinh)/i.test(photoName);
+  if (isScreenshotFilename && !reasons.includes('screenshot_detected')) {
+    reasons.push('screenshot_detected');
+    details.push(`Tên tập tin "${fileName}" chứa dấu hiệu ảnh chụp màn hình`);
+  }
+
+  // 3. Dấu hiệu: Thời điểm chụp cách ngày nghiệm thu quá xa (> 30 ngày) hoặc trong tương lai
+  if (meta.taken_at) {
+    try {
+      const takenDate = new Date(meta.taken_at);
+      const targetDate = inspectionDate ? new Date(inspectionDate) : new Date();
+
+      if (!isNaN(takenDate.getTime()) && !isNaN(targetDate.getTime())) {
+        const diffMs = targetDate.getTime() - takenDate.getTime();
+        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 30) {
+          reasons.push('taken_time_too_far');
+          details.push(`Thời điểm chụp ảnh (${meta.taken_at.slice(0, 10)}) cách ngày nghiệm thu (${targetDate.toISOString().slice(0, 10)}) hơn ${diffDays} ngày (> 30 ngày)`);
+        } else if (diffDays < -1) {
+          reasons.push('taken_time_too_far');
+          details.push(`Thời điểm chụp ảnh (${meta.taken_at}) là thời điểm tương lai so với ngày nghiệm thu`);
+        }
+      }
+    } catch (_) {}
+  }
+
+  const isSuspicious = reasons.length > 0;
+  let confidenceLevel = 'none';
+
+  if (isSuspicious) {
+    if (reasons.length >= 2 || (reasons.includes('screenshot_detected') && reasons.includes('missing_camera_metadata'))) {
+      confidenceLevel = 'high';
+    } else if (reasons.includes('screenshot_detected') || reasons.includes('taken_time_too_far')) {
+      confidenceLevel = 'medium';
+    } else {
+      confidenceLevel = 'low';
+    }
+  }
+
+  return {
+    is_suspicious: isSuspicious,
+    suspicious_reasons: reasons,
+    confidence_level: confidenceLevel,
+    suspicious_details: details.length > 0 ? details.join('; ') : null
+  };
+}
+
 module.exports = {
   parseExifMetadata,
-  formatExifDate
+  formatExifDate,
+  extractJpegDimensions,
+  evaluatePhotoSuspicion
 };

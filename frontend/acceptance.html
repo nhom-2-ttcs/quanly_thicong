@@ -347,6 +347,9 @@
         <p>Tự động tính khối lượng phát sinh trong đợt bằng luỹ kế hiện tại trừ luỹ kế đợt trước đã duyệt, đối chiếu số đội báo ở S-26 và đính kèm ảnh hiện trường (S-40).</p>
       </div>
       <div class="header-actions">
+        <a href="/payment.html" class="btn-secondary" style="text-decoration: none;">
+          💰 Đề nghị thanh toán & Tạm giữ (S-45)
+        </a>
         <button class="btn-secondary" onclick="reloadAcceptanceList()">
           🔄 Làm mới dữ liệu
         </button>
@@ -475,18 +478,19 @@
           <table style="font-size: 12.5px;">
             <thead>
               <tr>
-                <th style="width: 25%;">Hạng mục công việc</th>
-                <th style="width: 8%;">ĐVT</th>
-                <th style="width: 14%; text-align: right;">Luỹ kế trước đã duyệt</th>
-                <th style="width: 15%; text-align: right;">Luỹ kế thời điểm này *</th>
-                <th style="width: 14%; text-align: right;">Khối lượng đợt này (AC 2)</th>
-                <th style="width: 12%; text-align: right;">Số đội báo S-26 (AC 3)</th>
-                <th style="width: 12%; text-align: center;">Đối chiếu</th>
+                <th style="width: 22%;">Hạng mục công việc</th>
+                <th style="width: 6%;">ĐVT</th>
+                <th style="width: 12%; text-align: right;">Khối lượng HĐ (S-37)</th>
+                <th style="width: 13%; text-align: right;">Luỹ kế trước đã duyệt</th>
+                <th style="width: 14%; text-align: right;">Luỹ kế thời điểm này *</th>
+                <th style="width: 13%; text-align: right;">Khối lượng đợt này (AC 2)</th>
+                <th style="width: 10%; text-align: right;">Số đội báo S-26 (AC 3)</th>
+                <th style="width: 10%; text-align: center;">Đối chiếu</th>
               </tr>
             </thead>
             <tbody id="createSheetItemsBody">
               <tr>
-                <td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                <td colspan="8" style="text-align: center; padding: 20px; color: var(--text-muted);">
                   Đang tải danh mục hạng mục và số liệu đối chiếu...
                 </td>
               </tr>
@@ -743,6 +747,7 @@
       tbody.innerHTML = items.map((it, idx) => {
         const prevApproved = Number(it.previous_approved_quantity || 0);
         const teamReported = Number(it.team_reported_quantity || 0);
+        const contractLimit = (it.contract_quantity !== null && it.contract_quantity !== undefined) ? Number(it.contract_quantity) : null;
         // Ban đầu khởi tạo luỹ kế hiện tại bằng luỹ kế đợt trước
         const initCumulative = prevApproved;
         const periodQty = 0;
@@ -755,13 +760,16 @@
               <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono';">${it.code || ''}</div>
             </td>
             <td><span style="font-size: 12px; color: var(--text-muted);">${it.unit || 'm3'}</span></td>
+            <td style="text-align: right; font-family: 'JetBrains Mono'; font-weight: 700; color: #0284c7;">
+              ${contractLimit !== null ? contractLimit : '—'}
+            </td>
             <td style="text-align: right; font-family: 'JetBrains Mono'; font-weight: 700; color: #475569;">
               <span id="prev_qty_${idx}">${prevApproved}</span>
             </td>
             <td style="text-align: right;">
               <input type="number" step="0.01" min="${prevApproved}" class="input-qty"
                 id="cumulative_qty_${idx}" value="${initCumulative}"
-                oninput="onCumulativeQtyChanged(${idx}, ${prevApproved}, ${teamReported})">
+                oninput="onCumulativeQtyChanged(${idx}, ${prevApproved}, ${teamReported}, ${contractLimit !== null ? contractLimit : 'null'})">
             </td>
             <td class="calc-qty-cell" id="period_qty_${idx}">
               ${periodQty.toFixed(2)}
@@ -777,8 +785,8 @@
       }).join('');
     }
 
-    // Tự động tính khối lượng đợt khi nhập luỹ kế (AC 2)
-    function onCumulativeQtyChanged(idx, prevApproved, teamReported) {
+    // Tự động tính khối lượng đợt khi nhập luỹ kế (AC 2) & Kiểm tra hạn mức hợp đồng (S-37)
+    function onCumulativeQtyChanged(idx, prevApproved, teamReported, contractLimit = null) {
       const inputEl = document.getElementById(`cumulative_qty_${idx}`);
       const val = parseFloat(inputEl.value) || 0;
       const periodCell = document.getElementById(`period_qty_${idx}`);
@@ -792,7 +800,19 @@
         return;
       }
 
+      // S-37: Kiểm tra không vượt khối lượng hợp đồng
+      if (contractLimit !== null && val > contractLimit) {
+        inputEl.style.borderColor = 'var(--danger)';
+        inputEl.style.backgroundColor = '#fef2f2';
+        const periodQty = Number((val - prevApproved).toFixed(2));
+        periodCell.innerText = periodQty.toFixed(2);
+        periodCell.style.color = 'var(--danger)';
+        diffContainer.innerHTML = `<span class="diff-badge diff-severe" title="Vượt khối lượng hợp đồng cho phép (${contractLimit})">⚠️ Vượt HĐ (+${(val - contractLimit).toFixed(2)})</span>`;
+        return;
+      }
+
       inputEl.style.borderColor = 'var(--border-card)';
+      inputEl.style.backgroundColor = '#ffffff';
       const periodQty = Number((val - prevApproved).toFixed(2));
       periodCell.innerText = periodQty.toFixed(2);
       periodCell.style.color = 'var(--brand-blue)';
@@ -853,17 +873,24 @@
         return;
       }
 
-      // Thu thập items
+      // Thu thập items & Kiểm tra S-37
       const items = [];
       let hasError = false;
+      let errorMsg = '';
 
       currentPrefill.items.forEach((it, idx) => {
         const inputEl = document.getElementById(`cumulative_qty_${idx}`);
         const cumulative = parseFloat(inputEl.value) || 0;
         const prevApproved = Number(it.previous_approved_quantity || 0);
+        const contractLimit = (it.contract_quantity !== null && it.contract_quantity !== undefined) ? Number(it.contract_quantity) : null;
 
         if (cumulative < prevApproved) {
           hasError = true;
+          errorMsg = `Hạng mục "${it.item_name}" có khối lượng luỹ kế (${cumulative}) nhỏ hơn đợt trước (${prevApproved})!`;
+          inputEl.focus();
+        } else if (contractLimit !== null && cumulative > contractLimit) {
+          hasError = true;
+          errorMsg = `Khối lượng luỹ kế (${cumulative}) vượt quá khối lượng hợp đồng (${contractLimit}) của hạng mục "${it.item_name}"!`;
           inputEl.focus();
         }
 
@@ -871,6 +898,7 @@
           work_item_id: it.work_item_id,
           item_name: it.item_name,
           unit: it.unit,
+          contract_quantity: contractLimit,
           previous_approved_quantity: prevApproved,
           cumulative_quantity: cumulative,
           team_reported_quantity: it.team_reported_quantity
@@ -878,7 +906,7 @@
       });
 
       if (hasError) {
-        showToast('Có hạng mục có khối lượng luỹ kế nhỏ hơn đợt trước! Vui lòng kiểm tra lại.', false);
+        showToast(errorMsg || 'Số liệu luỹ kế không hợp lệ! Vui lòng kiểm tra lại.', false);
         return;
       }
 
@@ -1017,17 +1045,32 @@
           </div>
 
           <h4 style="font-size: 14px; font-weight: 800; margin-top: 10px;">
-            📸 Ảnh Hiện Trường Đính Kèm (${(sheet.photos || []).length} ảnh) — S-40
+            📸 Ảnh Hiện Trường Đính Kèm (${(sheet.photos || []).length} ảnh) — S-40 & S-42
           </h4>
           ${(sheet.photos && sheet.photos.length > 0) ? `
             <div class="photos-preview-grid">
               ${sheet.photos.map(p => {
                 const hasExif = Boolean(p.has_metadata);
+                const isSuspicious = Boolean(p.is_suspicious);
+                const reasons = Array.isArray(p.suspicious_reasons) ? p.suspicious_reasons : [];
                 return `
-                  <div class="photo-preview-card">
+                  <div class="photo-preview-card" style="${isSuspicious ? 'border: 2px solid #ef4444; background: #fff5f5;' : ''}">
                     <img src="${p.file_path || p.url || '/icons/icon.svg'}" alt="${p.file_name}" onclick="window.open(this.src, '_blank')">
                     <div class="photo-meta-box">
                       <strong style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.file_name}</strong>
+                      ${isSuspicious ? `
+                        <div class="photo-exif-pill" style="background: #fee2e2; color: #b91c1c; border: 1px solid #f87171; font-weight: 800;">
+                          ⚠️ NGHI VẤN GIAN LẬN (${p.confidence_level === 'high' ? 'Cao' : (p.confidence_level === 'medium' ? 'Trung bình' : 'Thấp')})
+                        </div>
+                        <div style="font-size: 11px; color: #991b1b; margin-top: 2px;">
+                          ${reasons.map(r => {
+                            if (r === 'missing_camera_metadata') return '• Thiếu siêu dữ liệu máy ảnh gốc';
+                            if (r === 'screenshot_detected') return '• Nghi vấn chụp lại màn hình điện thoại';
+                            if (r === 'taken_time_too_far') return '• Ngày chụp cách xa ngày nghiệm thu';
+                            return '• ' + r;
+                          }).join('<br>')}
+                        </div>
+                      ` : ''}
                       ${hasExif ? `
                         <div class="photo-exif-pill has-exif">
                           📍 ${p.latitude ? `${Number(p.latitude).toFixed(4)}, ${Number(p.longitude).toFixed(4)}` : ''}

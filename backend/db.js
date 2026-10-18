@@ -877,13 +877,137 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
         latitude DECIMAL(10, 7) NULL,
         longitude DECIMAL(10, 7) NULL,
         has_metadata BOOLEAN NOT NULL DEFAULT FALSE,
+        is_suspicious BOOLEAN NOT NULL DEFAULT FALSE,
+        suspicious_reasons TEXT NULL,
+        confidence_level VARCHAR(20) DEFAULT 'none',
+        suspicious_details TEXT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (sheet_id) REFERENCES acceptance_sheets(id) ON DELETE CASCADE,
         INDEX idx_asp_sheet (sheet_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    console.log(`[DB] Đã đồng bộ ${inMemoryUsers.length} tài khoản người dùng, schema calendars (S-17), milestones (T-43), alerts (T-44), site_diaries (T-50/51), photos & EXIF (S-40), project_teams (S-25) và acceptance_sheets (S-36) sẵn sàng.`);
+    // S-42: Kiểm tra các cột phát hiện gian lận ảnh cho acceptance_sheet_photos và site_diary_photos
+    try {
+      const [aspCols] = await pool.query(`
+        SELECT COLUMN_NAME FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'acceptance_sheet_photos' AND COLUMN_NAME = 'is_suspicious'
+      `);
+      if (!aspCols || aspCols.length === 0) {
+        await pool.query(`
+          ALTER TABLE acceptance_sheet_photos
+          ADD COLUMN is_suspicious BOOLEAN NOT NULL DEFAULT FALSE AFTER has_metadata,
+          ADD COLUMN suspicious_reasons TEXT NULL AFTER is_suspicious,
+          ADD COLUMN confidence_level VARCHAR(20) DEFAULT 'none' AFTER suspicious_reasons,
+          ADD COLUMN suspicious_details TEXT NULL AFTER confidence_level
+        `);
+      }
+    } catch (_) {}
+
+    try {
+      const [sdpCols] = await pool.query(`
+        SELECT COLUMN_NAME FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'site_diary_photos' AND COLUMN_NAME = 'is_suspicious'
+      `);
+      if (!sdpCols || sdpCols.length === 0) {
+        await pool.query(`
+          ALTER TABLE site_diary_photos
+          ADD COLUMN is_suspicious BOOLEAN NOT NULL DEFAULT FALSE AFTER has_metadata,
+          ADD COLUMN suspicious_reasons TEXT NULL AFTER is_suspicious,
+          ADD COLUMN confidence_level VARCHAR(20) DEFAULT 'none' AFTER suspicious_reasons,
+          ADD COLUMN suspicious_details TEXT NULL AFTER confidence_level
+        `);
+      }
+    } catch (_) {}
+
+    // S-45: Cột retention_rate trong projects và các bảng payment_requests
+    try {
+      const [projCols] = await pool.query(`
+        SELECT COLUMN_NAME FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'projects' AND COLUMN_NAME = 'retention_rate'
+      `);
+      if (!projCols || projCols.length === 0) {
+        await pool.query(`ALTER TABLE projects ADD COLUMN retention_rate DECIMAL(5, 2) NOT NULL DEFAULT 5.00`);
+      }
+    } catch (_) {}
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS payment_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        request_code VARCHAR(50) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        period_number INT NOT NULL DEFAULT 1,
+        from_date DATE NOT NULL,
+        to_date DATE NOT NULL,
+        gross_amount DECIMAL(18, 2) NOT NULL DEFAULT 0.00,
+        retention_rate DECIMAL(5, 2) NOT NULL DEFAULT 5.00,
+        retention_amount DECIMAL(18, 2) NOT NULL DEFAULT 0.00,
+        net_payable_amount DECIMAL(18, 2) NOT NULL DEFAULT 0.00,
+        status ENUM('draft', 'approved', 'paid', 'cancelled') NOT NULL DEFAULT 'draft',
+        notes TEXT NULL,
+        created_by INT NOT NULL DEFAULT 1,
+        approved_by INT NULL,
+        approved_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT,
+        FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL,
+        UNIQUE KEY uq_project_payment_code (project_id, request_code),
+        INDEX idx_payment_project_period (project_id, period_number)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS payment_request_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        payment_request_id INT NOT NULL,
+        acceptance_sheet_id INT NOT NULL,
+        work_item_id INT NULL,
+        item_name VARCHAR(255) NOT NULL,
+        unit VARCHAR(50) NOT NULL DEFAULT 'm3',
+        period_quantity DECIMAL(15, 4) NOT NULL DEFAULT 0.0000,
+        unit_price DECIMAL(18, 2) NOT NULL DEFAULT 0.00,
+        line_total DECIMAL(18, 2) NOT NULL DEFAULT 0.00,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (payment_request_id) REFERENCES payment_requests(id) ON DELETE CASCADE,
+        FOREIGN KEY (acceptance_sheet_id) REFERENCES acceptance_sheets(id) ON DELETE RESTRICT,
+        FOREIGN KEY (work_item_id) REFERENCES work_items(id) ON DELETE SET NULL,
+        INDEX idx_pri_request (payment_request_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // S-37: Database Trigger đảm bảo luỹ kế không vượt khối lượng hợp đồng ở tầng CSDL
+    try {
+      await pool.query(`DROP TRIGGER IF EXISTS trg_check_acceptance_contract_qty_insert`);
+      await pool.query(`
+        CREATE TRIGGER trg_check_acceptance_contract_qty_insert
+        BEFORE INSERT ON acceptance_sheet_items
+        FOR EACH ROW
+        BEGIN
+          DECLARE v_contract_qty DECIMAL(15, 4);
+          DECLARE v_item_code VARCHAR(50);
+          DECLARE v_item_name VARCHAR(255);
+
+          IF NEW.work_item_id IS NOT NULL THEN
+            SELECT khoi_luong_hop_dong, code, name
+            INTO v_contract_qty, v_item_code, v_item_name
+            FROM work_items
+            WHERE id = NEW.work_item_id;
+
+            IF v_contract_qty IS NOT NULL AND v_contract_qty > 0 THEN
+              IF NEW.cumulative_quantity > v_contract_qty THEN
+                SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Lỗi: Khối lượng luỹ kế nghiệm thu vượt quá khối lượng hợp đồng cho phép';
+              END IF;
+            END IF;
+          END IF;
+        END;
+      `);
+    } catch (_) {}
+
+    console.log(`[DB] Đã đồng bộ ${inMemoryUsers.length} tài khoản người dùng, schema calendars (S-17), milestones (T-43), alerts (T-44), site_diaries (T-50/51), photos & EXIF (S-40), project_teams (S-25), acceptance_sheets (S-36), limit checks (S-37), photo anti-fraud (S-42) và payment retention (S-45) sẵn sàng.`);
     return;
   } catch (err) {
     if (attempt < maxRetries) {

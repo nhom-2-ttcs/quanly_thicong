@@ -24,16 +24,18 @@ const {
   inMemoryWorkItems
 } = require('../models/store');
 const { DIARY_CONFIG, getAllowedWeatherConditions } = require('../config/diaryConfig');
-const { parseExifMetadata } = require('../utils/exifParser');
+const { parseExifMetadata, extractJpegDimensions, evaluatePhotoSuspicion } = require('../utils/exifParser');
 
 const DAY_NAMES = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
 
-function extractPhotoExif(file) {
+function extractPhotoExif(file, logDate = null) {
   let exif = { has_metadata: false, taken_at: null, latitude: null, longitude: null, altitude: null, raw_metadata: null };
+  let dims = null;
   try {
     const buf = file?.buffer || (file?.path && fs.existsSync(file.path) ? fs.readFileSync(file.path) : null);
     if (buf) {
       exif = parseExifMetadata(buf);
+      dims = extractJpegDimensions(buf);
     }
   } catch (_) {}
 
@@ -44,7 +46,32 @@ function extractPhotoExif(file) {
   const hasMetadata = Boolean(exif.has_metadata || takenAt || (latitude !== null && latitude !== undefined));
   const rawMetadata = exif.raw_metadata || null;
 
-  return { takenAt, latitude, longitude, altitude, hasMetadata, rawMetadata };
+  const fileName = file?.filename || file?.file_name || file?.name || '';
+  const suspicion = evaluatePhotoSuspicion({
+    metadata: { ...exif, taken_at: takenAt, latitude, longitude, has_metadata: hasMetadata },
+    fileName,
+    width: file?.width || dims?.width,
+    height: file?.height || dims?.height,
+    inspectionDate: logDate || new Date().toISOString().slice(0, 10)
+  });
+
+  const isSuspicious = file?.is_suspicious !== undefined ? Boolean(file.is_suspicious) : suspicion.is_suspicious;
+  const suspiciousReasons = file?.suspicious_reasons || suspicion.suspicious_reasons || [];
+  const confidenceLevel = file?.confidence_level || suspicion.confidence_level || 'none';
+  const suspiciousDetails = file?.suspicious_details || (suspicion.suspicious_details ? JSON.stringify(suspicion.suspicious_details) : null);
+
+  return {
+    takenAt,
+    latitude,
+    longitude,
+    altitude,
+    hasMetadata,
+    rawMetadata,
+    isSuspicious,
+    suspiciousReasons,
+    confidenceLevel,
+    suspiciousDetails
+  };
 }
 
 function isValidDateString(dateStr) {
@@ -548,7 +575,11 @@ class DiaryService {
           longitude: meta.longitude,
           altitude: meta.altitude,
           has_metadata: meta.hasMetadata,
-          raw_metadata: meta.rawMetadata
+          raw_metadata: meta.rawMetadata,
+          is_suspicious: meta.isSuspicious,
+          suspicious_reasons: meta.suspiciousReasons,
+          confidence_level: meta.confidenceLevel,
+          suspicious_details: meta.suspiciousDetails
         });
       });
     }
@@ -622,7 +653,11 @@ class DiaryService {
           longitude: meta.longitude,
           altitude: meta.altitude,
           has_metadata: meta.hasMetadata,
-          raw_metadata: meta.rawMetadata
+          raw_metadata: meta.rawMetadata,
+          is_suspicious: meta.isSuspicious,
+          suspicious_reasons: meta.suspiciousReasons,
+          confidence_level: meta.confidenceLevel,
+          suspicious_details: meta.suspiciousDetails
         });
       });
     }
@@ -763,7 +798,11 @@ class DiaryService {
           longitude: meta.longitude,
           altitude: meta.altitude,
           has_metadata: meta.hasMetadata,
-          raw_metadata: meta.rawMetadata
+          raw_metadata: meta.rawMetadata,
+          is_suspicious: meta.isSuspicious,
+          suspicious_reasons: meta.suspiciousReasons,
+          confidence_level: meta.confidenceLevel,
+          suspicious_details: meta.suspiciousDetails
         });
       } else {
         saveSiteDiaryPhoto({
@@ -780,7 +819,11 @@ class DiaryService {
           longitude: meta.longitude,
           altitude: meta.altitude,
           has_metadata: meta.hasMetadata,
-          raw_metadata: meta.rawMetadata
+          raw_metadata: meta.rawMetadata,
+          is_suspicious: meta.isSuspicious,
+          suspicious_reasons: meta.suspiciousReasons,
+          confidence_level: meta.confidenceLevel,
+          suspicious_details: meta.suspiciousDetails
         });
       }
     }

@@ -710,7 +710,11 @@ function saveSiteDiaryPhoto({
   longitude = null,
   altitude = null,
   has_metadata = false,
-  raw_metadata = null
+  raw_metadata = null,
+  is_suspicious = false,
+  suspicious_reasons = [],
+  confidence_level = null,
+  suspicious_details = null
 }) {
   const dId = Number(diary_id);
   const cId = client_photo_id ? String(client_photo_id) : null;
@@ -732,6 +736,10 @@ function saveSiteDiaryPhoto({
       if (altitude !== undefined) existing.altitude = altitude;
       if (has_metadata !== undefined) existing.has_metadata = Boolean(has_metadata);
       if (raw_metadata !== undefined) existing.raw_metadata = raw_metadata;
+      if (is_suspicious !== undefined) existing.is_suspicious = Boolean(is_suspicious);
+      if (suspicious_reasons !== undefined) existing.suspicious_reasons = Array.isArray(suspicious_reasons) ? suspicious_reasons : [];
+      if (confidence_level !== undefined) existing.confidence_level = confidence_level;
+      if (suspicious_details !== undefined) existing.suspicious_details = suspicious_details;
       return existing;
     }
   }
@@ -754,6 +762,10 @@ function saveSiteDiaryPhoto({
     altitude: altitude !== undefined && altitude !== null ? Number(altitude) : null,
     has_metadata: Boolean(has_metadata || taken_at || (latitude !== null && latitude !== undefined)),
     raw_metadata: raw_metadata || null,
+    is_suspicious: Boolean(is_suspicious),
+    suspicious_reasons: Array.isArray(suspicious_reasons) ? suspicious_reasons : [],
+    confidence_level: confidence_level || null,
+    suspicious_details: suspicious_details ? String(suspicious_details) : null,
     created_at: new Date().toISOString()
   };
   inMemorySiteDiaryPhotos.push(newPhoto);
@@ -779,6 +791,10 @@ function updateSiteDiaryPhoto(photoIdOrClientId, updateData) {
   if (updateData.altitude !== undefined) photo.altitude = updateData.altitude;
   if (updateData.has_metadata !== undefined) photo.has_metadata = Boolean(updateData.has_metadata);
   if (updateData.raw_metadata !== undefined) photo.raw_metadata = updateData.raw_metadata;
+  if (updateData.is_suspicious !== undefined) photo.is_suspicious = Boolean(updateData.is_suspicious);
+  if (updateData.suspicious_reasons !== undefined) photo.suspicious_reasons = Array.isArray(updateData.suspicious_reasons) ? updateData.suspicious_reasons : [];
+  if (updateData.confidence_level !== undefined) photo.confidence_level = updateData.confidence_level;
+  if (updateData.suspicious_details !== undefined) photo.suspicious_details = updateData.suspicious_details;
   return photo;
 }
 
@@ -1376,6 +1392,10 @@ function saveAcceptanceSheetPhoto(photoData) {
     latitude: photoData.latitude !== undefined && photoData.latitude !== null ? Number(photoData.latitude) : null,
     longitude: photoData.longitude !== undefined && photoData.longitude !== null ? Number(photoData.longitude) : null,
     has_metadata: Boolean(photoData.has_metadata || photoData.taken_at || (photoData.latitude !== null && photoData.latitude !== undefined)),
+    is_suspicious: Boolean(photoData.is_suspicious),
+    suspicious_reasons: Array.isArray(photoData.suspicious_reasons) ? photoData.suspicious_reasons : (typeof photoData.suspicious_reasons === 'string' ? JSON.parse(photoData.suspicious_reasons || '[]') : []),
+    confidence_level: photoData.confidence_level || null,
+    suspicious_details: photoData.suspicious_details ? String(photoData.suspicious_details) : null,
     created_at: new Date().toISOString()
   };
   inMemoryAcceptanceSheetPhotos.push(photo);
@@ -1388,6 +1408,130 @@ function deleteAcceptanceSheetPhoto(photoId) {
   if (idx === -1) return false;
   inMemoryAcceptanceSheetPhotos.splice(idx, 1);
   return true;
+}
+
+// ==========================================
+// ĐỀ NGHỊ THANH TOÁN & TẠM GIỮ HỢP ĐỒNG (S-45 / SCRUM-E08)
+// ==========================================
+let inMemoryPaymentRequests = [];
+let inMemoryPaymentRequestItems = [];
+
+function getProjectRetentionRate(projectId) {
+  const pId = Number(projectId);
+  const proj = inMemoryProjects.find(p => p.id === pId);
+  return proj && proj.retention_rate !== undefined ? Number(proj.retention_rate) : 5.00;
+}
+
+function updateProjectRetentionRate(projectId, rate) {
+  const pId = Number(projectId);
+  const r = Number(rate);
+  let proj = inMemoryProjects.find(p => p.id === pId);
+  if (!proj) {
+    proj = { id: pId, name: `Dự án ${pId}`, code: `DA-${pId}`, retention_rate: r };
+    inMemoryProjects.push(proj);
+  } else {
+    proj.retention_rate = r;
+  }
+  return r;
+}
+
+function getPaymentRequests(projectId) {
+  const pId = Number(projectId);
+  const list = inMemoryPaymentRequests
+    .filter(pr => Number(pr.project_id) === pId)
+    .sort((a, b) => b.period_number - a.period_number);
+
+  // Tính tổng tạm giữ luỹ kế qua các đề nghị (AC 3 S-45: tổng tạm giữ luỹ kế xem được)
+  let cumulativeRetention = 0;
+  let cumulativeGross = 0;
+  let cumulativeNet = 0;
+  list.forEach(pr => {
+    cumulativeRetention += Number(pr.retention_amount || 0);
+    cumulativeGross += Number(pr.gross_amount || 0);
+    cumulativeNet += Number(pr.net_payable_amount || 0);
+  });
+
+  return {
+    requests: list,
+    summary: {
+      retention_rate: getProjectRetentionRate(pId),
+      cumulative_retention_amount: Number(cumulativeRetention.toFixed(2)),
+      cumulative_gross_amount: Number(cumulativeGross.toFixed(2)),
+      cumulative_net_payable_amount: Number(cumulativeNet.toFixed(2))
+    }
+  };
+}
+
+function getPaymentRequestById(requestId) {
+  const rId = Number(requestId);
+  const req = inMemoryPaymentRequests.find(pr => pr.id === rId);
+  if (!req) return null;
+  const items = inMemoryPaymentRequestItems.filter(it => it.payment_request_id === rId);
+  return { ...req, items };
+}
+
+function savePaymentRequest(requestData, itemsData = []) {
+  const newId = inMemoryPaymentRequests.length > 0 ? Math.max(...inMemoryPaymentRequests.map(r => r.id)) + 1 : 1;
+  const gross = Number(requestData.gross_amount || 0);
+  const rate = Number(requestData.retention_rate !== undefined ? requestData.retention_rate : 5.00);
+  const retention = Number(requestData.retention_amount !== undefined ? requestData.retention_amount : (gross * (rate / 100)).toFixed(2));
+  const net = Number(requestData.net_payable_amount !== undefined ? requestData.net_payable_amount : (gross - retention).toFixed(2));
+
+  const newReq = {
+    id: newId,
+    project_id: Number(requestData.project_id),
+    request_code: String(requestData.request_code).trim(),
+    name: String(requestData.name).trim(),
+    period_number: Number(requestData.period_number || 1),
+    from_date: String(requestData.from_date),
+    to_date: String(requestData.to_date),
+    gross_amount: Number(gross.toFixed(2)),
+    retention_rate: Number(rate.toFixed(2)),
+    retention_amount: Number(retention.toFixed(2)),
+    net_payable_amount: Number(net.toFixed(2)),
+    status: requestData.status || 'draft',
+    notes: requestData.notes ? String(requestData.notes).trim() : null,
+    created_by: Number(requestData.created_by || 1),
+    approved_by: requestData.approved_by ? Number(requestData.approved_by) : null,
+    approved_at: requestData.approved_at || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  inMemoryPaymentRequests.push(newReq);
+
+  const createdItems = [];
+  let itemCounter = inMemoryPaymentRequestItems.length > 0 ? Math.max(...inMemoryPaymentRequestItems.map(i => i.id)) + 1 : 1;
+  for (const it of itemsData) {
+    const itemGross = Number((Number(it.period_quantity || 0) * Number(it.unit_price || 0)).toFixed(2));
+    const newItem = {
+      id: itemCounter++,
+      payment_request_id: newId,
+      acceptance_sheet_id: Number(it.acceptance_sheet_id),
+      work_item_id: it.work_item_id ? Number(it.work_item_id) : null,
+      item_name: String(it.item_name || 'Hạng mục').trim(),
+      unit: String(it.unit || 'm3').trim(),
+      period_quantity: Number(it.period_quantity || 0),
+      unit_price: Number(it.unit_price || 0),
+      line_total: Number(it.line_total !== undefined ? it.line_total : itemGross),
+      created_at: new Date().toISOString()
+    };
+    inMemoryPaymentRequestItems.push(newItem);
+    createdItems.push(newItem);
+  }
+
+  return { ...newReq, items: createdItems };
+}
+
+function approvePaymentRequest(projectId, requestId, userId) {
+  const rId = Number(requestId);
+  const req = inMemoryPaymentRequests.find(pr => pr.id === rId && Number(pr.project_id) === Number(projectId));
+  if (!req) return null;
+  req.status = 'approved';
+  req.approved_by = Number(userId);
+  req.approved_at = new Date().toISOString();
+  req.updated_at = new Date().toISOString();
+  return req;
 }
 
 module.exports = {
@@ -1481,6 +1625,14 @@ module.exports = {
   findPendingInvitation,
   createProjectInvitation,
   acceptProjectInvitation,
-  isUserProjectManager
+  isUserProjectManager,
+  inMemoryPaymentRequests,
+  inMemoryPaymentRequestItems,
+  getProjectRetentionRate,
+  updateProjectRetentionRate,
+  getPaymentRequests,
+  getPaymentRequestById,
+  savePaymentRequest,
+  approvePaymentRequest
 };
 

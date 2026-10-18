@@ -1,6 +1,6 @@
 const fs = require('fs');
 const store = require('../models/store');
-const { parseExifMetadata } = require('../utils/exifParser');
+const { parseExifMetadata, extractJpegDimensions, evaluatePhotoSuspicion } = require('../utils/exifParser');
 
 class AcceptanceService {
   constructor(db) {
@@ -19,30 +19,32 @@ class AcceptanceService {
     const pId = Number(projectId);
     const currentDate = toDate || new Date().toISOString().slice(0, 10);
 
-    // 1. Lấy danh sách hạng mục công việc (Work items) của dự án
+    // 1. Lấy danh sách hạng mục công việc (Work items) của dự án kèm khối lượng hợp đồng (S-35 / S-37)
     let workItems = [];
     if (this.isConnected) {
       try {
         const [wRows] = await this.pool.query(
-          'SELECT id, project_id, code, name, unit FROM work_items WHERE project_id = ? ORDER BY id ASC',
+          'SELECT id, project_id, code, name, unit, khoi_luong_hop_dong, don_gia_hop_dong FROM work_items WHERE project_id = ? ORDER BY id ASC',
           [pId]
         );
         workItems = wRows || [];
       } catch (_) {
-        workItems = store.inMemoryWorkItems.filter(w => Number(w.project_id) === pId);
+        workItems = (store.inMemoryWorkItems || []).filter(w => Number(w.project_id) === pId);
       }
     } else {
-      workItems = store.inMemoryWorkItems.filter(w => Number(w.project_id) === pId);
+      workItems = (store.inMemoryWorkItems || []).filter(w => Number(w.project_id) === pId);
     }
 
     if (workItems.length === 0) {
       // Nếu chưa có work_items, lấy từ tasks hoặc tạo mục mẫu
-      const tasks = store.getTasks(pId);
+      const tasks = store.getTasks ? store.getTasks(pId) : (store.inMemoryTasks || []).filter(t => Number(t.project_id) === pId);
       workItems = tasks.map(t => ({
         id: t.work_item_id || t.id,
         code: t.code || `CV-${t.id}`,
         name: t.name,
-        unit: 'm3'
+        unit: 'm3',
+        khoi_luong_hop_dong: t.quantity || null,
+        don_gia_hop_dong: null
       }));
     }
 
@@ -158,11 +160,20 @@ class AcceptanceService {
       const wId = Number(w.id);
       const prevApproved = prevApprovedMap.get(wId) || prevApprovedMap.get(w.name?.trim().toLowerCase()) || 0;
       const teamReported = teamReportedMap.get(wId) || 0;
+      const contractLimit = (w.khoi_luong_hop_dong !== undefined && w.khoi_luong_hop_dong !== null)
+        ? Number(w.khoi_luong_hop_dong)
+        : (w.quantity !== undefined && w.quantity !== null ? Number(w.quantity) : null);
+      const unitPrice = (w.don_gia_hop_dong !== undefined && w.don_gia_hop_dong !== null)
+        ? Number(w.don_gia_hop_dong)
+        : 0;
+
       return {
         work_item_id: wId,
         code: w.code,
         item_name: w.name,
         unit: w.unit || 'm3',
+        contract_quantity: contractLimit !== null ? Number(contractLimit.toFixed(4)) : null,
+        unit_price: unitPrice,
         previous_approved_quantity: Number(prevApproved.toFixed(2)),
         cumulative_quantity: Number(prevApproved.toFixed(2)), // Mặc định bằng đợt trước, người dùng nhập thêm
         period_quantity: 0.00, // Tự động tính: cumulative - previous_approved
@@ -293,39 +304,133 @@ class AcceptanceService {
     let createdSheet = null;
 
     if (this.isConnected) {
-      // Kiểm tra trùng mã phiếu trong cùng dự án
-      const [dup] = await this.pool.query(
-        'SELECT id FROM acceptance_sheets WHERE project_id = ? AND sheet_code = ? LIMIT 1',
-        [pId, sheetCode]
-      );
-      if (dup && dup.length > 0) {
-        const err = new Error(`Mã phiếu "${sheetCode}" đã tồn tại trong dự án này`);
-        err.status = 409;
-        throw err;
-      }
+      const conn = await this.pool.getConnection();
+      await conn.beginTransaction();
 
-      const [res] = await this.pool.query(
-        `INSERT INTO acceptance_sheets (project_id, sheet_code, name, period_number, from_date, to_date, status, notes, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?)`,
-        [pId, sheetCode, name, periodNumber, fromDate, toDate, notes, uId]
-      );
-      const sheetId = res.insertId;
-
-      for (const it of computedItems) {
-        await this.pool.query(
-          `INSERT INTO acceptance_sheet_items (sheet_id, work_item_id, task_id, item_name, unit, previous_approved_quantity, cumulative_quantity, period_quantity, team_reported_quantity, difference, notes)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [sheetId, it.work_item_id, it.task_id, it.item_name, it.unit, it.previous_approved_quantity, it.cumulative_quantity, it.period_quantity, it.team_reported_quantity, it.difference, it.notes]
+      try {
+        // 1. Kiểm tra trùng mã phiếu trong cùng dự án
+        const [dup] = await conn.query(
+          'SELECT id FROM acceptance_sheets WHERE project_id = ? AND sheet_code = ? LIMIT 1',
+          [pId, sheetCode]
         );
-      }
+        if (dup && dup.length > 0) {
+          const err = new Error(`Mã phiếu "${sheetCode}" đã tồn tại trong dự án này`);
+          err.status = 409;
+          throw err;
+        }
 
-      createdSheet = await this.getAcceptanceSheetById(pId, sheetId);
+        // 2. SCRUM-S37 / T-68: Khóa dòng và kiểm tra luỹ kế không vượt khối lượng hợp đồng (FOR UPDATE để tuần tự hóa chống Race Condition R-05)
+        const [workItemsRows] = await conn.query(
+          'SELECT id, code, name, khoi_luong_hop_dong FROM work_items WHERE project_id = ? FOR UPDATE',
+          [pId]
+        );
+        const workItemsMap = new Map();
+        (workItemsRows || []).forEach(w => {
+          workItemsMap.set(Number(w.id), w);
+        });
+
+        for (const it of computedItems) {
+          const wInfo = it.work_item_id ? workItemsMap.get(Number(it.work_item_id)) : null;
+          const contractLimit = (wInfo && wInfo.khoi_luong_hop_dong !== null && wInfo.khoi_luong_hop_dong !== undefined)
+            ? Number(wInfo.khoi_luong_hop_dong)
+            : (it.contract_quantity !== undefined && it.contract_quantity !== null ? Number(it.contract_quantity) : null);
+
+          if (contractLimit !== null && !isNaN(contractLimit) && contractLimit > 0) {
+            if (it.cumulative_quantity > contractLimit) {
+              const itemCode = wInfo?.code || `CV-${it.work_item_id || 'X'}`;
+              const itemName = it.item_name || wInfo?.name || 'Hạng mục';
+              const err = new Error(`Khối lượng luỹ kế (${it.cumulative_quantity}) vượt quá khối lượng hợp đồng (${contractLimit}) của hạng mục "${itemName}" (${itemCode})`);
+              err.status = 400;
+              err.details = {
+                work_item_id: it.work_item_id,
+                item_name: itemName,
+                item_code: itemCode,
+                contract_quantity: contractLimit,
+                cumulative_quantity: it.cumulative_quantity,
+                excess_quantity: Number((it.cumulative_quantity - contractLimit).toFixed(2))
+              };
+              throw err;
+            }
+          }
+        }
+
+        // 3. Tạo phiếu nghiệm thu
+        const [res] = await conn.query(
+          `INSERT INTO acceptance_sheets (project_id, sheet_code, name, period_number, from_date, to_date, status, notes, created_by)
+           VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?)`,
+          [pId, sheetCode, name, periodNumber, fromDate, toDate, notes, uId]
+        );
+        const sheetId = res.insertId;
+
+        for (const it of computedItems) {
+          await conn.query(
+            `INSERT INTO acceptance_sheet_items (sheet_id, work_item_id, task_id, item_name, unit, previous_approved_quantity, cumulative_quantity, period_quantity, team_reported_quantity, difference, notes)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [sheetId, it.work_item_id, it.task_id, it.item_name, it.unit, it.previous_approved_quantity, it.cumulative_quantity, it.period_quantity, it.team_reported_quantity, it.difference, it.notes]
+          );
+        }
+
+        await conn.commit();
+        createdSheet = await this.getAcceptanceSheetById(pId, sheetId);
+      } catch (err) {
+        await conn.rollback();
+        if (err.sqlState === '45000' || (err.message && err.message.toLowerCase().includes('vượt quá khối lượng hợp đồng'))) {
+          err.status = 400;
+        }
+        throw err;
+      } finally {
+        conn.release();
+      }
     } else {
       const all = store.getAcceptanceSheets(pId);
       if (all.some(s => s.sheet_code.toLowerCase() === sheetCode.toLowerCase())) {
         const err = new Error(`Mã phiếu "${sheetCode}" đã tồn tại trong dự án này`);
         err.status = 409;
         throw err;
+      }
+
+      // S-37 In-memory validation
+      const inMemWorkItems = (store.inMemoryWorkItems || []).filter(w => Number(w.project_id) === pId);
+      const inMemTasks = (store.inMemoryTasks || []).filter(t => Number(t.project_id) === pId);
+
+      for (const it of computedItems) {
+        let contractLimit = null;
+        let itemCode = 'CV';
+        if (it.work_item_id) {
+          const wi = inMemWorkItems.find(w => Number(w.id) === Number(it.work_item_id));
+          if (wi) {
+            itemCode = wi.code || itemCode;
+            contractLimit = (wi.khoi_luong_hop_dong !== undefined && wi.khoi_luong_hop_dong !== null)
+              ? Number(wi.khoi_luong_hop_dong)
+              : (wi.quantity !== undefined ? Number(wi.quantity) : null);
+          } else {
+            const task = inMemTasks.find(t => Number(t.work_item_id || t.id) === Number(it.work_item_id));
+            if (task) {
+              itemCode = task.code || itemCode;
+              contractLimit = task.quantity ? Number(task.quantity) : null;
+            }
+          }
+        }
+        if (it.contract_quantity !== undefined && it.contract_quantity !== null) {
+          contractLimit = Number(it.contract_quantity);
+        }
+
+        if (contractLimit !== null && !isNaN(contractLimit) && contractLimit > 0) {
+          if (it.cumulative_quantity > contractLimit) {
+            const itemName = it.item_name || 'Hạng mục';
+            const err = new Error(`Khối lượng luỹ kế (${it.cumulative_quantity}) vượt quá khối lượng hợp đồng (${contractLimit}) của hạng mục "${itemName}" (${itemCode})`);
+            err.status = 400;
+            err.details = {
+              work_item_id: it.work_item_id,
+              item_name: itemName,
+              item_code: itemCode,
+              contract_quantity: contractLimit,
+              cumulative_quantity: it.cumulative_quantity,
+              excess_quantity: Number((it.cumulative_quantity - contractLimit).toFixed(2))
+            };
+            throw err;
+          }
+        }
       }
 
       const sheet = store.saveAcceptanceSheet({
@@ -425,13 +530,28 @@ class AcceptanceService {
         [sId]
       );
 
-      const mappedPhotos = (photos || []).map(p => ({
-        ...p,
-        url: p.file_path || `/uploads/acceptance/${p.file_name}`,
-        metadata_status_text: (p.has_metadata || p.taken_at || p.latitude)
-          ? 'Đã có siêu dữ liệu'
-          : 'Không có siêu dữ liệu'
-      }));
+      const mappedPhotos = (photos || []).map(p => {
+        let reasons = [];
+        try {
+          if (Array.isArray(p.suspicious_reasons)) {
+            reasons = p.suspicious_reasons;
+          } else if (typeof p.suspicious_reasons === 'string' && p.suspicious_reasons.trim()) {
+            reasons = JSON.parse(p.suspicious_reasons);
+          }
+        } catch (_) {}
+
+        return {
+          ...p,
+          url: p.file_path || `/uploads/acceptance/${p.file_name}`,
+          is_suspicious: Boolean(p.is_suspicious),
+          suspicious_reasons: reasons,
+          confidence_level: p.confidence_level || 'none',
+          suspicious_details: p.suspicious_details || null,
+          metadata_status_text: (p.has_metadata || p.taken_at || p.latitude)
+            ? 'Đã có siêu dữ liệu'
+            : 'Không có siêu dữ liệu'
+        };
+      });
 
       return {
         ...sheet,
@@ -483,7 +603,7 @@ class AcceptanceService {
   }
 
   /**
-   * Đính kèm ảnh hiện trường vào phiếu nghiệm thu (AC 4 & S-40 EXIF)
+   * Đính kèm ảnh hiện trường vào phiếu nghiệm thu (AC 4 & S-40 EXIF & S-42 Anti-fraud)
    */
   async addPhotos(projectId, sheetId, files = []) {
     const pId = Number(projectId);
@@ -512,10 +632,12 @@ class AcceptanceService {
 
       // S-40: Đọc thời điểm và toạ độ GPS từ EXIF
       let exif = { has_metadata: false, taken_at: null, latitude: null, longitude: null };
+      let dims = null;
       try {
         const buf = file.buffer || (file.path && fs.existsSync(file.path) ? fs.readFileSync(file.path) : null);
         if (buf) {
           exif = parseExifMetadata(buf);
+          dims = extractJpegDimensions(buf);
         }
       } catch (_) {}
 
@@ -524,11 +646,40 @@ class AcceptanceService {
       const longitude = file.longitude !== undefined && file.longitude !== null ? Number(file.longitude) : exif.longitude;
       const hasMetadata = Boolean(exif.has_metadata || takenAt || (latitude !== null && latitude !== undefined));
 
+      // SCRUM-S42 / T-75: Phát hiện ảnh thiếu siêu dữ liệu hoặc chụp lại màn hình
+      const suspicion = evaluatePhotoSuspicion({
+        metadata: { ...exif, taken_at: takenAt, latitude, longitude, has_metadata: hasMetadata },
+        fileName,
+        width: file.width || dims?.width,
+        height: file.height || dims?.height,
+        inspectionDate: sheet.to_date || sheet.from_date || new Date().toISOString().slice(0, 10)
+      });
+
+      const isSuspicious = file.is_suspicious !== undefined ? Boolean(file.is_suspicious) : suspicion.is_suspicious;
+      const suspiciousReasons = file.suspicious_reasons || suspicion.suspicious_reasons || [];
+      const confidenceLevel = file.confidence_level || suspicion.confidence_level || 'none';
+      const suspiciousDetails = file.suspicious_details || (suspicion.suspicious_details ? JSON.stringify(suspicion.suspicious_details) : null);
+
       if (this.isConnected) {
         const [res] = await this.pool.query(
-          `INSERT INTO acceptance_sheet_photos (sheet_id, file_name, file_path, file_size, mime_type, caption, taken_at, latitude, longitude, has_metadata)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [sId, fileName, filePath, fileSize, mimeType, caption, takenAt, latitude, longitude, hasMetadata]
+          `INSERT INTO acceptance_sheet_photos (sheet_id, file_name, file_path, file_size, mime_type, caption, taken_at, latitude, longitude, has_metadata, is_suspicious, suspicious_reasons, confidence_level, suspicious_details)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            sId,
+            fileName,
+            filePath,
+            fileSize,
+            mimeType,
+            caption,
+            takenAt,
+            latitude,
+            longitude,
+            hasMetadata,
+            isSuspicious,
+            JSON.stringify(suspiciousReasons),
+            confidenceLevel,
+            suspiciousDetails
+          ]
         );
         added.push({
           id: res.insertId,
@@ -541,6 +692,10 @@ class AcceptanceService {
           latitude,
           longitude,
           has_metadata: hasMetadata,
+          is_suspicious: isSuspicious,
+          suspicious_reasons: suspiciousReasons,
+          confidence_level: confidenceLevel,
+          suspicious_details: suspiciousDetails,
           metadata_status_text: hasMetadata ? 'Đã có siêu dữ liệu' : 'Không có siêu dữ liệu'
         });
       } else {
@@ -554,7 +709,11 @@ class AcceptanceService {
           taken_at: takenAt,
           latitude,
           longitude,
-          has_metadata: hasMetadata
+          has_metadata: hasMetadata,
+          is_suspicious: isSuspicious,
+          suspicious_reasons: suspiciousReasons,
+          confidence_level: confidenceLevel,
+          suspicious_details: suspiciousDetails
         });
         added.push({
           ...photo,
