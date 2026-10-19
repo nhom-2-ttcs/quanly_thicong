@@ -1055,6 +1055,33 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    // S-43 / T-99: Bổ sung payment_request_id vào acceptance_sheets để khoá liên kết
+    try {
+      const [colCheck] = await pool.query(`
+        SELECT COLUMN_NAME FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'acceptance_sheets' AND COLUMN_NAME = 'payment_request_id'
+      `);
+      if (!colCheck || colCheck.length === 0) {
+        await pool.query(`
+          ALTER TABLE acceptance_sheets
+          ADD COLUMN payment_request_id INT NULL AFTER status
+        `);
+      }
+      try {
+        await pool.query(`
+          ALTER TABLE acceptance_sheets
+          ADD CONSTRAINT fk_as_payment_request
+          FOREIGN KEY (payment_request_id) REFERENCES payment_requests(id) ON DELETE SET NULL
+        `);
+      } catch (_) {}
+      try {
+        await pool.query(`
+          ALTER TABLE acceptance_sheets
+          ADD UNIQUE KEY uq_acceptance_sheet_payment (payment_request_id, id)
+        `);
+      } catch (_) {}
+    } catch (_) {}
+
     // S-37: Database Trigger đảm bảo luỹ kế không vượt khối lượng hợp đồng ở tầng CSDL
     try {
       await pool.query(`DROP TRIGGER IF EXISTS trg_check_acceptance_contract_qty_insert`);

@@ -365,10 +365,17 @@
   <div class="modal-overlay" id="createPaymentModal">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>➕ Lập Đề Nghị Thanh Toán & Khấu Trừ Tạm Giữ (S-45)</h3>
+        <h3>➕ Sinh Đề Nghị Thanh Toán Từ Phiếu Nghiệm Thu Đã Duyệt (S-43)</h3>
         <button class="btn-close-modal" onclick="closeCreatePaymentModal()">&times;</button>
       </div>
       <div class="modal-body">
+        <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #1e40af; display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 20px;">ℹ️</span>
+          <div>
+            <strong>Quy tắc tự sinh (S-43):</strong> Hệ thống tự động truy vấn các phiếu nghiệm thu đã duyệt chưa đưa vào đề nghị, lấy đủ hạng mục, khối lượng đợt và đơn giá hợp đồng để tính thành tiền. <i>Một phiếu nghiệm thu chỉ vào được một đề nghị duy nhất (T-99).</i>
+          </div>
+        </div>
+
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
           <div class="form-group">
             <label>Mã đề nghị thanh toán *</label>
@@ -379,12 +386,18 @@
             <input type="text" id="inputPaymentTitle" class="form-control" placeholder="Đề nghị thanh toán Đợt 1">
           </div>
           <div class="form-group">
-            <label>Số đợt *</label>
+            <label>Số đợt đề nghị *</label>
             <input type="number" id="inputPaymentPeriod" class="form-control" value="1">
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+          <div class="form-group">
+            <label>Kỳ nghiệm thu nguồn (T-97) *</label>
+            <select id="selectSourcePeriod" class="form-control" onchange="onSourcePeriodChanged()">
+              <option value="">-- Tất cả phiếu NT chưa thanh toán --</option>
+            </select>
+          </div>
           <div class="form-group">
             <label>Từ ngày</label>
             <input type="date" id="inputPaymentFromDate" class="form-control">
@@ -451,6 +464,97 @@
         <button type="button" class="btn-primary" id="btnSubmitPayment" onclick="submitCreatePaymentRequest()">
           💾 Lưu Đề Nghị Thanh Toán
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: XEM CHI TIẾT ĐỀ NGHỊ THANH TOÁN (S-43 & T-100) -->
+  <div class="modal-overlay" id="paymentDetailModal">
+    <div class="modal-card" style="max-width: 1050px;">
+      <div class="modal-header">
+        <h3>
+          <span>📑 Chi Tiết Đề Nghị Thanh Toán:</span>
+          <span id="detailRequestCode" style="color: var(--brand-blue); font-family: 'JetBrains Mono'; margin-left: 6px;"></span>
+        </h3>
+        <button class="btn-close-modal" onclick="closePaymentDetailModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Thông tin chung đề nghị -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; background: #f8fafc; padding: 14px 18px; border-radius: 10px; border: 1.5px solid var(--border-card);">
+          <div>
+            <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Tên đợt thanh toán</span>
+            <div id="detailName" style="font-size: 14px; font-weight: 800; color: var(--text-title); margin-top: 2px;"></div>
+          </div>
+          <div>
+            <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Kỳ / Đợt</span>
+            <div id="detailPeriod" style="font-size: 14px; font-weight: 800; color: var(--brand-blue); margin-top: 2px;"></div>
+          </div>
+          <div>
+            <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Thời gian nghiệm thu</span>
+            <div id="detailDateRange" style="font-size: 13px; font-weight: 700; color: var(--text-body); margin-top: 2px;"></div>
+          </div>
+          <div>
+            <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Trạng thái</span>
+            <div id="detailStatus" style="margin-top: 2px;"></div>
+          </div>
+        </div>
+
+        <!-- Bảng chi tiết các dòng đề nghị (T-100: Hiện đủ cột theo AC: hạng mục, khối lượng đợt, đơn giá, thành tiền) -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h4 style="font-size: 14px; font-weight: 800; color: var(--text-title);">
+              📋 Bảng Danh Sách Hạng Mục Thanh Toán (T-100 / S-43)
+            </h4>
+            <span id="detailItemsCount" style="font-size: 12px; font-weight: 700; color: var(--text-muted);">0 hạng mục</span>
+          </div>
+          <div style="max-height: 280px; overflow-y: auto; border: 1.5px solid var(--border-card); border-radius: 8px;">
+            <table style="font-size: 12.5px;">
+              <thead>
+                <tr>
+                  <th style="width: 5%; text-align: center;">STT</th>
+                  <th style="width: 15%;">Phiếu NT nguồn</th>
+                  <th style="width: 27%;">Hạng mục công việc (AC)</th>
+                  <th style="width: 8%; text-align: center;">ĐVT</th>
+                  <th style="width: 14%; text-align: right;">Khối lượng đợt (AC)</th>
+                  <th style="width: 15%; text-align: right;">Đơn giá HĐ (AC)</th>
+                  <th style="width: 16%; text-align: right;">Thành tiền (AC)</th>
+                </tr>
+              </thead>
+              <tbody id="detailItemsTableBody">
+                <tr><td colspan="7" style="text-align: center; padding: 20px;">Đang tải chi tiết các dòng...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Khung tổng hợp tiền & Kiểm tra chênh lệch khớp 100% (T-98 & T-100) -->
+        <div class="formula-summary-box">
+          <div class="formula-row">
+            <span><strong>Tổng thành tiền các dòng (Gross Amount):</strong></span>
+            <span style="font-family: 'JetBrains Mono'; font-weight: 800; font-size: 16px; color: var(--text-title);" id="detailGrossAmount">0 đ</span>
+          </div>
+          <div class="formula-row" style="color: #b91c1c;">
+            <span><strong>Khấu trừ tạm giữ hợp đồng (<span id="detailRetentionPercent">5%</span>):</strong></span>
+            <span style="font-family: 'JetBrains Mono'; font-weight: 800; font-size: 16px;" id="detailRetentionAmount">- 0 đ</span>
+          </div>
+          <hr style="border: none; border-top: 1px dashed #86efac; margin: 4px 0;">
+          <div class="formula-row" style="color: #065f46;">
+            <span><strong>Số tiền thực thanh toán đề nghị (Net Payable):</strong></span>
+            <span style="font-family: 'JetBrains Mono'; font-weight: 800; font-size: 19px;" id="detailNetAmount">0 đ</span>
+          </div>
+          <div style="font-size: 12px; color: #15803d; font-weight: 700; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <span>🛡️ Tổng hiển thị khớp tổng các dòng: Gross = Tiền Tạm Giữ + Thực Nhận (Chênh lệch: 0 đ)</span>
+            <span style="color: #0284c7; font-family: 'JetBrains Mono';">📐 Quy tắc làm tròn: HALF_UP 2 chữ số thập phân (NFR S-43)</span>
+          </div>
+        </div>
+
+        <div id="detailNotesContainer" style="font-size: 12.5px; color: var(--text-muted); display: none;">
+          <strong>Ghi chú:</strong> <span id="detailNotesText"></span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="window.print()">🖨️ In / Xuất Đề Nghị</button>
+        <button type="button" class="btn-primary" onclick="closePaymentDetailModal()">Đóng</button>
       </div>
     </div>
   </div>
@@ -537,8 +641,16 @@
         const isApproved = String(r.status).toLowerCase() === 'approved';
         return `
           <tr>
-            <td><strong style="font-family: 'JetBrains Mono'; color: var(--brand-blue);">${r.request_code}</strong></td>
-            <td><strong>${r.name}</strong></td>
+            <td>
+              <a href="javascript:void(0)" onclick="viewPaymentDetail(${r.id})" style="text-decoration: none;">
+                <strong style="font-family: 'JetBrains Mono'; color: var(--brand-blue);">${r.request_code}</strong>
+              </a>
+            </td>
+            <td>
+              <a href="javascript:void(0)" onclick="viewPaymentDetail(${r.id})" style="text-decoration: none; color: inherit;">
+                <strong>${r.name}</strong>
+              </a>
+            </td>
             <td><span style="font-family: 'JetBrains Mono'; font-weight: 700;">Đợt ${r.period_number}</span></td>
             <td style="text-align: right; font-family: 'JetBrains Mono'; font-weight: 700;">${formatMoney(r.gross_amount)}</td>
             <td style="text-align: center; font-family: 'JetBrains Mono'; font-weight: 800; color: #0284c7;">${Number(r.retention_rate).toFixed(2)}%</td>
@@ -550,13 +662,18 @@
               </span>
             </td>
             <td style="text-align: right; white-space: nowrap;">
-              ${!isApproved ? `
-                <button class="btn-primary" style="font-size: 11.5px; padding: 4px 8px;" onclick="approvePayment(${r.id})">
-                  ✔️ Duyệt
+              <div style="display: inline-flex; gap: 6px; align-items: center;">
+                <button class="btn-secondary" style="font-size: 11.5px; padding: 4px 8px;" onclick="viewPaymentDetail(${r.id})" title="Xem chi tiết các dòng hạng mục & tổng tiền (T-100)">
+                  👁️ Chi tiết
                 </button>
-              ` : `
-                <span style="font-size: 11.5px; color: #059669; font-weight: 700;">Đã chốt</span>
-              `}
+                ${!isApproved ? `
+                  <button class="btn-primary" style="font-size: 11.5px; padding: 4px 8px;" onclick="approvePayment(${r.id})">
+                    ✔️ Duyệt
+                  </button>
+                ` : `
+                  <span style="font-size: 11.5px; color: #059669; font-weight: 700; padding: 0 4px;">Đã chốt</span>
+                `}
+              </div>
             </td>
           </tr>
         `;
@@ -599,61 +716,90 @@
       }
     }
 
-    // 3. Mở Modal Lập đề nghị thanh toán mới
+    // 3. Mở Modal Lập đề nghị thanh toán mới (S-43 T-97/T-98/T-99)
     async function openCreatePaymentModal() {
       document.getElementById('createPaymentModal').style.display = 'flex';
       document.getElementById('inputPaymentFromDate').value = new Date().toISOString().slice(0, 10);
       document.getElementById('inputPaymentToDate').value = new Date().toISOString().slice(0, 10);
-      await loadPrefillPayment();
+      await loadPrefillPayment(null);
     }
 
     function closeCreatePaymentModal() {
       document.getElementById('createPaymentModal').style.display = 'none';
     }
 
-    async function loadPrefillPayment() {
+    async function loadPrefillPayment(filterPeriod = null) {
       const tbody = document.getElementById('prefillItemsBody');
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">Đang tải danh sách hạng mục từ phiếu nghiệm thu đã duyệt...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">Đang tải danh sách hạng mục từ phiếu nghiệm thu đã duyệt chưa đưa vào đề nghị (T-97)...</td></tr>`;
 
       try {
-        const res = await fetch(`/api/projects/${projectId}/payment-requests/prefill`, {
+        // T-97: Sử dụng endpoint S-43 prefill chỉ lấy phiếu đã duyệt chưa liên kết
+        const query = (filterPeriod !== null && filterPeriod !== undefined && filterPeriod !== '')
+          ? `?period_number=${filterPeriod}`
+          : '';
+        const res = await fetch(`/api/projects/${projectId}/payment-requests/s43-prefill${query}`, {
           headers: { 'Authorization': `Bearer ${getToken()}` }
         });
         const data = await res.json();
         if (data.success && data.data) {
           currentPrefillData = data.data;
-          document.getElementById('inputPaymentCode').value = currentPrefillData.suggested_request_code || 'DNTT-01';
-          document.getElementById('inputPaymentTitle').value = currentPrefillData.suggested_name || 'Đề nghị thanh toán Đợt 1';
-          document.getElementById('inputPaymentPeriod').value = currentPrefillData.suggested_period_number || 1;
-          document.getElementById('inputPaymentRetentionRate').value = (currentPrefillData.retention_rate || 5.00).toFixed(2);
+
+          if (filterPeriod === null) {
+            document.getElementById('inputPaymentCode').value = currentPrefillData.suggested_request_code || 'DNTT-01';
+            document.getElementById('inputPaymentTitle').value = currentPrefillData.suggested_name || 'Đề nghị thanh toán Đợt 1';
+            document.getElementById('inputPaymentPeriod').value = currentPrefillData.suggested_period_number || 1;
+            document.getElementById('inputPaymentRetentionRate').value = (currentPrefillData.retention_rate || 5.00).toFixed(2);
+
+            // Populate options cho selectSourcePeriod
+            const selectEl = document.getElementById('selectSourcePeriod');
+            if (selectEl) {
+              const sourceSheets = currentPrefillData.source_sheets || [];
+              const periods = [...new Set(sourceSheets.map(s => s.period_number).filter(Boolean))].sort((a,b) => a - b);
+              selectEl.innerHTML = `<option value="">-- Tất cả phiếu NT chưa thanh toán (${sourceSheets.length} phiếu) --</option>` +
+                periods.map(p => {
+                  const count = sourceSheets.filter(s => s.period_number === p).length;
+                  return `<option value="${p}">Kỳ / Đợt nghiệm thu ${p} (${count} phiếu NT)</option>`;
+                }).join('');
+            }
+          }
 
           renderPrefillItems(currentPrefillData.items || []);
           recalculateFormula();
         } else {
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger);">${data.message || 'Lỗi tải prefill'}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 20px;">${data.message || 'Lỗi tải prefill'}</td></tr>`;
         }
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger);">Lỗi kết nối: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 20px;">Lỗi kết nối: ${err.message}</td></tr>`;
       }
+    }
+
+    function onSourcePeriodChanged() {
+      const selectedPeriod = document.getElementById('selectSourcePeriod')?.value;
+      loadPrefillPayment(selectedPeriod || null);
     }
 
     function renderPrefillItems(items) {
       const tbody = document.getElementById('prefillItemsBody');
       if (!items || items.length === 0) {
         tbody.innerHTML = `
-          <tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">
-            Chưa có phiếu nghiệm thu nào được phê duyệt để thanh toán. Vui lòng duyệt phiếu nghiệm thu ở trang Nghiệm thu trước!
+          <tr><td colspan="6" style="text-align: center; padding: 25px; color: var(--amber-text); background: #fefce8;">
+            ⚠️ Không có phiếu nghiệm thu đã duyệt nào chưa được đưa vào đề nghị trong kỳ này.<br>
+            <span style="font-size: 11.5px; color: var(--text-muted);">
+              Mỗi phiếu nghiệm thu chỉ được đưa vào 1 đề nghị thanh toán (T-99). Vui lòng duyệt thêm phiếu tại <a href="/acceptance.html" style="color: var(--brand-blue); font-weight: 700;">Nghiệm thu đợt</a>.
+            </span>
           </td></tr>
         `;
+        document.getElementById('btnSubmitPayment').disabled = true;
         return;
       }
 
+      document.getElementById('btnSubmitPayment').disabled = false;
       tbody.innerHTML = items.map(it => `
         <tr>
-          <td><span style="font-family: 'JetBrains Mono'; font-weight: 700; color: var(--brand-blue);">${it.acceptance_sheet_code || 'NT'}</span></td>
+          <td><span style="font-family: 'JetBrains Mono'; font-weight: 700; color: var(--brand-blue);">${it.acceptance_sheet_code || ('NT-' + it.acceptance_sheet_id)}</span></td>
           <td><strong>${it.item_name}</strong></td>
-          <td>${it.unit}</td>
-          <td style="text-align: right; font-family: 'JetBrains Mono'; font-weight: 700;">${it.period_quantity}</td>
+          <td style="text-align: center;">${it.unit || 'm3'}</td>
+          <td style="text-align: right; font-family: 'JetBrains Mono'; font-weight: 700;">${Number(it.period_quantity).toLocaleString('vi-VN', { maximumFractionDigits: 4 })}</td>
           <td style="text-align: right; font-family: 'JetBrains Mono';">${formatMoney(it.unit_price)}</td>
           <td style="text-align: right; font-family: 'JetBrains Mono'; font-weight: 800;">${formatMoney(it.line_total)}</td>
         </tr>
@@ -662,10 +808,10 @@
 
     function recalculateFormula() {
       const items = currentPrefillData?.items || [];
-      const gross = items.reduce((sum, it) => sum + Number(it.line_total || 0), 0);
+      const gross = Math.round(items.reduce((sum, it) => sum + Number(it.line_total || 0), 0) * 100) / 100;
       const rate = parseFloat(document.getElementById('inputPaymentRetentionRate').value) || 0;
-      const retention = Number((gross * (rate / 100)).toFixed(2));
-      const net = Number((gross - retention).toFixed(2));
+      const retention = Math.round(gross * (rate / 100) * 100) / 100;
+      const net = Math.round((gross - retention) * 100) / 100;
 
       document.getElementById('lblGrossAmount').innerText = formatMoney(gross);
       document.getElementById('lblRatePercent').innerText = rate.toFixed(2) + '%';
@@ -673,6 +819,7 @@
       document.getElementById('lblNetPayable').innerText = formatMoney(net);
     }
 
+    // T-99: Sinh đề nghị thanh toán và khoá liên kết phiếu nghiệm thu nguyên tử
     async function submitCreatePaymentRequest() {
       const code = document.getElementById('inputPaymentCode').value.trim();
       const title = document.getElementById('inputPaymentTitle').value.trim();
@@ -681,7 +828,7 @@
       const toDate = document.getElementById('inputPaymentToDate').value;
       const rate = parseFloat(document.getElementById('inputPaymentRetentionRate').value) || 0;
       const notes = document.getElementById('inputPaymentNotes').value.trim();
-      const items = currentPrefillData?.items || [];
+      const selectedSourcePeriod = document.getElementById('selectSourcePeriod')?.value;
 
       if (!code || !title) {
         showToast('Vui lòng nhập mã đề nghị và tên đợt thanh toán', false);
@@ -690,33 +837,42 @@
 
       const btn = document.getElementById('btnSubmitPayment');
       btn.disabled = true;
-      btn.innerText = '⏳ Đang lưu...';
+      btn.innerText = '⏳ Đang tự sinh đề nghị & khoá liên kết...';
+
+      const bodyPayload = {
+        request_code: code,
+        name: title,
+        period_number: period,
+        from_date: fromDate,
+        to_date: toDate,
+        retention_rate: rate,
+        notes
+      };
+
+      if (selectedSourcePeriod !== undefined && selectedSourcePeriod !== null && selectedSourcePeriod !== '') {
+        bodyPayload.filter_period_number = Number(selectedSourcePeriod);
+      }
 
       try {
-        const res = await fetch(`/api/projects/${projectId}/payment-requests`, {
+        // T-99: Gọi endpoint tự sinh từ phiếu nghiệm thu đã duyệt với transaction bảo vệ
+        const res = await fetch(`/api/projects/${projectId}/payment-requests/from-acceptance-sheets`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${getToken()}`
           },
-          body: JSON.stringify({
-            request_code: code,
-            name: title,
-            period_number: period,
-            from_date: fromDate,
-            to_date: toDate,
-            retention_rate: rate,
-            notes,
-            items
-          })
+          body: JSON.stringify(bodyPayload)
         });
         const data = await res.json();
         if (res.ok && data.success) {
-          showToast(data.message || 'Lập đề nghị thanh toán thành công!');
+          showToast(data.message || 'Sinh đề nghị thanh toán từ phiếu nghiệm thu thành công!');
           closeCreatePaymentModal();
-          loadPaymentRequests();
+          await loadPaymentRequests();
+          if (data.data?.id) {
+            viewPaymentDetail(data.data.id);
+          }
         } else {
-          showToast(data.message || 'Lỗi khi lưu đề nghị', false);
+          showToast(data.message || 'Lỗi khi sinh đề nghị thanh toán', false);
         }
       } catch (err) {
         showToast(`Lỗi: ${err.message}`, false);
@@ -724,6 +880,71 @@
         btn.disabled = false;
         btn.innerText = '💾 Lưu Đề Nghị Thanh Toán';
       }
+    }
+
+    // T-100: Xem chi tiết các dòng đề nghị và tổng tiền (hiển thị đủ cột AC)
+    async function viewPaymentDetail(requestId) {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/payment-requests/${requestId}`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success || !data.data) {
+          showToast(data.message || 'Không thể tải chi tiết đề nghị thanh toán', false);
+          return;
+        }
+
+        const r = data.data;
+        document.getElementById('detailRequestCode').innerText = r.request_code;
+        document.getElementById('detailName').innerText = r.name;
+        document.getElementById('detailPeriod').innerText = `Đợt ${r.period_number}`;
+        document.getElementById('detailDateRange').innerText = `${r.from_date || '---'} đến ${r.to_date || '---'}`;
+        const isApproved = String(r.status).toLowerCase() === 'approved';
+        document.getElementById('detailStatus').innerHTML = `
+          <span class="badge-status ${isApproved ? 'badge-approved' : 'badge-draft'}">
+            ${isApproved ? '✅ ĐÃ DUYỆT' : '⏳ BẢN NHÁP'}
+          </span>
+        `;
+        const rate = Number(r.retention_rate || 5);
+        document.getElementById('detailRetentionPercent').innerText = `${rate.toFixed(2)}%`;
+        document.getElementById('detailGrossAmount').innerText = formatMoney(r.gross_amount);
+        document.getElementById('detailRetentionAmount').innerText = '- ' + formatMoney(r.retention_amount);
+        document.getElementById('detailNetAmount').innerText = formatMoney(r.net_payable_amount);
+
+        if (r.notes) {
+          document.getElementById('detailNotesContainer').style.display = 'block';
+          document.getElementById('detailNotesText').innerText = r.notes;
+        } else {
+          document.getElementById('detailNotesContainer').style.display = 'none';
+        }
+
+        const items = r.items || [];
+        document.getElementById('detailItemsCount').innerText = `${items.length} hạng mục`;
+        const tbody = document.getElementById('detailItemsTableBody');
+        if (items.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 25px; color: var(--text-muted);">Không có dòng hạng mục nào trong đề nghị này.</td></tr>`;
+        } else {
+          tbody.innerHTML = items.map((it, idx) => `
+            <tr>
+              <td style="text-align: center; font-weight: 700; color: var(--text-muted);">${idx + 1}</td>
+              <td><span style="font-family: 'JetBrains Mono'; font-weight: 700; color: var(--brand-blue);">${it.acceptance_sheet_code || ('NT-' + it.acceptance_sheet_id)}</span></td>
+              <td><strong>${it.item_name}</strong></td>
+              <td style="text-align: center;">${it.unit || 'm3'}</td>
+              <td style="text-align: right; font-family: 'JetBrains Mono'; font-weight: 700;">${Number(it.period_quantity).toLocaleString('vi-VN', { maximumFractionDigits: 4 })}</td>
+              <td style="text-align: right; font-family: 'JetBrains Mono';">${formatMoney(it.unit_price)}</td>
+              <td style="text-align: right; font-family: 'JetBrains Mono'; font-weight: 800; color: var(--text-title);">${formatMoney(it.line_total)}</td>
+            </tr>
+          `).join('');
+        }
+
+        document.getElementById('paymentDetailModal').style.display = 'flex';
+      } catch (err) {
+        showToast(`Lỗi khi mở chi tiết: ${err.message}`, false);
+      }
+    }
+
+    function closePaymentDetailModal() {
+      document.getElementById('paymentDetailModal').style.display = 'none';
     }
 
     async function approvePayment(id) {

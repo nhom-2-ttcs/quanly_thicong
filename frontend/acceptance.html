@@ -675,7 +675,13 @@
             <td><strong>${s.name}</strong></td>
             <td><span style="font-weight: 800; font-family: 'JetBrains Mono';">Đợt ${s.period_number}</span></td>
             <td>${s.to_date || s.cutoff_date || '—'}</td>
-            <td><span class="badge-status ${badgeClass}">${badgeText}</span></td>
+            <td>
+              <span class="badge-status ${badgeClass}">${badgeText}</span>
+              ${isApproved ? (s.payment_request_id 
+                ? '<div style="margin-top: 4px;"><span class="badge-status" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-size: 10px;">💰 ĐÃ VÀO ĐNTT</span></div>'
+                : '<div style="margin-top: 4px;"><span class="badge-status" style="background: #fefce8; color: #854d0e; border: 1px solid #fef08a; font-size: 10px;">Chưa lập ĐNTT</span></div>'
+              ) : ''}
+            </td>
             <td><span style="font-weight: 700;">${s.items_count || 0}</span> mục</td>
             <td>
               <span style="font-weight: 700;">${s.photos_count || 0}</span> ảnh
@@ -690,7 +696,15 @@
                 <button class="btn-primary" style="font-size: 12px; padding: 5px 10px; margin-left: 4px;" onclick="approveSheet(${s.id})">
                   ✔️ Duyệt
                 </button>
-              ` : ''}
+              ` : (!s.payment_request_id ? `
+                <a href="/payment.html?projectId=${projectId}" class="btn-primary" style="font-size: 12px; padding: 5px 10px; margin-left: 4px; text-decoration: none;" title="Sinh đề nghị thanh toán từ phiếu đã duyệt này (S-43)">
+                  💰 Sinh ĐNTT
+                </a>
+              ` : `
+                <a href="/payment.html?projectId=${projectId}" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; margin-left: 4px; text-decoration: none;" title="Xem đề nghị thanh toán liên kết">
+                  📑 Xem ĐNTT
+                </a>
+              `)}
             </td>
           </tr>
         `;
