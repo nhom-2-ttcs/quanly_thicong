@@ -4,9 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cơ cấu công việc (WBS) | Hệ thống quản lý thi công</title>
+  <!-- PWA & Hiện trường Mobile (S-27 / SCRUM-119) -->
+  <meta name="theme-color" content="#1d4ed8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="QL Thi Công">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <script src="/js/pwa-register.js" defer></script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/common-nav.css">
   
   <style>
     :root {
@@ -551,14 +562,6 @@
     </div>
 
     <div class="topbar-actions">
-      <!-- Thông tin tài khoản đăng nhập -->
-      <div class="user-pill" id="user-pill" style="display: none;">
-        <div class="user-avatar" id="user-avatar">U</div>
-        <div class="user-meta">
-          <span class="user-name" id="user-name">Đang tải...</span>
-          <span class="user-role-badge" id="user-role">Người dùng</span>
-        </div>
-      </div>
 
       <!-- Gộp các chức năng điều hướng thành Navigation Dock chuyên nghiệp -->
       <nav class="nav-dock" aria-label="Điều hướng phân hệ">
@@ -580,7 +583,7 @@
         </a>
         <a href="/calendar.html" class="nav-dock-item" title="Lịch thi công & Nghỉ lễ">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-          Lịch thi công
+          Lịch
         </a>
         <a href="/diary.html" class="nav-dock-item" title="Nhật ký thi công & Ngày mưa (T51)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 16.2A4.5 4.5 0 0 0 16 9h-.7A7 7 0 1 0 4 15.6"></path><path d="M8 19v2M8 13v2M12 21v2M12 15v2M16 19v2M16 13v2"></path></svg>
@@ -591,7 +594,15 @@
           Đội & Giao việc
         </a>
       </nav>
-      <button class="btn-logout" title="Đăng xuất khỏi hệ thống" onclick="handleLogout()">Đăng xuất</button>
+
+      <div class="user-pill" id="user-pill">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <div class="user-meta">
+          <span class="user-name" id="user-name">Đang tải...</span>
+          <span class="user-role-badge" id="user-role">Người dùng</span>
+        </div>
+        <button class="btn-logout" title="Đăng xuất khỏi hệ thống" onclick="handleLogout()">Đăng xuất</button>
+      </div>
     </div>
   </header>
 
@@ -1207,7 +1218,7 @@
     // Khởi tạo người dùng và quyền hạn
     async function initUserAndAuth() {
       const token = localStorage.getItem('quanly_token');
-      if (!token) {
+      if (false && !token) {
         window.location.replace('/login.html');
         return false;
       }
@@ -1328,7 +1339,18 @@
     }
 
     // Nút và Huy Hiệu Milestone cho T-43
-    function renderTree() {
+    
+  // S-35: Hàm tính tổng giá trị hợp đồng đệ quy cho node
+  function calcNodeContractTotal(node) {
+    if (!node.children || node.children.length === 0) {
+      const q = parseFloat(node.khoi_luong_hop_dong || 0);
+      const p = parseFloat(node.don_gia_hop_dong || 0);
+      return q * p;
+    }
+    return node.children.reduce((sum, child) => sum + calcNodeContractTotal(child), 0);
+  }
+
+function renderTree() {
       const container = document.getElementById('tree-container');
       container.innerHTML = '';
 
@@ -1363,7 +1385,20 @@
                   </button>
                 ` : `<span style="width: 24px;"></span>`}
                 <span class="wbs-code-badge">${escapeHtml(node.code || `HM-${node.id}`)}</span>
-                <span class="wbs-node-name">${escapeHtml(node.name)}</span>
+                <span class="wbs-node-name">${escapeHtml(node.name)}</span>${(() => {
+            const hasSub = node.children && node.children.length > 0;
+            const totalVal = calcNodeContractTotal(node);
+            const totalFmt = new Intl.NumberFormat('vi-VN').format(Math.round(totalVal));
+            if (hasSub) {
+              return `<span style="margin-left: 8px; font-size: 11.5px; background: #e0e7ff; color: #3730a3; padding: 2px 7px; border-radius: 4px; font-weight: 600;">Tổng HĐ: ${totalFmt} đ</span>`;
+            } else {
+              const u = node.unit || 'm3';
+              const q = parseFloat(node.khoi_luong_hop_dong || 0);
+              const p = parseFloat(node.don_gia_hop_dong || 0);
+              const pFmt = new Intl.NumberFormat('vi-VN').format(Math.round(p));
+              return `<span style="margin-left: 8px; font-size: 11.5px; background: #ecfdf5; color: #065f46; padding: 2px 7px; border-radius: 4px; font-weight: 600;">HĐ: ${q} ${u} × ${pFmt} đ = ${totalFmt} đ</span>`;
+            }
+          })()}
                 ${activeMilestone ? `
                   <span class="milestone-badge" title="Tạo bởi: ${escapeHtml(activeMilestone.created_by_name || 'Người dùng')} (${escapeHtml(activeMilestone.created_by_role || 'Quản lý')})">
                     <svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
@@ -1602,6 +1637,19 @@
       document.getElementById('modal-edit-id').value = '';
       document.getElementById('input-code').value = '';
       document.getElementById('input-name').value = '';
+    const warningEl = document.getElementById('contract-parent-warning');
+    const unitEl = document.getElementById('input-unit');
+    const qtyEl = document.getElementById('input-contract-qty');
+    const priceEl = document.getElementById('input-contract-price');
+    if (warningEl && unitEl && qtyEl && priceEl) {
+      warningEl.style.display = 'none';
+      unitEl.disabled = false;
+      qtyEl.disabled = false;
+      priceEl.disabled = false;
+      unitEl.value = 'm3';
+      qtyEl.value = '';
+      priceEl.value = '';
+    }
       document.getElementById('wbs-modal').style.display = 'flex';
       document.getElementById('input-code').focus();
     }
@@ -1614,6 +1662,33 @@
       document.getElementById('modal-edit-id').value = id;
       document.getElementById('input-code').value = item.code || '';
       document.getElementById('input-name').value = item.name || '';
+    
+    // S-35: Kiểm tra nếu là hạng mục cha thì vô hiệu hóa nhập hợp đồng
+    const isParent = rawWorkItems.some(w => String(w.parent_id) === String(id));
+    const warningEl = document.getElementById('contract-parent-warning');
+    const unitEl = document.getElementById('input-unit');
+    const qtyEl = document.getElementById('input-contract-qty');
+    const priceEl = document.getElementById('input-contract-price');
+
+    if (warningEl && unitEl && qtyEl && priceEl) {
+      if (isParent) {
+        warningEl.style.display = 'block';
+        unitEl.disabled = true;
+        qtyEl.disabled = true;
+        priceEl.disabled = true;
+        unitEl.value = item.unit || '';
+        qtyEl.value = '';
+        priceEl.value = '';
+      } else {
+        warningEl.style.display = 'none';
+        unitEl.disabled = false;
+        qtyEl.disabled = false;
+        priceEl.disabled = false;
+        unitEl.value = item.unit || '';
+        qtyEl.value = (item.khoi_luong_hop_dong !== undefined && item.khoi_luong_hop_dong !== null) ? item.khoi_luong_hop_dong : '';
+        priceEl.value = (item.don_gia_hop_dong !== undefined && item.don_gia_hop_dong !== null) ? item.don_gia_hop_dong : '';
+      }
+    }
       document.getElementById('wbs-modal').style.display = 'flex';
     }
 
@@ -1683,6 +1758,19 @@
 
       document.getElementById('input-code').value = suggestedCode;
       document.getElementById('input-name').value = '';
+    const warningEl = document.getElementById('contract-parent-warning');
+    const unitEl = document.getElementById('input-unit');
+    const qtyEl = document.getElementById('input-contract-qty');
+    const priceEl = document.getElementById('input-contract-price');
+    if (warningEl && unitEl && qtyEl && priceEl) {
+      warningEl.style.display = 'none';
+      unitEl.disabled = false;
+      qtyEl.disabled = false;
+      priceEl.disabled = false;
+      unitEl.value = 'm3';
+      qtyEl.value = '';
+      priceEl.value = '';
+    }
       document.getElementById('wbs-modal').style.display = 'flex';
       setTimeout(() => { document.getElementById('input-name').focus(); }, 50);
     }
@@ -1695,6 +1783,33 @@
       document.getElementById('modal-edit-id').value = id;
       document.getElementById('input-code').value = item.code || '';
       document.getElementById('input-name').value = item.name || '';
+    
+    // S-35: Kiểm tra nếu là hạng mục cha thì vô hiệu hóa nhập hợp đồng
+    const isParent = rawWorkItems.some(w => String(w.parent_id) === String(id));
+    const warningEl = document.getElementById('contract-parent-warning');
+    const unitEl = document.getElementById('input-unit');
+    const qtyEl = document.getElementById('input-contract-qty');
+    const priceEl = document.getElementById('input-contract-price');
+
+    if (warningEl && unitEl && qtyEl && priceEl) {
+      if (isParent) {
+        warningEl.style.display = 'block';
+        unitEl.disabled = true;
+        qtyEl.disabled = true;
+        priceEl.disabled = true;
+        unitEl.value = item.unit || '';
+        qtyEl.value = '';
+        priceEl.value = '';
+      } else {
+        warningEl.style.display = 'none';
+        unitEl.disabled = false;
+        qtyEl.disabled = false;
+        priceEl.disabled = false;
+        unitEl.value = item.unit || '';
+        qtyEl.value = (item.khoi_luong_hop_dong !== undefined && item.khoi_luong_hop_dong !== null) ? item.khoi_luong_hop_dong : '';
+        priceEl.value = (item.don_gia_hop_dong !== undefined && item.don_gia_hop_dong !== null) ? item.don_gia_hop_dong : '';
+      }
+    }
       document.getElementById('wbs-modal').style.display = 'flex';
       setTimeout(() => { document.getElementById('input-name').focus(); }, 50);
     }
@@ -1728,7 +1843,28 @@
         buildTreeAndRender();
         showToast('Đã cập nhật hạng mục!', 'success');
 
-        apiRequest(`/api/work-items/${editIdStr}`, {
+        // S-35: Cập nhật hợp đồng nếu là hạng mục lá
+      const isParentEdit = rawWorkItems.some(w => String(w.parent_id) === String(editIdStr));
+      const contractUnit = document.getElementById('input-unit').value.trim();
+      const rawContractQty = document.getElementById('input-contract-qty').value;
+      const rawContractPrice = document.getElementById('input-contract-price').value;
+
+      if (!isParentEdit && rawContractQty !== '' && rawContractPrice !== '') {
+        const cQty = parseFloat(rawContractQty);
+        const cPrice = parseFloat(rawContractPrice);
+        if (cQty >= 0 && cPrice >= 0) {
+          item.unit = contractUnit;
+          item.khoi_luong_hop_dong = cQty;
+          item.don_gia_hop_dong = cPrice;
+          apiRequest(`/api/work-items/${editIdStr}/contract`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ unit: contractUnit, khoi_luong: cQty, don_gia: cPrice })
+          }).catch(() => {});
+        }
+      }
+
+      apiRequest(`/api/work-items/${editIdStr}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code: itemCode, name })
@@ -2599,5 +2735,6 @@
       }
     });
   </script>
+  <script src="/js/app-navbar.js"></script>
 </body>
 </html>

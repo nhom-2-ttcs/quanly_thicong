@@ -1,8 +1,11 @@
+const fs = require('fs');
+const path = require('path');
 const {
   getSiteDiaries,
   getSiteDiaryByDate,
   saveSiteDiaryEntry,
   lockSiteDiary,
+  unlockSiteDiary,
   inMemorySiteDiaries,
   inMemorySiteDiaryPhotos,
   getSiteDiaryPhotos,
@@ -28,8 +31,56 @@ const {
   saveSiteDiaryItemHistory,
   getSiteDiaryItemHistory
 } = require('../models/store');
+const { DIARY_CONFIG, getAllowedWeatherConditions } = require('../config/diaryConfig');
+const { parseExifMetadata, extractJpegDimensions, evaluatePhotoSuspicion } = require('../utils/exifParser');
 
 const DAY_NAMES = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+
+function extractPhotoExif(file, logDate = null) {
+  let exif = { has_metadata: false, taken_at: null, latitude: null, longitude: null, altitude: null, raw_metadata: null };
+  let dims = null;
+  try {
+    const buf = file?.buffer || (file?.path && fs.existsSync(file.path) ? fs.readFileSync(file.path) : null);
+    if (buf) {
+      exif = parseExifMetadata(buf);
+      dims = extractJpegDimensions(buf);
+    }
+  } catch (_) {}
+
+  const takenAt = file?.taken_at || exif.taken_at || null;
+  const latitude = (file?.latitude !== undefined && file?.latitude !== null) ? Number(file.latitude) : exif.latitude;
+  const longitude = (file?.longitude !== undefined && file?.longitude !== null) ? Number(file.longitude) : exif.longitude;
+  const altitude = (file?.altitude !== undefined && file?.altitude !== null) ? Number(file.altitude) : exif.altitude;
+  const hasMetadata = Boolean(exif.has_metadata || takenAt || (latitude !== null && latitude !== undefined));
+  const rawMetadata = exif.raw_metadata || null;
+
+  const fileName = file?.filename || file?.file_name || file?.name || '';
+  const suspicion = evaluatePhotoSuspicion({
+    metadata: { ...exif, taken_at: takenAt, latitude, longitude, has_metadata: hasMetadata },
+    fileName,
+    width: file?.width || dims?.width,
+    height: file?.height || dims?.height,
+    inspectionDate: logDate || new Date().toISOString().slice(0, 10)
+  });
+
+  const isSuspicious = file?.is_suspicious !== undefined ? Boolean(file.is_suspicious) : suspicion.is_suspicious;
+  const suspiciousReasons = file?.suspicious_reasons || suspicion.suspicious_reasons || [];
+  const confidenceLevel = file?.confidence_level || suspicion.confidence_level || 'none';
+  const suspiciousDetails = file?.suspicious_details || (suspicion.suspicious_details ? JSON.stringify(suspicion.suspicious_details) : null);
+
+  return {
+    takenAt,
+    latitude,
+    longitude,
+    altitude,
+    hasMetadata,
+    rawMetadata,
+    isSuspicious,
+    suspiciousReasons,
+    confidenceLevel,
+    suspiciousDetails
+  };
+}
 
 function isValidDateString(dateStr) {
   if (!dateStr || typeof dateStr !== 'string') return false;
@@ -45,14 +96,19 @@ function isValidDateString(dateStr) {
 }
 
 function getMonday(dateInput) {
-  const d = new Date(dateInput);
-  const day = d.getDay();
+  // Dates such as YYYY-MM-DD are calendar dates, not local timestamps. Parse
+  // and calculate them in UTC so servers in UTC- timezones don't shift a day.
+  const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(String(dateInput))
+    ? `${dateInput}T00:00:00Z`
+    : dateInput);
+  if (Number.isNaN(d.getTime())) return null;
+  const day = d.getUTCDay();
   // Chủ Nhật (0) -> lùi 6 ngày về Thứ Hai tuần trước; Thứ 2 (1) -> lùi 0; Thứ 3 (2) -> lùi 1...
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(d.setDate(diff));
-  const y = monday.getFullYear();
-  const m = String(monday.getMonth() + 1).padStart(2, '0');
-  const dayNum = String(monday.getDate()).padStart(2, '0');
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setUTCDate(d.getUTCDate() + diff);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dayNum = String(d.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${dayNum}`;
 }
 
@@ -84,6 +140,7 @@ class DiaryService {
 
     if (items.length === 0 && (entryData.work_item_id || entryData.work_content)) {
       items = [{
+        client_item_id: entryData.client_item_id ? String(entryData.client_item_id) : null,
         work_item_id: entryData.work_item_id ? Number(entryData.work_item_id) : null,
         work_content: String(entryData.work_content || entryData.work_notes || '').trim(),
         log_time: entryData.log_time ? String(entryData.log_time).trim() : null,
@@ -92,6 +149,7 @@ class DiaryService {
       }];
     }
     return items.map(it => ({
+      client_item_id: it.client_item_id ? String(it.client_item_id) : null,
       work_item_id: it.work_item_id ? Number(it.work_item_id) : null,
       work_content: String(it.work_content || it.content || it.name || '').trim(),
       log_time: it.log_time ? String(it.log_time).trim() : null,
@@ -100,13 +158,20 @@ class DiaryService {
     }));
   }
 
+  getDiaryConfig() {
+    return {
+      success: true,
+      data: DIARY_CONFIG
+    };
+  }
+
   validateEntry(data) {
     const errors = [];
     if (!data.diary_date || !isValidDateString(data.diary_date)) {
       errors.push('Ngày nhật ký không hợp lệ hoặc thiếu định dạng YYYY-MM-DD');
     }
 
-    const allowedConditions = ['sunny', 'cloudy', 'rain_intermittent', 'rain_all_day'];
+    const allowedConditions = getAllowedWeatherConditions();
     if (data.weather_condition && !allowedConditions.includes(data.weather_condition)) {
       errors.push(`Điều kiện thời tiết không hợp lệ. Phải là một trong: ${allowedConditions.join(', ')}`);
     }
@@ -178,44 +243,38 @@ class DiaryService {
 
     if (!diary) return null;
 
-    // Lấy danh sách ảnh đính kèm (T52 & S-33 T-60)
+    // Lấy danh sách ảnh đính kèm (T52, S-33 T-60 & S-40 EXIF)
     let photos = [];
+    const mapPhotoObj = p => {
+      const status = p.upload_status || 'completed';
+      const isPending = status === 'pending' || status === 'uploading';
+      const hasMeta = Boolean(p.has_metadata || p.taken_at || (p.latitude !== null && p.latitude !== undefined));
+      return {
+        ...p,
+        upload_status: status,
+        url: isPending ? null : (p.file_name ? `/uploads/diaries/${p.file_name}` : null),
+        taken_at: p.taken_at || null,
+        latitude: p.latitude !== null && p.latitude !== undefined ? Number(p.latitude) : null,
+        longitude: p.longitude !== null && p.longitude !== undefined ? Number(p.longitude) : null,
+        altitude: p.altitude !== null && p.altitude !== undefined ? Number(p.altitude) : null,
+        has_metadata: hasMeta,
+        raw_metadata: p.raw_metadata || null,
+        metadata_status_text: hasMeta ? 'Đã có siêu dữ liệu' : 'Không có siêu dữ liệu (không có GPS/thời gian chụp)'
+      };
+    };
+
     if (this.pool?.query) {
       try {
         const [pRows] = await this.pool.query(
-          'SELECT id, diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id, created_at FROM site_diary_photos WHERE diary_id = ? ORDER BY id ASC',
+          'SELECT id, diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id, taken_at, latitude, longitude, altitude, has_metadata, raw_metadata, created_at FROM site_diary_photos WHERE diary_id = ? ORDER BY id ASC',
           [diary.id]
         );
-        photos = (pRows || []).map(p => {
-          const status = p.upload_status || 'completed';
-          const isPending = status === 'pending' || status === 'uploading';
-          return {
-            ...p,
-            upload_status: status,
-            url: isPending ? null : (p.file_name ? `/uploads/diaries/${p.file_name}` : null)
-          };
-        });
+        photos = (pRows || []).map(mapPhotoObj);
       } catch (e) {
-        photos = getSiteDiaryPhotos(diary.id).map(p => {
-          const status = p.upload_status || 'completed';
-          const isPending = status === 'pending' || status === 'uploading';
-          return {
-            ...p,
-            upload_status: status,
-            url: isPending ? null : (p.file_name ? `/uploads/diaries/${p.file_name}` : null)
-          };
-        });
+        photos = getSiteDiaryPhotos(diary.id).map(mapPhotoObj);
       }
     } else {
-      photos = getSiteDiaryPhotos(diary.id).map(p => {
-        const status = p.upload_status || 'completed';
-        const isPending = status === 'pending' || status === 'uploading';
-        return {
-          ...p,
-          upload_status: status,
-          url: isPending ? null : (p.file_name ? `/uploads/diaries/${p.file_name}` : null)
-        };
-      });
+      photos = getSiteDiaryPhotos(diary.id).map(mapPhotoObj);
     }
 
     // Lấy danh sách công việc chi tiết (T51/T52/S-21)
@@ -407,7 +466,7 @@ class DiaryService {
         }
       }
 
-      // 4. Lưu ảnh đính kèm hoàn chỉnh (photos)
+      // 4. Lưu ảnh đính kèm hoàn chỉnh (photos - S-40 EXIF)
       if (Array.isArray(files) && files.length > 0) {
         for (const file of files) {
           const fileName = file.filename || file.file_name || file.name;
@@ -415,10 +474,12 @@ class DiaryService {
           const fileSize = Number(file.size || file.file_size || 0);
           const mimeType = file.mimetype || file.mime_type || 'image/jpeg';
           const caption = file.caption ? String(file.caption).trim() : null;
+          const meta = extractPhotoExif(file);
 
           await this.pool.query(
-            'INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [diaryId, fileName, filePath, fileSize, mimeType, caption, 'completed']
+            `INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, taken_at, latitude, longitude, altitude, has_metadata, raw_metadata)
+             VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?)`,
+            [diaryId, fileName, filePath, fileSize, mimeType, caption, meta.takenAt, meta.latitude, meta.longitude, meta.altitude, meta.hasMetadata, meta.rawMetadata]
           );
         }
       }
@@ -441,6 +502,24 @@ class DiaryService {
           const mimeType = p.mime_type || p.fileType || 'image/jpeg';
           const caption = p.caption ? String(p.caption).trim() : null;
           const clientPhotoId = p.client_photo_id || p.id || null;
+
+          // S-34 / T-64: Idempotency & Deduplication
+          if (clientPhotoId) {
+            const [existing] = await this.pool.query(
+              'SELECT id FROM site_diary_photos WHERE diary_id = ? AND client_photo_id = ? LIMIT 1',
+              [diaryId, clientPhotoId]
+            );
+            if (existing && existing.length > 0) {
+              await this.pool.query(
+                `UPDATE site_diary_photos
+                 SET file_name = ?, file_size = ?, mime_type = ?, caption = COALESCE(?, caption)
+                 WHERE id = ?`,
+                [fileName, fileSize, mimeType, caption, existing[0].id]
+              );
+              continue;
+            }
+          }
+
           await this.pool.query(
             'INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             [diaryId, fileName, '', fileSize, mimeType, caption, 'pending', clientPhotoId]
@@ -455,6 +534,7 @@ class DiaryService {
     const saved = saveSiteDiaryEntry({
       project_id: pId,
       diary_date: diaryDate,
+      client_diary_id: entryData.client_diary_id || null,
       weather_condition: weatherCond,
       is_rain_day: Boolean(isRain),
       temperature_min: tempMin,
@@ -475,6 +555,7 @@ class DiaryService {
       items.forEach(it => {
         saveSiteDiaryItem({
           diary_id: diaryId,
+          client_item_id: it.client_item_id || null,
           work_item_id: it.work_item_id ? Number(it.work_item_id) : null,
           work_content: String(it.work_content || it.content || it.name || '').trim(),
           log_time: it.log_time ? String(it.log_time).trim() : null,
@@ -484,9 +565,10 @@ class DiaryService {
       });
     }
 
-    // Lưu photos in-memory
+    // Lưu photos in-memory (S-40 EXIF)
     if (Array.isArray(files) && files.length > 0) {
       files.forEach(f => {
+        const meta = extractPhotoExif(f);
         saveSiteDiaryPhoto({
           diary_id: diaryId,
           file_name: f.filename || f.file_name || f.name,
@@ -494,7 +576,18 @@ class DiaryService {
           file_size: Number(f.size || f.file_size || 0),
           mime_type: f.mimetype || f.mime_type || 'image/jpeg',
           caption: f.caption ? String(f.caption).trim() : null,
-          upload_status: 'completed'
+          upload_status: f.upload_status || 'completed',
+          client_photo_id: f.client_photo_id || null,
+          taken_at: meta.takenAt,
+          latitude: meta.latitude,
+          longitude: meta.longitude,
+          altitude: meta.altitude,
+          has_metadata: meta.hasMetadata,
+          raw_metadata: meta.rawMetadata,
+          is_suspicious: meta.isSuspicious,
+          suspicious_reasons: meta.suspiciousReasons,
+          confidence_level: meta.confidenceLevel,
+          suspicious_details: meta.suspiciousDetails
         });
       });
     }
@@ -544,14 +637,17 @@ class DiaryService {
         const fileSize = Number(file.size || 0);
         const mimeType = file.mimetype || 'image/jpeg';
         const caption = file.caption || null;
+        const meta = extractPhotoExif(file);
 
         await this.pool.query(
-          'INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [diary.id, fileName, filePath, fileSize, mimeType, caption, 'completed']
+          `INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, taken_at, latitude, longitude, altitude, has_metadata, raw_metadata)
+           VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?)`,
+          [diary.id, fileName, filePath, fileSize, mimeType, caption, meta.takenAt, meta.latitude, meta.longitude, meta.altitude, meta.hasMetadata, meta.rawMetadata]
         );
       }
     } else {
       files.forEach(f => {
+        const meta = extractPhotoExif(f);
         saveSiteDiaryPhoto({
           diary_id: diary.id,
           file_name: f.filename || f.file_name,
@@ -559,7 +655,17 @@ class DiaryService {
           file_size: Number(f.size || 0),
           mime_type: f.mimetype || 'image/jpeg',
           caption: f.caption || null,
-          upload_status: 'completed'
+          upload_status: 'completed',
+          taken_at: meta.takenAt,
+          latitude: meta.latitude,
+          longitude: meta.longitude,
+          altitude: meta.altitude,
+          has_metadata: meta.hasMetadata,
+          raw_metadata: meta.rawMetadata,
+          is_suspicious: meta.isSuspicious,
+          suspicious_reasons: meta.suspiciousReasons,
+          confidence_level: meta.confidenceLevel,
+          suspicious_details: meta.suspiciousDetails
         });
       });
     }
@@ -593,6 +699,23 @@ class DiaryService {
         const mimeType = p.mime_type || p.fileType || 'image/jpeg';
         const caption = p.caption ? String(p.caption).trim() : null;
         const clientPhotoId = p.client_photo_id || p.id || null;
+
+        // S-34 / T-64: Idempotency & Deduplication
+        if (clientPhotoId) {
+          const [existing] = await this.pool.query(
+            'SELECT id FROM site_diary_photos WHERE diary_id = ? AND client_photo_id = ? LIMIT 1',
+            [diary.id, clientPhotoId]
+          );
+          if (existing && existing.length > 0) {
+            await this.pool.query(
+              `UPDATE site_diary_photos
+               SET file_name = ?, file_size = ?, mime_type = ?, caption = COALESCE(?, caption)
+               WHERE id = ?`,
+              [fileName, fileSize, mimeType, caption, existing[0].id]
+            );
+            continue;
+          }
+        }
 
         await this.pool.query(
           `INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id)
@@ -638,6 +761,8 @@ class DiaryService {
     const photoCaption = caption || file.caption || null;
     const clientId = client_photo_id || null;
 
+    const meta = extractPhotoExif(file);
+
     if (this.pool?.query) {
       let existingId = null;
       if (clientId) {
@@ -654,15 +779,16 @@ class DiaryService {
         await this.pool.query(
           `UPDATE site_diary_photos
            SET file_name = ?, file_path = ?, file_size = ?, mime_type = ?,
-               caption = COALESCE(?, caption), upload_status = 'completed'
+               caption = COALESCE(?, caption), upload_status = 'completed',
+               taken_at = ?, latitude = ?, longitude = ?, altitude = ?, has_metadata = ?, raw_metadata = ?
            WHERE id = ?`,
-          [fileName, filePath, fileSize, mimeType, photoCaption, existingId]
+          [fileName, filePath, fileSize, mimeType, photoCaption, meta.takenAt, meta.latitude, meta.longitude, meta.altitude, meta.hasMetadata, meta.rawMetadata, existingId]
         );
       } else {
         await this.pool.query(
-          `INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id)
-           VALUES (?, ?, ?, ?, ?, ?, 'completed', ?)`,
-          [diary.id, fileName, filePath, fileSize, mimeType, photoCaption, clientId]
+          `INSERT INTO site_diary_photos (diary_id, file_name, file_path, file_size, mime_type, caption, upload_status, client_photo_id, taken_at, latitude, longitude, altitude, has_metadata, raw_metadata)
+           VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?, ?)`,
+          [diary.id, fileName, filePath, fileSize, mimeType, photoCaption, clientId, meta.takenAt, meta.latitude, meta.longitude, meta.altitude, meta.hasMetadata, meta.rawMetadata]
         );
       }
     } else {
@@ -674,7 +800,17 @@ class DiaryService {
           file_size: fileSize,
           mime_type: mimeType,
           caption: photoCaption || existing.caption,
-          upload_status: 'completed'
+          upload_status: 'completed',
+          taken_at: meta.takenAt,
+          latitude: meta.latitude,
+          longitude: meta.longitude,
+          altitude: meta.altitude,
+          has_metadata: meta.hasMetadata,
+          raw_metadata: meta.rawMetadata,
+          is_suspicious: meta.isSuspicious,
+          suspicious_reasons: meta.suspiciousReasons,
+          confidence_level: meta.confidenceLevel,
+          suspicious_details: meta.suspiciousDetails
         });
       } else {
         saveSiteDiaryPhoto({
@@ -685,7 +821,17 @@ class DiaryService {
           mime_type: mimeType,
           caption: photoCaption,
           upload_status: 'completed',
-          client_photo_id: clientId
+          client_photo_id: clientId,
+          taken_at: meta.takenAt,
+          latitude: meta.latitude,
+          longitude: meta.longitude,
+          altitude: meta.altitude,
+          has_metadata: meta.hasMetadata,
+          raw_metadata: meta.rawMetadata,
+          is_suspicious: meta.isSuspicious,
+          suspicious_reasons: meta.suspiciousReasons,
+          confidence_level: meta.confidenceLevel,
+          suspicious_details: meta.suspiciousDetails
         });
       }
     }
@@ -700,20 +846,34 @@ class DiaryService {
         url: `/uploads/diaries/${fileName}`,
         caption: photoCaption,
         upload_status: 'completed',
-        client_photo_id: clientId
+        client_photo_id: clientId,
+        taken_at: meta.takenAt,
+        latitude: meta.latitude,
+        longitude: meta.longitude,
+        altitude: meta.altitude,
+        has_metadata: meta.hasMetadata,
+        raw_metadata: meta.rawMetadata,
+        metadata_status_text: meta.hasMetadata ? 'Đã có siêu dữ liệu' : 'Không có siêu dữ liệu (không có GPS/thời gian chụp)'
       }
     };
   }
 
   async deletePhoto(projectId, photoId) {
     const phId = Number(photoId);
+    const pId = Number(projectId);
+    if (!phId || !pId) {
+      const err = new Error('projectId hoặc photoId không hợp lệ');
+      err.status = 400;
+      throw err;
+    }
+
     if (this.pool?.query) {
       const [rows] = await this.pool.query(
         `SELECT p.*, d.is_locked, d.project_id
          FROM site_diary_photos p
          JOIN site_diaries d ON p.diary_id = d.id
-         WHERE p.id = ? LIMIT 1`,
-        [phId]
+         WHERE p.id = ? AND d.project_id = ? LIMIT 1`,
+        [phId, pId]
       );
       if (!rows || rows.length === 0) {
         const err = new Error('Không tìm thấy ảnh đính kèm');
@@ -725,11 +885,68 @@ class DiaryService {
         err.status = 423;
         throw err;
       }
+      const fileName = rows[0].file_name;
       await this.pool.query('DELETE FROM site_diary_photos WHERE id = ?', [phId]);
+
+      // Kiểm tra file vật lý có còn được bản ghi khác dùng chung không trước khi xóa
+      if (fileName) {
+        const [sharedRows] = await this.pool.query(
+          'SELECT COUNT(*) as cnt FROM site_diary_photos WHERE file_name = ?',
+          [fileName]
+        );
+        if (sharedRows && sharedRows[0] && Number(sharedRows[0].cnt) === 0) {
+          const uploadsDir = path.join(__dirname, '../../uploads/diaries');
+          const filePath = path.join(uploadsDir, fileName);
+          try {
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+            }
+          } catch (e) {
+            console.warn('Không thể xóa file vật lý:', e.message);
+          }
+        }
+      }
       return true;
     }
 
-    return deleteSiteDiaryPhoto(phId);
+    // In-memory store (kiểm thử hoặc fallback)
+    const photo = inMemorySiteDiaryPhotos.find(p => p.id === phId);
+    if (!photo) {
+      const err = new Error('Không tìm thấy ảnh đính kèm');
+      err.status = 404;
+      throw err;
+    }
+    const diary = inMemorySiteDiaries.find(d => d.id === photo.diary_id);
+    if (!diary || Number(diary.project_id) !== pId) {
+      const err = new Error('Không tìm thấy ảnh đính kèm');
+      err.status = 404;
+      throw err;
+    }
+    if (diary.is_locked === 1) {
+      const err = new Error('Nhật ký đã bị khóa sổ, không thể xóa ảnh.');
+      err.status = 423;
+      throw err;
+    }
+
+    const fileName = photo.file_name;
+    deleteSiteDiaryPhoto(phId);
+
+    // Kiểm tra xem file vật lý có còn được bản ghi khác trong in-memory dùng chung không
+    if (fileName) {
+      const isShared = inMemorySiteDiaryPhotos.some(p => p.file_name === fileName);
+      if (!isShared) {
+        const uploadsDir = path.join(__dirname, '../../uploads/diaries');
+        const filePath = path.join(uploadsDir, fileName);
+        try {
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+        } catch (e) {
+          console.warn('Không thể xóa file vật lý in-memory:', e.message);
+        }
+      }
+    }
+    return true;
   }
 
   /**
@@ -1263,6 +1480,83 @@ class DiaryService {
       lockSiteDiary(pId, dateStr, userId);
     }
     return { success: true, message: `Đã khóa sổ nhật ký ngày ${dateStr}` };
+  }
+
+  // S-24 / SCRUM-116: Mở khóa sổ nhật ký (Kiểm tra quyền, lý do bắt buộc và ghi audit log)
+  async unlockDiary(projectId, dateStr, user, reason) {
+    const pId = Number(projectId);
+    const userId = Number(user?.userId || user?.id || 1);
+    const roleId = Number(user?.role_id || 0);
+    const roleName = String(user?.role_name || user?.role || '').toLowerCase();
+
+    // 1. Kiểm tra quyền phù hợp: Chỉ Admin hoặc Chỉ huy trưởng công trình
+    const isAuthorized = roleId === 1 || roleId === 2 || roleName === 'admin' || roleName === 'project_manager';
+    if (!isAuthorized) {
+      const err = new Error('Từ chối: Bạn không có quyền mở khóa sổ nhật ký. Chỉ Quản trị viên hoặc Chỉ huy trưởng mới được thực hiện.');
+      err.status = 403;
+      throw err;
+    }
+
+    // 2. Kiểm tra lý do bắt buộc
+    const cleanReason = String(reason || '').trim();
+    if (!cleanReason) {
+      const err = new Error('Lý do mở khóa là bắt buộc.');
+      err.status = 400;
+      throw err;
+    }
+
+    // 3. Thực hiện mở khóa và ghi audit log
+    if (this.pool?.query) {
+      const [rows] = await this.pool.query(
+        'SELECT id, is_locked FROM site_diaries WHERE project_id = ? AND diary_date = ? LIMIT 1',
+        [pId, dateStr]
+      );
+      if (!rows || rows.length === 0) {
+        const err = new Error('Không tìm thấy nhật ký của ngày này để mở khóa.');
+        err.status = 404;
+        throw err;
+      }
+      const diaryId = rows[0].id;
+      await this.pool.query(
+        'UPDATE site_diaries SET is_locked = 0, locked_at = NULL, locked_by = NULL WHERE id = ?',
+        [diaryId]
+      );
+      await this.pool.query(
+        'INSERT INTO audit_logs (user_id, action, resource_type, resource_id, reason) VALUES (?, ?, ?, ?, ?)',
+        [userId, 'UNLOCK_DIARY', 'site_diaries', `${pId}_${dateStr}`, cleanReason]
+      );
+    } else {
+      unlockSiteDiary(pId, dateStr, userId, cleanReason);
+    }
+
+    return {
+      success: true,
+      message: `Đã mở khóa sổ nhật ký ngày ${dateStr} thành công.`,
+      unlocked_by: userId,
+      reason: cleanReason,
+      date: dateStr
+    };
+  }
+
+  // S-24: Xem lịch sử audit log mở khóa sổ
+  async getDiaryUnlockLogs(projectId, dateStr) {
+    const pId = Number(projectId);
+    const resourceId = `${pId}_${dateStr}`;
+
+    if (this.pool?.query) {
+      const [rows] = await this.pool.query(`
+        SELECT a.*, u.full_name AS user_name, u.email
+        FROM audit_logs a
+        LEFT JOIN users u ON a.user_id = u.id
+        WHERE a.resource_type = 'site_diaries' AND (a.resource_id = ? OR a.resource_id LIKE ?)
+        ORDER BY a.created_at DESC
+      `, [resourceId, `%${dateStr}%`]);
+      return { success: true, data: rows };
+    }
+
+    const { getAuditLogs } = require('../models/store');
+    const logs = getAuditLogs({ resourceType: 'site_diaries', resourceId });
+    return { success: true, data: logs };
   }
 
   /**
@@ -2087,6 +2381,212 @@ class DiaryService {
         work_item_code: wi?.code || null
       };
     });
+  }
+
+  // S-32 / SCRUM-145: Cập nhật nhật ký có kiểm tra xung đột phiên bản (Optimistic Concurrency)
+  async updateDiaryWithConflictCheck(projectId, dateStr, updateData, user) {
+    const pId = Number(projectId);
+    const userId = Number(user?.userId || user?.id || 1);
+
+    const currentDiary = await this.getDiaryByDate(pId, dateStr);
+    if (!currentDiary) {
+      const err = new Error('Không tìm thấy nhật ký ngày cần cập nhật');
+      err.status = 404;
+      throw err;
+    }
+
+    const clientVersion = updateData.version !== undefined ? Number(updateData.version) : (updateData.client_version !== undefined ? Number(updateData.client_version) : null);
+    const serverVersion = Number(currentDiary.version || 1);
+
+    // Phát hiện xung đột phiên bản
+    if (clientVersion !== null && clientVersion !== serverVersion) {
+      // 1. Phân tích các trường thay đổi
+      const checkFields = ['weather_condition', 'weather_notes', 'manpower_count', 'equipment_status', 'work_notes'];
+      const conflictingFields = [];
+      const disjointFields = {};
+
+      for (const f of checkFields) {
+        if (updateData[f] !== undefined) {
+          const clientVal = String(updateData[f] ?? '').trim();
+          const serverVal = String(currentDiary[f] ?? '').trim();
+          if (clientVal !== serverVal) {
+            // Kiểm tra xem trường này có phải là trường xung đột trực tiếp không
+            if (updateData.base_version_data && updateData.base_version_data[f] !== undefined) {
+              const baseVal = String(updateData.base_version_data[f] ?? '').trim();
+              if (baseVal !== serverVal && baseVal !== clientVal) {
+                conflictingFields.push(f);
+              } else if (baseVal === serverVal) {
+                disjointFields[f] = updateData[f];
+              }
+            } else {
+              conflictingFields.push(f);
+            }
+          }
+        }
+      }
+
+      // 2. Hai thay đổi ở trường khác nhau phải được gộp nếu an toàn (Auto-Merge disjoint fields)
+      if (conflictingFields.length === 0 && Object.keys(disjointFields).length > 0) {
+        const mergedData = { ...currentDiary, ...disjointFields };
+        const saved = await this.saveDiary(pId, { ...mergedData, diary_date: dateStr }, null, userId);
+
+        // Lưu vết auto-merge
+        await this._saveConflictRecord({
+          projectId: pId,
+          entityType: 'diary',
+          entityId: currentDiary.id,
+          serverVersion,
+          clientVersion,
+          serverData: currentDiary,
+          clientData: updateData,
+          conflictFields: [],
+          autoMerged: true,
+          mergedData: saved
+        });
+
+        return {
+          success: true,
+          message: 'Tự động gộp các thay đổi an toàn thành công.',
+          auto_merged: true,
+          data: { ...saved, auto_merged: true },
+          version: saved.version
+        };
+      }
+
+      // 3. Nếu có trường trùng lặp thay đổi -> Giữ cả 2 bản, ghi nhận xung đột và trả về HTTP 409
+      const savedConflict = await this._saveConflictRecord({
+        projectId: pId,
+        entityType: 'diary',
+        entityId: currentDiary.id,
+        serverVersion,
+        clientVersion,
+        serverData: currentDiary,
+        clientData: updateData,
+        conflictFields: conflictingFields.length > 0 ? conflictingFields : ['content'],
+        autoMerged: false
+      });
+
+      const err = new Error('Phát hiện xung đột phiên bản: Dữ liệu đã được người khác chỉnh sửa.');
+      err.status = 409;
+      err.conflict = true;
+      err.conflict_id = savedConflict.id;
+      err.data = {
+        server_version: serverVersion,
+        client_version: clientVersion,
+        conflict_fields: conflictingFields,
+        server_data: currentDiary,
+        client_data: updateData
+      };
+      throw err;
+    }
+
+    // Không có xung đột phiên bản -> Cập nhật bình thường (kế thừa các trường chưa đổi)
+    return this.saveDiary(pId, { ...currentDiary, ...updateData, diary_date: dateStr }, null, userId);
+  }
+
+  async _saveConflictRecord(data) {
+    if (this.pool?.query) {
+      const [res] = await this.pool.query(
+        `INSERT INTO diary_conflicts (
+          project_id, entity_type, entity_id, server_version, client_version,
+          server_data, client_data, conflict_fields, auto_merged, merged_data, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          data.projectId,
+          data.entityType,
+          data.entityId,
+          data.serverVersion,
+          data.clientVersion,
+          JSON.stringify(data.serverData || {}),
+          JSON.stringify(data.clientData || {}),
+          JSON.stringify(data.conflictFields || []),
+          data.autoMerged ? 1 : 0,
+          data.mergedData ? JSON.stringify(data.mergedData) : null,
+          data.autoMerged ? 'resolved_merged' : 'pending'
+        ]
+      );
+      return { id: res.insertId, ...data };
+    }
+
+    const { saveDiaryConflict } = require('../models/store');
+    return saveDiaryConflict(data);
+  }
+
+  // S-32: Lấy danh sách các xung đột phiên bản cần xử lý
+  async getDiaryConflicts(projectId, status = null) {
+    const pId = Number(projectId);
+    if (this.pool?.query) {
+      let q = 'SELECT * FROM diary_conflicts WHERE project_id = ?';
+      const params = [pId];
+      if (status) {
+        q += ' AND status = ?';
+        params.push(status);
+      }
+      q += ' ORDER BY created_at DESC';
+      const [rows] = await this.pool.query(q, params);
+      return { success: true, data: rows };
+    }
+
+    const { getDiaryConflicts } = require('../models/store');
+    return { success: true, data: getDiaryConflicts(pId, status) };
+  }
+
+  // S-32: Người dùng chọn giữ bản server, bản client, hoặc gộp thủ công (bản còn lại vẫn lưu trong lịch sử)
+  async resolveDiaryConflict(projectId, conflictId, resolution = {}, user) {
+    const pId = Number(projectId);
+    const cId = Number(conflictId);
+    const userId = Number(user?.userId || user?.id || 1);
+    const choice = resolution.choice || resolution.action || 'keep_server'; // 'keep_server' | 'keep_client' | 'custom'
+
+    let conflict = null;
+    if (this.pool?.query) {
+      const [rows] = await this.pool.query('SELECT * FROM diary_conflicts WHERE id = ? AND project_id = ?', [cId, pId]);
+      conflict = rows[0] || null;
+    } else {
+      const { getDiaryConflictById } = require('../models/store');
+      conflict = getDiaryConflictById(cId);
+    }
+
+    if (!conflict) {
+      const err = new Error('Không tìm thấy bản ghi xung đột.');
+      err.status = 404;
+      throw err;
+    }
+
+    const serverData = typeof conflict.server_data === 'string' ? JSON.parse(conflict.server_data) : conflict.server_data;
+    const clientData = typeof conflict.client_data === 'string' ? JSON.parse(conflict.client_data) : conflict.client_data;
+
+    let appliedData = serverData;
+    let status = 'resolved_server';
+
+    if (choice === 'keep_client') {
+      appliedData = { ...serverData, ...clientData };
+      status = 'resolved_client';
+      // Ghi đè bằng bản client và tăng phiên bản
+      await this.saveDiary(pId, { ...serverData, ...clientData, diary_date: serverData.diary_date }, null, userId);
+    } else if (choice === 'custom' && resolution.custom_data) {
+      appliedData = { ...serverData, ...resolution.custom_data };
+      status = 'resolved_merged';
+      await this.saveDiary(pId, { ...serverData, ...resolution.custom_data, diary_date: serverData.diary_date }, null, userId);
+    }
+
+    if (this.pool?.query) {
+      await this.pool.query(
+        'UPDATE diary_conflicts SET status = ?, resolved_by = ?, resolved_at = CURRENT_TIMESTAMP, merged_data = ? WHERE id = ?',
+        [status, userId, JSON.stringify(appliedData), cId]
+      );
+    } else {
+      const { resolveDiaryConflict } = require('../models/store');
+      resolveDiaryConflict(cId, { status, mergedData: appliedData }, userId);
+    }
+
+    return {
+      success: true,
+      message: `Đã giải quyết xung đột thành công (Lựa chọn: ${choice}). Bản còn lại được lưu trữ đầy đủ trong lịch sử.`,
+      status,
+      resolved_choice: choice,
+      active_data: appliedData
+    };
   }
 }
 

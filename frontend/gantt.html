@@ -4,9 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sơ đồ tiến độ thi công (Gantt, CPM & Baseline)</title>
+  <!-- PWA & Hiện trường Mobile (S-27 / SCRUM-119) -->
+  <meta name="theme-color" content="#1d4ed8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="QL Thi Công">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <script src="/js/pwa-register.js" defer></script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/common-nav.css">
   <style>
     :root {
       --primary: #2563eb;
@@ -33,12 +44,13 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body { background-color: var(--bg); color: var(--text-main); padding: 20px; min-height: 100vh; }
+    body { background-color: var(--bg); color: var(--text-main); padding: 0; min-height: 100vh; }
 
     /* Top Navigation Bar */
     .top-bar {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto;
+      grid-template-areas: "title nav" "actions actions";
       align-items: center;
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -46,10 +58,10 @@
       padding: 12px 20px;
       margin-bottom: 16px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-      flex-wrap: wrap;
       gap: 12px;
     }
-    .top-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .top-left { grid-area: title; min-width: 0; display: flex; align-items: center; }
+    .module-nav { grid-area: nav; display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
     .back-btn {
       display: inline-flex;
       align-items: center;
@@ -65,9 +77,10 @@
       transition: all 0.15s ease;
     }
     .back-btn:hover { background: #f1f5f9; color: var(--text-main); border-color: var(--border-dark); }
-    .top-title { font-size: 18px; font-weight: 800; color: var(--text-main); margin-left: 6px; }
+    .module-nav .back-btn[aria-current="page"] { background: var(--primary-soft); color: var(--primary); border-color: #bfdbfe; }
+    .top-title { font-size: 18px; line-height: 1.3; font-weight: 800; color: var(--text-main); }
 
-    .top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .top-actions { grid-area: actions; display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; padding-top: 4px; border-top: 1px solid var(--border-subtle); }
     
     .btn-action {
       display: inline-flex;
@@ -166,6 +179,7 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.04);
       min-height: 400px;
     }
+    .gantt-board[hidden] { display: none; }
     .task-col {
       width: var(--task-col-w);
       min-width: var(--task-col-w);
@@ -217,6 +231,7 @@
 
     .timeline-col {
       flex: 1;
+      min-width: 0;
       overflow-x: auto;
       overflow-y: hidden;
       position: relative;
@@ -393,54 +408,112 @@
     .history-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
     .history-table th { background: #f1f5f9; padding: 10px; text-align: left; font-weight: 700; border-bottom: 1px solid var(--border); }
     .history-table td { padding: 10px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+
+    .gantt-status {
+      margin: 0 0 16px;
+      padding: 14px 16px;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-size: 14px;
+    }
+    .gantt-status.error { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+    .gantt-status[hidden] { display: none; }
+    @media (max-width: 1100px) {
+      body { padding: 12px; }
+      .top-bar { grid-template-columns: 1fr; grid-template-areas: "title" "nav" "actions"; }
+      .module-nav, .top-actions { justify-content: flex-start; }
+      .summary-card { align-items: flex-start; padding: 14px; }
+      .metrics { gap: 12px; }
+      .gantt-board { min-height: 320px; }
+    }
+    @media (max-width: 560px) {
+      .top-bar { padding: 12px; }
+      .top-title { font-size: 16px; }
+      .module-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+      .module-nav .back-btn { justify-content: center; min-height: 38px; padding: 6px; }
+      .top-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+      .top-actions > * { justify-content: center; min-height: 38px; }
+      .top-actions .btn-baseline, #btnHistoryBaseline { grid-column: span 2; }
+      .metrics { display: grid; grid-template-columns: 1fr; }
+      .legend-box { gap: 8px 12px; }
+      .task-col { width: 190px; min-width: 190px; }
+      .task-row { padding: 0 8px; gap: 5px; font-size: 12px; }
+      .code-badge { font-size: 10px; }
+    }
   </style>
 </head>
 <body>
 
-  <!-- Top Navigation Bar -->
-  <div class="top-bar">
-    <div class="top-left">
-      <a href="/schedule.html" class="back-btn">⬅ Bảng CPM</a>
-      <a href="/calendar.html" class="back-btn">📅 Lịch làm việc</a>
-      <a href="/teams.html" class="back-btn">👷‍♂️ Đội & Giao việc</a>
-      <a href="/wbs.html" class="back-btn">🌳 WBS</a>
-      <a href="/index.html" class="back-btn">🏠 Trang chủ</a>
-      <h1 class="top-title">Sơ đồ tiến độ thi công & Đường găng</h1>
-    </div>
-    <div class="top-actions">
-      <button class="btn-action" id="btnFilterCrit" onclick="toggleCriticalFilter()">
-        <span>◆</span> Chỉ xem việc găng
-      </button>
-      <div class="segmented-tabs">
-        <button id="btnDay" class="active" onclick="setView('day')">Ngày</button>
-        <button id="btnWeek" onclick="setView('week')">Tuần</button>
+  <!-- Top Navigation Bar Thống Nhất -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-logo">📊</div>
+      <div class="topbar-title">
+        <h1 class="top-title">Sơ đồ tiến độ & Đường găng</h1>
+        <span>PHÂN HỆ GANTT, CPM & BASELINE</span>
       </div>
-      <button class="btn-action btn-baseline" id="btnLockBaseline" onclick="openLockBaselineModal()" title="Chốt kế hoạch gốc">
-        📌 Chốt kế hoạch gốc
-      </button>
-      <button class="btn-action" id="btnHistoryBaseline" onclick="openHistoryModal()" title="Lịch sử chốt kế hoạch gốc">
-        📜 Lịch sử chốt
-      </button>
     </div>
-  </div>
+    <nav class="module-nav" aria-label="Tiện ích dự án">
+      <a href="/index.html" class="nav-item back-btn">Tổng quan</a>
+      <a href="/wbs.html" class="nav-item back-btn">WBS</a>
+      <a href="/schedule.html" class="nav-item back-btn">CPM</a>
+      <a href="/gantt.html" class="nav-item back-btn active" aria-current="page">Gantt</a>
+      <a href="/calendar.html" class="nav-item back-btn">Lịch</a>
+      <a href="/diary.html" class="nav-item back-btn">Nhật ký</a>
+      <a href="/teams.html" class="nav-item back-btn">Đội & Giao việc</a>
+    </nav>
+    <div class="user-pill" id="userPill">
+      <div class="user-avatar" id="avatar-letter">QL</div>
+      <div class="user-meta">
+        <span class="user-name" id="display-user-name">Người dùng</span>
+        <span class="user-role" id="display-user-role">Đang tải...</span>
+      </div>
+      <button class="btn-logout" id="btnLogout" onclick="handleLogout()" title="Đăng xuất">Đăng xuất</button>
+    </div>
+  </header>
+
+  <div class="gantt-main-container" style="padding: 16px 20px;">
+    <!-- Gantt Action Toolbar (Tách riêng khỏi Module Nav) -->
+    <div class="gantt-toolbar-card" style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 18px; margin-bottom: 14px; gap: 12px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+      <div style="font-size: 13px; font-weight: 700; color: #475569; display: flex; align-items: center; gap: 6px;">
+        <span>🛠️ Thao tác biểu đồ Gantt:</span>
+      </div>
+      <div class="top-actions">
+        <button class="btn-action" id="btnFilterCrit" onclick="toggleCriticalFilter()">
+          <span>◆</span> Chỉ xem việc găng
+        </button>
+        <div class="segmented-tabs">
+          <button id="btnDay" class="active" onclick="setView('day')">Ngày</button>
+          <button id="btnWeek" onclick="setView('week')">Tuần</button>
+        </div>
+        <button class="btn-action btn-baseline" id="btnLockBaseline" onclick="openLockBaselineModal()" title="Chốt kế hoạch gốc">
+          📌 Chốt kế hoạch gốc
+        </button>
+        <button class="btn-action" id="btnHistoryBaseline" onclick="openHistoryModal()" title="Lịch sử chốt kế hoạch gốc">
+          📜 Lịch sử chốt
+        </button>
+      </div>
+    </div>
 
   <!-- Summary Dashboard Bar -->
   <div class="summary-card">
     <div class="metrics">
       <div class="metric-item">
         <span class="metric-label">Dự án:</span>
-        <span class="metric-val" id="valProjectName">Dự án mẫu thi công</span>
+        <span class="metric-val" id="valProjectName">Đang tải…</span>
       </div>
       <div class="metric-item">
         <span class="metric-label">Kế hoạch gốc:</span>
-        <span class="metric-val" id="valPlanEnd">15/11/2026</span>
+        <span class="metric-val" id="valPlanEnd">—</span>
       </div>
       <div class="metric-item">
         <span class="metric-label">Dự kiến hiện tại:</span>
-        <span class="metric-val" id="valCurrentEnd">18/11/2026</span>
+        <span class="metric-val" id="valCurrentEnd">—</span>
       </div>
       <div class="metric-item">
-        <span id="badgeDelayStatus" class="badge-status delayed">⚠️ Chậm 3 ngày</span>
+        <span id="badgeDelayStatus" class="badge-status ontime">Đang tải…</span>
       </div>
     </div>
     <div class="legend-box">
@@ -464,7 +537,8 @@
   </div>
 
   <!-- Gantt Container -->
-  <div class="gantt-board" id="ganttContainer">
+  <div class="gantt-status" id="ganttStatus" role="status" aria-live="polite">Đang tải dữ liệu tiến độ…</div>
+  <div class="gantt-board" id="ganttContainer" hidden>
     <div class="task-col">
       <div class="task-header">Danh sách công việc</div>
       <div id="taskList"></div>
@@ -476,6 +550,7 @@
   </div>
 
   <div id="ganttTooltip"></div>
+  </div> <!-- .gantt-main-container -->
 
   <!-- MODAL CHỐT KẾ HOẠCH GỐC -->
   <div class="modal-backdrop" id="modalLockBaseline">
@@ -566,44 +641,51 @@
   <script src="js/timelineScale.js"></script>
   <script src="js/recalculateSchedule.js"></script>
   <script>
-    const PROJECT_ID = 1;
+    const requestedProjectId = Number(new URLSearchParams(window.location.search).get('projectId'));
+    const PROJECT_ID = Number.isInteger(requestedProjectId) && requestedProjectId > 0 ? requestedProjectId : 1;
+    document.querySelectorAll('.module-nav a').forEach(link => {
+      const target = new URL(link.href, window.location.origin);
+      if (target.pathname !== '/index.html') {
+        target.searchParams.set('projectId', String(PROJECT_ID));
+        link.href = target.pathname + target.search;
+      }
+    });
     let currentUnit = 'day';
     let filterCriticalOnly = false;
     let currentBaseline = null;
 
-    // BỘ DỮ LIỆU CÔNG TRƯỜNG MẪU (CHUẨN ĐỂ THUYẾT TRÌNH VÀ DEMO)
-    const fallbackProjectData = {
-      projectStartDate: "2026-10-01",
-      projectEndDate: "2026-11-15",
-      tasks: [
-        { id: "1", code: "CV-01", name: "Đào đất hố móng", earlyStart: "2026-10-01", earlyFinish: "2026-10-06", actualStart: "2026-10-01", actualFinish: "2026-10-06", progress: 100, totalFloat: 0, isCritical: true, duration: 5 },
-        { id: "2", code: "CV-02", name: "Đổ bê tông lót móng", earlyStart: "2026-10-06", earlyFinish: "2026-10-10", actualStart: "2026-10-06", actualFinish: "2026-10-10", progress: 100, totalFloat: 0, isCritical: true, duration: 4 },
-        { id: "3", code: "CV-03", name: "Gia công cốt thép móng (Bị trễ)", earlyStart: "2026-10-08", earlyFinish: "2026-10-16", actualStart: "2026-10-08", actualFinish: "2026-10-21", progress: 100, totalFloat: 2, isCritical: false, isNewCritical: true, currentFinish: "2026-10-21", duration: 8 },
-        { id: "4", code: "CV-04", name: "Ván khuôn đài móng & giằng móng", earlyStart: "2026-10-21", earlyFinish: "2026-10-27", actualStart: "2026-10-21", actualFinish: null, progress: 60, totalFloat: 0, isCritical: true, duration: 6 },
-        { id: "5", code: "CV-05", name: "Đổ bê tông đài móng", earlyStart: "2026-10-27", earlyFinish: "2026-11-01", actualStart: null, actualFinish: null, progress: 0, totalFloat: 0, isCritical: true, duration: 5 },
-        { id: "6", code: "CV-06", name: "Bảo dưỡng bê tông & Tháo ván khuôn", earlyStart: "2026-11-01", earlyFinish: "2026-11-05", actualStart: null, actualFinish: null, progress: 0, totalFloat: 3, isCritical: false, duration: 4 },
-        { id: "7", code: "CV-07", name: "Lắp dựng cốt thép & Cột tầng 1", earlyStart: "2026-11-05", earlyFinish: "2026-11-12", actualStart: null, actualFinish: null, progress: 0, totalFloat: 0, isCritical: true, duration: 7 }
-      ]
-    };
-
-    let baseProjectData = JSON.parse(JSON.stringify(fallbackProjectData));
+    let baseProjectData = { projectStartDate: null, projectEndDate: null, tasks: [] };
     let scheduleCalc = {
-      tasks: baseProjectData.tasks,
-      originalEndDate: "2026-11-12",
-      currentEndDate: "2026-11-15",
-      delayDays: 3
+      tasks: [], originalEndDate: null, currentEndDate: null, delayDays: 0
     };
 
     function addDaysToDate(baseDateStr, days) {
-      const d = new Date(baseDateStr);
-      d.setDate(d.getDate() + Number(days));
-      return d.toISOString().split('T')[0];
+      const d = new Date(`${String(baseDateStr).slice(0, 10)}T00:00:00Z`);
+      if (Number.isNaN(d.getTime())) return '';
+      d.setUTCDate(d.getUTCDate() + Number(days));
+      return d.toISOString().slice(0, 10);
     }
 
     function getDiffDays(d1, d2) {
-      const t1 = new Date(d1).getTime();
-      const t2 = new Date(d2).getTime();
+      const t1 = new Date(`${String(d1).slice(0, 10)}T00:00:00Z`).getTime();
+      const t2 = new Date(`${String(d2).slice(0, 10)}T00:00:00Z`).getTime();
       return Math.max(1, Math.round((t2 - t1) / (1000 * 60 * 60 * 24)));
+    }
+
+    function showGanttStatus(message, type = 'info') {
+      const status = document.getElementById('ganttStatus');
+      status.textContent = message;
+      status.className = `gantt-status${type === 'error' ? ' error' : ''}`;
+      status.hidden = false;
+      document.getElementById('ganttContainer').hidden = true;
+    }
+
+    function getAuthHeaders(includeJson = false) {
+      const token = localStorage.getItem('quanly_token');
+      return {
+        ...(includeJson ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      };
     }
 
     function formatDateVN(dateStr) {
@@ -620,22 +702,60 @@
       return String(val ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
     }
 
+    function todayLocalDate() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    // S-01: Dự án chưa lưu ngày khởi công => không tự gán ngày giả, yêu cầu nhập và lưu qua API.
+    function showStartDateRequired() {
+      showGanttStatus('Dự án chưa có ngày khởi công nên chưa thể quy đổi lịch CPM sang ngày thực tế.');
+      const status = document.getElementById('ganttStatus');
+      const form = document.createElement('form');
+      form.id = 'startDateForm';
+      form.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px';
+      form.innerHTML = '<label for="inputProjectStart">Ngày khởi công:</label>'
+        + '<input type="date" id="inputProjectStart" required style="padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px">'
+        + '<button type="submit" class="btn-action" id="btnSaveProjectStart">Lưu ngày khởi công</button>'
+        + '<span id="startDateError" style="color:#b91c1c"></span>';
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const value = document.getElementById('inputProjectStart').value;
+        const errSpan = document.getElementById('startDateError');
+        errSpan.textContent = '';
+        try {
+          const res = await fetch(`/api/projects/${PROJECT_ID}`, {
+            method: 'PUT', headers: getAuthHeaders(true), body: JSON.stringify({ start_date: value })
+          });
+          const result = await res.json().catch(() => ({}));
+          if (!res.ok || result.success === false) throw new Error(result.message || `Không lưu được ngày khởi công (HTTP ${res.status})`);
+          showGanttStatus('Đã lưu ngày khởi công. Đang tải lại…');
+          loadScheduleData();
+        } catch (err) {
+          errSpan.textContent = err.message;
+        }
+      });
+      status.appendChild(form);
+    }
+
     // === Tải dữ liệu tiến độ & Kế hoạch gốc ===
     async function loadScheduleData() {
+      document.getElementById('valProjectName').textContent = `Dự án #${PROJECT_ID}`;
       try {
-        const token = localStorage.getItem('quanly_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
-        // Thử gọi API CSDL
-        const res = await fetch(`/api/projects/${PROJECT_ID}/scheduling/results`, { headers });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.tasks && json.tasks.length > 0) {
-            const start = "2026-10-01";
+        const res = await fetch(`/api/projects/${PROJECT_ID}/scheduling/results`, { headers: getAuthHeaders() });
+        const json = await res.json();
+        if (!res.ok || json.success === false) throw new Error(json.message || `Không tải được dữ liệu (HTTP ${res.status})`);
+        const tasks = Array.isArray(json.tasks) ? json.tasks : [];
+        if (tasks.length > 0) {
+            const start = json.projectStartDate;
+            if (!start) {
+              showStartDateRequired();
+              return;
+            }
             baseProjectData = {
               projectStartDate: start,
-              projectEndDate: addDaysToDate(start, json.projectDuration || 45),
-              tasks: json.tasks.map(t => ({
+              projectEndDate: addDaysToDate(start, Number(json.projectDuration) || Math.max(...tasks.map(t => Number(t.earlyFinish) || 0))),
+              tasks: tasks.map(t => ({
                 id: String(t.taskId || t.id),
                 code: t.code || `CV-${t.taskId}`,
                 name: t.name,
@@ -652,29 +772,33 @@
                 isCritical: Boolean(t.isCritical)
               }))
             };
-          }
+        } else {
+          baseProjectData = { projectStartDate: null, projectEndDate: null, tasks: [] };
         }
       } catch (err) {
-        console.log('Sử dụng bộ dữ liệu mẫu công trường để trình chiếu:', err);
+        console.error('Không thể tải dữ liệu Gantt:', err);
+        showGanttStatus(`${err.message || 'Không thể tải dữ liệu tiến độ.'} Hãy kiểm tra đăng nhập, kết nối máy chủ và thử tải lại.`, 'error');
+        return;
       }
 
       // Tính toán lại độ trễ & mốc kết thúc
-      if (typeof recalculateProjectSchedule === 'function') {
+      if (baseProjectData.tasks.length && typeof recalculateProjectSchedule === 'function') {
         try {
-          scheduleCalc = recalculateProjectSchedule(baseProjectData, "2026-10-25");
-        } catch {
+          scheduleCalc = recalculateProjectSchedule(baseProjectData, todayLocalDate());
+        } catch (calcErr) {
+          console.warn('Không tính lại được độ trễ:', calcErr);
           scheduleCalc = {
             tasks: baseProjectData.tasks,
             originalEndDate: baseProjectData.projectEndDate,
-            currentEndDate: addDaysToDate(baseProjectData.projectEndDate, 3),
-            delayDays: 3
+            currentEndDate: baseProjectData.projectEndDate,
+            delayDays: 0
           };
         }
       }
 
       // Tải baseline đã lưu
       try {
-        const bRes = await fetch(`/api/projects/${PROJECT_ID}/scheduling/baseline`);
+        const bRes = await fetch(`/api/projects/${PROJECT_ID}/scheduling/baseline`, { headers: getAuthHeaders() });
         if (bRes.ok) {
           currentBaseline = await bRes.json();
         } else {
@@ -684,11 +808,22 @@
         currentBaseline = JSON.parse(localStorage.getItem(`quanly_baseline_${PROJECT_ID}`) || 'null');
       }
 
+      if (!baseProjectData.tasks.length) {
+        showGanttStatus('Chưa có công việc được lập lịch cho dự án này. Hãy thêm công việc và mối phụ thuộc trong WBS/CPM để xem biểu đồ Gantt.');
+        document.getElementById('valPlanEnd').textContent = '—';
+        document.getElementById('valCurrentEnd').textContent = '—';
+        document.getElementById('badgeDelayStatus').className = 'badge-status ontime';
+        document.getElementById('badgeDelayStatus').textContent = 'Chưa có dữ liệu';
+        return;
+      }
+      document.getElementById('ganttStatus').hidden = true;
+      document.getElementById('ganttContainer').hidden = false;
       renderGantt();
     }
 
     // === Vẽ Sơ đồ Gantt ===
     function renderGantt() {
+      document.getElementById('valProjectName').innerText = `Dự án #${PROJECT_ID}`;
       document.getElementById('valPlanEnd').innerText = formatDateVN(scheduleCalc.originalEndDate || baseProjectData.projectEndDate);
       document.getElementById('valCurrentEnd').innerText = formatDateVN(scheduleCalc.currentEndDate || baseProjectData.projectEndDate);
       
@@ -916,23 +1051,26 @@
         return;
       }
 
+      try {
+        const res = await fetch(`/api/tasks/${id}/progress`, {
+          method: 'PUT',
+          headers: getAuthHeaders(true),
+          body: JSON.stringify({ actual_start: start, actual_end: end, percent_complete: pct, confirm_reopen: true })
+        });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok || result.success === false) throw new Error(result.message || `Không lưu được tiến độ (HTTP ${res.status})`);
+      } catch (e) {
+        errEl.innerText = e.message || 'Không thể lưu tiến độ. Hãy kiểm tra kết nối và quyền truy cập.';
+        errEl.style.display = 'block';
+        return;
+      }
+
       const task = (baseProjectData?.tasks || []).find(x => x.id === id);
       if (task) {
         task.actualStart = start;
         task.actualFinish = end;
         task.progress = pct;
       }
-
-      try {
-        const res = await fetch(`/api/tasks/${id}/progress`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ actual_start: start, actual_end: end, percent_complete: pct, confirm_reopen: true })
-        });
-      } catch (e) {
-        console.log('Cập nhật local tiến độ thành công');
-      }
-
       closeProgModal();
       renderGantt();
     }
@@ -970,12 +1108,19 @@
       };
 
       try {
-        await fetch(`/api/projects/${PROJECT_ID}/scheduling/baseline`, {
+        const res = await fetch(`/api/projects/${PROJECT_ID}/scheduling/baseline`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(true),
           body: JSON.stringify({ authorName: author, reason: reason })
         });
-      } catch {}
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok || result.success === false) throw new Error(result.message || `Không chốt được kế hoạch gốc (HTTP ${res.status})`);
+        baselineData.baseline = result.baseline || result;
+        baselineData.tasks = result.tasks || baselineData.tasks;
+      } catch (err) {
+        alert(err.message || 'Không thể chốt kế hoạch gốc. Hãy kiểm tra kết nối và quyền truy cập.');
+        return;
+      }
 
       currentBaseline = baselineData;
       localStorage.setItem(`quanly_baseline_${PROJECT_ID}`, JSON.stringify(baselineData));
@@ -1046,8 +1191,28 @@
       renderGantt();
     }
 
+    // Bảo lưu projectId trên module-nav
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const rawPId = urlParams.get('projectId');
+      const pId = Number(rawPId);
+      const validProjectId = (Number.isInteger(pId) && pId > 0) ? pId : (rawPId ? rawPId : null);
+      if (validProjectId) {
+        document.querySelectorAll('.module-nav a').forEach(link => {
+          try {
+            const target = new URL(link.href, window.location.origin);
+            if (target.pathname !== '/' && target.pathname !== '/index.html') {
+              target.searchParams.set('projectId', String(validProjectId));
+              link.href = target.pathname + target.search;
+            }
+          } catch(e) {}
+        });
+      }
+    })();
+
     // Khởi chạy nạp dữ liệu
     loadScheduleData();
   </script>
+  <script src="/js/app-navbar.js"></script>
 </body>
 </html>

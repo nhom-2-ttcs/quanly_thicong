@@ -1,0 +1,333 @@
+/**
+ * Quản Lý Thi Công - Unified Navigation & Theme Stylesheet
+ * Đồng bộ Topbar, Navigation Dock, Typography và Bảng màu sáng chuẩn trên mọi phân hệ
+ */
+
+:root {
+  --nav-bg: #ffffff;
+  --nav-border: #e2e8f0;
+  --nav-text-main: #0f172a;
+  --nav-text-muted: #64748b;
+  --nav-dock-bg: #f1f5f9;
+  --nav-dock-border: #e2e8f0;
+  --nav-item-text: #334155;
+  --nav-item-hover-bg: #e2e8f0;
+  --nav-item-active-bg: #eff6ff;
+  --nav-item-active-text: #1d4ed8;
+  --nav-item-active-border: #bfdbfe;
+  --nav-primary: #2563eb;
+  --nav-primary-hover: #1d4ed8;
+}
+
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* 1. THANH TOPBAR THỐNG NHẤT */
+header.topbar,
+header.top-bar,
+.topbar {
+  background: var(--nav-bg) !important;
+  color: var(--nav-text-main) !important;
+  border-bottom: 1px solid var(--nav-border) !important;
+  padding: 10px 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  box-sizing: border-box !important;
+}
+
+/* 2. KHỐI THƯƠNG HIỆU & TIÊU ĐỀ TRANG */
+.topbar-brand,
+.brand-group,
+.top-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  text-decoration: none !important;
+  color: var(--nav-text-main) !important;
+  min-width: 0 !important;
+  flex-shrink: 1 !important;
+}
+
+.topbar-logo,
+.brand-icon {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%) !important;
+  border-radius: 9px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #ffffff !important;
+  font-size: 18px !important;
+  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.25) !important;
+}
+
+.topbar-logo svg,
+.brand-icon svg {
+  width: 20px !important;
+  height: 20px !important;
+  stroke: #ffffff !important;
+  fill: none !important;
+}
+
+.topbar-title,
+.brand-info {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+  line-height: 1.25 !important;
+}
+
+.topbar-title h1,
+.brand-info h1,
+.top-title {
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.2px !important;
+  color: var(--nav-text-main) !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.topbar-title span,
+.brand-info span {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--nav-text-muted) !important;
+  letter-spacing: 0.2px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* 3. THANH ĐIỀU HƯỚNG DOCK LIỀN MẠCH */
+.nav-dock,
+.module-nav {
+  display: inline-flex !important;
+  align-items: center !important;
+  background: var(--nav-dock-bg) !important;
+  border: 1px solid var(--nav-dock-border) !important;
+  border-radius: 10px !important;
+  padding: 3px !important;
+  gap: 2px !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.nav-dock .nav-item,
+.nav-dock .nav-dock-item,
+.module-nav .back-btn,
+.nav-dock a,
+.module-nav a {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: var(--nav-item-text) !important;
+  text-decoration: none !important;
+  padding: 6px 11px !important;
+  border-radius: 7px !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  transition: all 0.15s ease !important;
+  white-space: nowrap !important;
+  line-height: 1 !important;
+}
+
+.nav-dock .nav-item svg,
+.nav-dock .nav-dock-item svg,
+.module-nav .back-btn svg {
+  width: 14px !important;
+  height: 14px !important;
+  flex-shrink: 0 !important;
+}
+
+.nav-dock .nav-item:hover,
+.nav-dock .nav-dock-item:hover,
+.module-nav .back-btn:hover,
+.nav-dock a:hover,
+.module-nav a:hover {
+  background: var(--nav-item-hover-bg) !important;
+  color: var(--nav-text-main) !important;
+}
+
+/* Active Tab: Xanh dương sáng rõ ràng, duy nhất 1 tab trên 1 trang */
+.nav-dock .nav-item.active,
+.nav-dock .nav-dock-item.active,
+.module-nav .back-btn[aria-current="page"],
+.module-nav .back-btn.active,
+.nav-dock a.active {
+  background: var(--nav-item-active-bg) !important;
+  color: var(--nav-item-active-text) !important;
+  border: 1px solid var(--nav-item-active-border) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.08) !important;
+}
+
+/* 4. KHỐI TÀI KHOẢN & ĐĂNG XUẤT */
+.topbar-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-shrink: 0 !important;
+}
+
+.user-pill,
+.user-profile {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 20px !important;
+  padding: 4px 10px 4px 5px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+}
+
+.user-avatar {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.user-meta,
+.user-info-text {
+  display: flex !important;
+  flex-direction: column !important;
+  line-height: 1.2 !important;
+  text-align: left !important;
+}
+
+.user-name {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: var(--nav-text-main) !important;
+  max-width: 140px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.user-role,
+.user-role-badge {
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  color: var(--nav-text-muted) !important;
+  max-width: 140px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.btn-logout {
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  color: #b91c1c !important;
+  padding: 4px 9px !important;
+  border-radius: 6px !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  white-space: nowrap !important;
+  margin-left: 2px !important;
+}
+
+.btn-logout:hover {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border-color: #f87171 !important;
+}
+
+/* 5. GANTT TOP-ACTIONS (Tách riêng khỏi Module Nav) */
+.top-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+/* 6. RESPONSIVE ADAPTATIONS */
+@media (max-width: 1180px) {
+  header.topbar,
+  header.top-bar,
+  .topbar {
+    padding: 8px 16px !important;
+    gap: 10px !important;
+  }
+  .brand-info span {
+    display: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  header.topbar,
+  header.top-bar,
+  .topbar {
+    flex-wrap: wrap !important;
+  }
+  .nav-dock,
+  .module-nav {
+    order: 3 !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 4px !important;
+  }
+  .nav-dock::-webkit-scrollbar,
+  .module-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+}
+
+@media (max-width: 560px) {
+  header.topbar,
+  header.top-bar,
+  .topbar {
+    padding: 8px 12px !important;
+    gap: 8px !important;
+  }
+  .topbar-title h1,
+  .brand-info h1,
+  .top-title {
+    font-size: 14.5px !important;
+  }
+  .user-meta,
+  .user-info-text {
+    display: none !important;
+  }
+  .user-pill,
+  .user-profile {
+    padding: 3px 6px !important;
+  }
+  .nav-dock .nav-item,
+  .nav-dock .nav-dock-item,
+  .module-nav .back-btn,
+  .nav-dock a,
+  .module-nav a {
+    font-size: 12px !important;
+    padding: 6px 9px !important;
+    min-height: 34px !important;
+  }
+}

@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: 1. Build & Install Dependencies
         run: |
@@ -28,6 +28,10 @@ jobs:
         run: |
           cd backend
           npm run lint
+
+      - name: Install Chromium for S-34 browser test
+        run: npx playwright-core install --with-deps chromium
+        working-directory: backend
 
       - name: 3. Start Docker Compose Stack
         env:
@@ -73,11 +77,21 @@ jobs:
 
       - name: 5. Run Automated Tests
         env:
-          BACKEND_BASE_URL: http://localhost:5001
-          FRONTEND_BASE_URL: http://localhost:8081
+          BACKEND_BASE_URL: http://localhost:5000
+          FRONTEND_BASE_URL: http://localhost:5000
+          REQUIRE_S34_BROWSER: 'true'
         run: |
           cd backend
           npm test
+
+      - name: 6. Run S-34 E2E Offline 20 Photos Test (T-63, T-64, T-65 < 3 mins)
+        env:
+          BACKEND_BASE_URL: http://localhost:5000
+          FRONTEND_BASE_URL: http://localhost:5000
+          REQUIRE_S34_BROWSER: 'true'
+        run: |
+          cd backend
+          npm run test:s34
 
       - name: Diagnostics on Failure
         if: failure()

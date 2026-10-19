@@ -21,6 +21,7 @@ const {
   findPendingInvitation,
   createProjectInvitation
 } = require('../models/store');
+const { isValidCalendarDate, withStartDate } = require('../utils/projectStartDate');
 
 module.exports = (db) => {
   const router = express.Router();
@@ -33,7 +34,7 @@ module.exports = (db) => {
       if (req.user && req.user.role_name !== 'admin' && req.user.role_id !== 1) {
         rows = rows.filter(p => canUserAccessProject(req.user, p.id));
       }
-      return res.json({ success: true, data: rows });
+      return res.json({ success: true, data: rows.map(withStartDate) });
     }
     try {
       let [rows] = await pool.query('SELECT * FROM projects ORDER BY id ASC');
@@ -50,7 +51,7 @@ module.exports = (db) => {
         }
       }
 
-      res.json({ success: true, data: rows });
+      res.json({ success: true, data: rows.map(withStartDate) });
     } catch (err) {
       let rows = inMemoryProjects;
       if (req.user && req.user.role_name !== 'admin' && req.user.role_id !== 1) {
@@ -74,7 +75,7 @@ module.exports = (db) => {
       if (!proj) {
         return res.status(404).json({ success: false, message: 'Dự án không tồn tại' });
       }
-      return res.json({ success: true, data: proj });
+      return res.json({ success: true, data: withStartDate(proj) });
     }
 
     try {
@@ -82,7 +83,7 @@ module.exports = (db) => {
       if (rows.length === 0) {
         return res.status(404).json({ success: false, message: 'Dự án không tồn tại' });
       }
-      res.json({ success: true, data: rows[0] });
+      res.json({ success: true, data: withStartDate(rows[0]) });
     } catch (err) {
       const proj = inMemoryProjects.find(p => p.id === projectId);
       if (!proj) {
@@ -96,15 +97,18 @@ module.exports = (db) => {
   router.post('/projects', async (req, res) => {
     if (checkViewerForbidden(req, res)) return;
 
-    const { name, code, description } = req.body;
+    const { name, code, description, start_date } = req.body;
     if (!name || !code) {
       return res.status(400).json({ success: false, message: 'Tên dự án và mã dự án không được để trống' });
+    }
+    if (start_date !== undefined && start_date !== null && start_date !== '' && !isValidCalendarDate(start_date)) {
+      return res.status(400).json({ success: false, message: 'Ngày khởi công không hợp lệ (định dạng YYYY-MM-DD)' });
     }
 
     try {
       const [result] = await pool.query(
-        'INSERT INTO projects (name, code, description) VALUES (?, ?, ?)',
-        [name.trim(), code.trim(), description ? description.trim() : null]
+        'INSERT INTO projects (name, code, description, start_date) VALUES (?, ?, ?, ?)',
+        [name.trim(), code.trim(), description ? description.trim() : null, start_date || null]
       );
       res.status(201).json({
         success: true,
@@ -121,7 +125,21 @@ module.exports = (db) => {
     if (checkViewerForbidden(req, res)) return;
 
     const projectId = Number(req.params.id);
-    const { name, code, description } = req.body;
+    const { name, code, description, start_date } = req.body;
+    if (start_date !== undefined && start_date !== null && !isValidCalendarDate(start_date)) {
+      return res.status(400).json({ success: false, message: 'Ngày khởi công không hợp lệ (định dạng YYYY-MM-DD)' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    if (db && db.isConnected === false) {
+      const proj = inMemoryProjects.find(p => p.id === projectId);
+      if (!proj) return res.status(404).json({ success: false, message: 'Dự án không tồn tại' });
+      if (name) proj.name = name.trim();
+      if (code) proj.code = code.trim();
+      if (description) proj.description = description.trim();
+      if (start_date) proj.start_date = start_date;
+      return res.json({ success: true, message: 'Cập nhật dự án thành công', data: withStartDate(proj) });
+    }
 
     try {
       const [existing] = await pool.query('SELECT id FROM projects WHERE id = ?', [projectId]);
@@ -130,8 +148,8 @@ module.exports = (db) => {
       }
 
       await pool.query(
-        'UPDATE projects SET name = COALESCE(?, name), code = COALESCE(?, code), description = COALESCE(?, description) WHERE id = ?',
-        [name ? name.trim() : null, code ? code.trim() : null, description ? description.trim() : null, projectId]
+        'UPDATE projects SET name = COALESCE(?, name), code = COALESCE(?, code), description = COALESCE(?, description), start_date = COALESCE(?, start_date) WHERE id = ?',
+        [name ? name.trim() : null, code ? code.trim() : null, description ? description.trim() : null, start_date || null, projectId]
       );
       res.json({ success: true, message: 'Cập nhật dự án thành công' });
     } catch (err) {

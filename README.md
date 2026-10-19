@@ -437,3 +437,43 @@ npm test
   * `SMTP_USER`: Tài khoản email gửi thư.
   * `SMTP_PASS`: Mật khẩu ứng dụng (App Password).
 
+---
+
+## 🚀 Hoàn Thiện Phạm Vi Sprint 4 & Sprint 5 (S-21 đến S-34, 40 SP)
+
+Toàn bộ 14 User Story thuộc Sprint 4 và Sprint 5 đã được kiểm thử, tối ưu và hoàn thiện theo đúng Definition of Done (DoD):
+
+### 1. Danh sách 14 User Stories
+1. **S-21 / SCRUM-113**: Ghi mục nhật ký gắn với hạng mục, nội dung và giờ; lọc theo ngày/hạng mục; chặn lưu khi thiếu hạng mục.
+2. **S-22 / SCRUM-114**: Nhật ký ngày có nhân lực, thiết bị và thời tiết; xem/đối chiếu các ngày mưa trong tuần; nạp cấu hình tập trung (`backend/src/config/diaryConfig.js`), không hard-code rải rác.
+3. **S-23 / SCRUM-115**: Đính kèm nhiều ảnh hiện trường, nén ảnh dưới 1MB ở client, hiển thị thumbnail trước ảnh gốc, cho phép gửi lại ảnh lỗi, lưu trữ an toàn chống path traversal.
+4. **S-24 / SCRUM-116**: Khóa nhật ký phía server (`is_locked = 1`, HTTP 423). Mở khóa bắt buộc nhập lý do, phân quyền Ban quản lý và ghi nhận audit log.
+5. **S-25 / SCRUM-117**: Chỉ huy trưởng gán, hủy hoặc chuyển công việc giữa các đội thi công; lưu lịch sử phân công; cảnh báo khi vượt định mức công việc song song.
+6. **S-26 / SCRUM-118**: Đội trưởng xem công việc trên mobile theo ngày bắt đầu (start_date ASC), nhận biết việc găng (Critical Path); báo cáo khối lượng hoàn thành theo ngày; cảnh báo khi vượt kế hoạch nhưng vẫn cho lưu; cách ly nghiêm ngặt giữa các đội.
+7. **S-27 / SCRUM-119**: PWA cài đặt được (A2HS), mở toàn màn hình, lưu App Shell để mở nhanh lần sau, thông báo phiên bản mới mà không tự ý reload khi đang nhập dữ liệu.
+8. **S-28 / SCRUM-120**: Quản lý mời thành viên và gán vai trò; hỗ trợ đặt mật khẩu lần đầu; gỡ thành viên bảo vệ PM cuối cùng, thu hồi quyền API nhưng giữ nguyên lịch sử.
+9. **S-29 / SCRUM-142**: Lưu trữ ngoại tuyến nhật ký có cấu trúc đầy đủ (thời tiết, nhân lực, thiết bị, hạng mục thi công, ảnh) trong IndexedDB; sinh mã định danh trên thiết bị (`client_diary_id`); xin quyền lưu trữ bền vững và cảnh báo dung lượng gần đầy.
+10. **S-30 / SCRUM-143**: Tự động đồng bộ khi có mạng lại theo thứ tự tạo; bảo vệ tính Idempotency bằng UNIQUE constraint tại CSDL (`client_diary_id`, `client_item_id`, `client_photo_id`); cách ly lỗi từng mục mà không chặn các mục tiếp theo.
+11. **S-31 / SCRUM-144**: Thanh trạng thái hiển thị số nhật ký và số ảnh đang chờ đồng bộ từ bộ nhớ máy (không gọi API đếm); hiển thị thời điểm đồng bộ thành công gần nhất.
+12. **S-32 / SCRUM-145**: Kiểm soát xung đột phiên bản (Optimistic Concurrency) với trường `version`; tự động gộp an toàn (Auto-Merge) các trường không chồng lấn; trả về HTTP 409 Conflict khi sửa cùng trường và giữ cả hai bản trong bảng `diary_conflicts`.
+13. **S-33 / SCRUM-146**: Hàng đợi ảnh nền tuần tự không chặn ghi nhật ký; tự động tạm dừng khi mất sóng và tiếp tục khi có mạng; hiển thị placeholder ảnh chờ thay vì ảnh hỏng.
+14. **S-34 / SCRUM-147**: Kịch bản E2E kiểm thử bằng trình duyệt thật (`playwright-core`): ngắt mạng, tạo 20 nhật ký kèm ảnh vào IndexedDB, kết nối mạng lại, server nhận đúng 20 bản ghi duy nhất, kiểm tra gửi lặp cùng mã bảo toàn idempotency, thời gian chạy dưới 180 giây (< 3s).
+
+### 2. Các File Migration CSDL Mới
+* `migration_s26_team_daily_progress.sql` & `_down.sql`: Bảng `team_daily_progress` theo dõi tiến độ thi công từng ngày của đội.
+* `migration_s30_idempotency_keys.sql` & `_down.sql`: Ràng buộc `UNIQUE KEY` cho `client_diary_id`, `client_item_id`, `client_photo_id`.
+* `migration_s32_conflict_resolution.sql` & `_down.sql`: Cột `version` và bảng `diary_conflicts` lưu vết xung đột và giữ cả 2 bản.
+
+### 3. Lệnh Chạy Kiểm Thử
+```bash
+# Kiểm tra lint
+npm run lint
+
+# Chạy toàn bộ 258 bài test tự động
+npm test
+
+# Chạy riêng kịch bản trình duyệt thật S-34 E2E
+npm run test:s34
+```
+
+

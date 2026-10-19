@@ -27,6 +27,23 @@ app.use((req, res, next) => {
   next();
 });
 
+// Phục vụ file Service Worker và Manifest với MIME Type và Header chuẩn (S-27 / PWA)
+app.get('/sw.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.sendFile(path.join(__dirname, '../frontend/sw.js'));
+});
+
+app.get('/manifest.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+  res.sendFile(path.join(__dirname, '../frontend/manifest.json'));
+});
+
+app.get('/offline', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/offline.html'));
+});
+
 // Phục vụ giao diện người dùng frontend và file uploads
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -102,6 +119,14 @@ app.get('/teams', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/teams.html'));
 });
 
+app.get('/acceptance', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/acceptance.html'));
+});
+
+app.get('/payment', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/payment.html'));
+});
+
 // Middleware xác thực token phiên
 const { authenticate } = require('./src/utils/rbac');
 app.use(authenticate);
@@ -112,6 +137,7 @@ app.use('/api', projectRoutes(db));
 
 const wbsRoutes = require("./wbs_routes");
 app.use("/api", wbsRoutes(db));
+app.use("/api", require("./s35_routes")(db));
 
 // Routes quản lý lịch làm việc và ngày nghỉ lễ (S-17 / T-40)
 const calendarRoutes = require('./src/routes/calendarRoutes');
@@ -134,6 +160,14 @@ app.use("/api", diaryRoutes(db));
 // S-25 / SCRUM-125 / T-50: Đội thi công & Chỉ huy trưởng giao việc
 const teamRoutes = require("./src/routes/teamRoutes");
 app.use("/api", teamRoutes(db));
+
+// S-36 / SCRUM-165: Lập phiếu nghiệm thu theo đợt & tự tính khối lượng phát sinh
+const acceptanceRoutes = require("./src/routes/acceptanceRoutes");
+app.use("/api", acceptanceRoutes(db));
+
+// S-45 / SCRUM-E08: Khấu trừ tiền tạm giữ hợp đồng trên đề nghị thanh toán
+const paymentRoutes = require("./src/routes/paymentRoutes");
+app.use("/api", paymentRoutes(db));
 
 // ==========================================
 // CÁC ENDPOINT CHO SAO LƯU & KHÔI PHỤC CSDL (S-20, T-46, T-47)
@@ -176,7 +210,7 @@ app.post('/api/backup/restore', async (req, res) => {
 });
 
 function startServer(port) {
-  const server = app.listen(port, async () => {
+  const server = app.listen(port, "0.0.0.0", async () => {
     console.log(`===================================================`);
     console.log(`🚀 Backend Quản lý thi công đang chạy tại port ${port}`);
     console.log(`👉 Link giao diện Lịch Làm Việc: http://localhost:${port}/calendar.html`);

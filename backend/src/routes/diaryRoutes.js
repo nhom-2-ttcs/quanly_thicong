@@ -6,6 +6,15 @@ module.exports = (db) => {
   const router = express.Router();
   const diaryService = new DiaryService(db);
 
+  // 0. S-22 / SCRUM-114: Cấu hình danh mục loại thời tiết và thiết bị thi công
+  router.get('/projects/:projectId/diary-config', (req, res) => {
+    res.json(diaryService.getDiaryConfig());
+  });
+
+  router.get('/diary-config', (req, res) => {
+    res.json(diaryService.getDiaryConfig());
+  });
+
   // 1. Xem đối chiếu tuần làm việc và thống kê ngày mưa (T51)
   // Lưu ý: Đặt route /week-comparison trước route /:date để tránh trùng khớp tham số
   router.get('/projects/:projectId/diaries/week-comparison', async (req, res) => {
@@ -442,6 +451,110 @@ const { handleMultipartUpload } = require('../middlewares/multipartUpload');
         success: false,
         message: err.message || 'Lỗi khi lấy lịch sử mục nhật ký'
       });
+    }
+  });
+
+  // 17. S-24 / SCRUM-116: Khóa sổ nhật ký thi công phía server
+  router.post('/projects/:projectId/diaries/:date/lock', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const dateStr = req.params.date;
+    if (checkProjectReadAccess(req, res, projectId)) return;
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const userId = req.user?.id || req.body.user_id || 1;
+      const result = await diaryService.lockDiary(projectId, dateStr, userId);
+      res.json(result);
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
+  // 18. S-24 / SCRUM-116: Mở khóa sổ nhật ký thi công (Quyền Admin / PM, lý do bắt buộc và audit log)
+  router.post('/projects/:projectId/diaries/:date/unlock', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const dateStr = req.params.date;
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    try {
+      const user = req.user || { id: Number(req.body.user_id) || 1, role_name: req.body.role || 'project_manager' };
+      const { reason } = req.body;
+      const result = await diaryService.unlockDiary(projectId, dateStr, user, reason);
+      res.json(result);
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
+  // 19. S-24: Xem lịch sử audit log mở khóa sổ
+  router.get('/projects/:projectId/diaries/:date/unlock-logs', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const dateStr = req.params.date;
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    try {
+      const result = await diaryService.getDiaryUnlockLogs(projectId, dateStr);
+      res.json(result);
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
+  // 20. S-32 / SCRUM-145: Cập nhật nhật ký có kiểm tra xung đột phiên bản (Optimistic Concurrency)
+  router.put('/projects/:projectId/diaries/:date', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const dateStr = req.params.date;
+    if (checkProjectReadAccess(req, res, projectId)) return;
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const user = req.user || { id: Number(req.body.user_id) || 1 };
+      const result = await diaryService.updateDiaryWithConflictCheck(projectId, dateStr, req.body, user);
+      res.json({
+        success: true,
+        message: result.message || 'Cập nhật nhật ký thành công',
+        data: result.data || result
+      });
+    } catch (err) {
+      if (err.status === 409 && err.conflict) {
+        return res.status(409).json({
+          success: false,
+          conflict: true,
+          message: err.message,
+          data: err.data
+        });
+      }
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
+  // 21. S-32: Lấy danh sách xung đột phiên bản của dự án
+  router.get('/projects/:projectId/diary-conflicts', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    try {
+      const status = req.query.status || null;
+      const result = await diaryService.getDiaryConflicts(projectId, status);
+      res.json(result);
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
+  // 22. S-32: Giải quyết xung đột (Chọn giữ bản server, bản client, hoặc gộp thủ công)
+  router.post('/projects/:projectId/diary-conflicts/:id/resolve', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const conflictId = Number(req.params.id);
+    if (checkProjectReadAccess(req, res, projectId)) return;
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const user = req.user || { id: Number(req.body.user_id) || 1, role_name: req.body.role || 'project_manager' };
+      const result = await diaryService.resolveDiaryConflict(projectId, conflictId, req.body, user);
+      res.json(result);
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
     }
   });
 

@@ -4,11 +4,12 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "lint": "node -c server.js wbs_routes.js src/routes/taskRoutes.js src/routes/dependencyRoutes.js src/routes/schedulingRoutes.js src/routes/projectRoutes.js src/routes/diaryRoutes.js src/routes/teamRoutes.js src/services/teamService.js src/repositories/dependencyRepository.js src/repositories/scheduleResultRepository.js src/repositories/baselineRepository.js src/services/dependencyService.js src/services/diaryService.js src/middlewares/multipartUpload.js src/utils/rbac.js src/domain/scheduling/graph.js src/domain/scheduling/topologicalSort.js src/domain/scheduling/contracts.js src/domain/scheduling/schedulerService.js src/algorithms/dependencyConstraints.js src/algorithms/forwardPass.js src/algorithms/topologicalSort.js src/algorithms/backwardPass.js middlewares/checkCycleMiddleware.js services/cycleDetectorService.js src/services/backupService.js",
+    "lint": "node -c server.js wbs_routes.js src/routes/taskRoutes.js src/routes/dependencyRoutes.js src/routes/schedulingRoutes.js src/routes/projectRoutes.js src/routes/diaryRoutes.js src/routes/teamRoutes.js src/routes/acceptanceRoutes.js src/services/acceptanceService.js src/routes/paymentRoutes.js src/services/paymentService.js src/services/teamService.js src/utils/exifParser.js src/repositories/dependencyRepository.js src/repositories/scheduleResultRepository.js src/repositories/baselineRepository.js src/services/dependencyService.js src/services/diaryService.js src/middlewares/multipartUpload.js src/utils/rbac.js src/utils/projectStartDate.js src/domain/scheduling/graph.js src/domain/scheduling/topologicalSort.js src/domain/scheduling/contracts.js src/domain/scheduling/schedulerService.js src/algorithms/dependencyConstraints.js src/algorithms/forwardPass.js src/algorithms/topologicalSort.js src/algorithms/backwardPass.js middlewares/checkCycleMiddleware.js services/cycleDetectorService.js src/services/backupService.js",
     "backup": "node scripts/backup.js",
     "restore": "node scripts/restore.js",
     "benchmark": "node scripts/run_real_benchmark.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:s34": "node --test test/s34_offline_20_photos_e2e.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

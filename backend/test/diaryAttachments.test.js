@@ -348,6 +348,183 @@ test('=== [T52 / S-23] BỘ KIỂM THỬ GỬI NHẬT KÝ THI CÔNG & ẢNH ĐÍ
       const photosAfter = getSiteDiaryPhotos(saved.id);
       assert.strictEqual(photosAfter.length, 0, 'Ảnh phải được xóa khỏi nhật ký');
     });
+
+    await tB.test('B9: Xóa ảnh không tồn tại trả về lỗi 404', async () => {
+      await assert.rejects(
+        async () => {
+          await diaryService.deletePhoto(projectId, 999999);
+        },
+        (err) => {
+          assert.strictEqual(err.status, 404);
+          assert.ok(err.message.includes('Không tìm thấy ảnh đính kèm'));
+          return true;
+        }
+      );
+    });
+
+    await tB.test('B10: Không thể xóa ảnh thuộc dự án khác (ngăn chặn xóa chéo dự án)', async () => {
+      // Tạo nhật ký và ảnh ở dự án 2
+      const savedOther = await diaryService.saveDiary(2, {
+        diary_date: '2026-10-19',
+        weather_condition: 'sunny'
+      }, 1, [
+        {
+          filename: 'photo_proj_2.jpg',
+          path: '/uploads/diaries/photo_proj_2.jpg',
+          size: 1024 * 50,
+          mimetype: 'image/jpeg'
+        }
+      ]);
+      const otherPhotos = getSiteDiaryPhotos(savedOther.id);
+      const otherPhotoId = otherPhotos[0].id;
+
+      // Cố tình dùng projectId 1 để xóa ảnh của projectId 2
+      await assert.rejects(
+        async () => {
+          await diaryService.deletePhoto(1, otherPhotoId);
+        },
+        (err) => {
+          assert.strictEqual(err.status, 404);
+          return true;
+        }
+      );
+
+      // Ảnh của dự án 2 vẫn còn nguyên vẹn
+      const afterAttempt = getSiteDiaryPhotos(savedOther.id);
+      assert.strictEqual(afterAttempt.length, 1);
+    });
+
+    await tB.test('B11: Xóa ảnh thuộc nhật ký đã bị khóa sổ ném lỗi HTTP 423', async () => {
+      const lockDate = '2026-10-20';
+      const saved = await diaryService.saveDiary(projectId, {
+        diary_date: lockDate,
+        weather_condition: 'sunny'
+      }, 1, [
+        {
+          filename: 'photo_locked.jpg',
+          path: '/uploads/diaries/photo_locked.jpg',
+          size: 1024 * 80,
+          mimetype: 'image/jpeg'
+        }
+      ]);
+      const photoId = getSiteDiaryPhotos(saved.id)[0].id;
+
+      // Khóa sổ nhật ký ngày này
+      await diaryService.lockDiary(projectId, lockDate, 1);
+
+      // Thao tác xóa ảnh phải bị chặn với mã 423
+      await assert.rejects(
+        async () => {
+          await diaryService.deletePhoto(projectId, photoId);
+        },
+        (err) => {
+          assert.strictEqual(err.status, 423);
+          assert.ok(err.message.includes('đã bị khóa sổ'));
+          return true;
+        }
+      );
+
+      // Ảnh vẫn còn nguyên vẹn
+      assert.strictEqual(getSiteDiaryPhotos(saved.id).length, 1);
+    });
+
+    await tB.test('B12: Không xóa file vật lý nếu file vẫn được bản ghi khác dùng chung', async () => {
+      const sharedFileName = 'shared_photo_specimen.jpg';
+      const uploadsDir = path.join(__dirname, '../uploads/diaries');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const testFilePath = path.join(uploadsDir, sharedFileName);
+      fs.writeFileSync(testFilePath, 'dummy-binary-photo-content');
+
+      // Tạo 2 nhật ký cùng tham chiếu sharedFileName
+      const d1 = await diaryService.saveDiary(projectId, {
+        diary_date: '2026-10-21',
+        weather_condition: 'sunny'
+      }, 1, [{ filename: sharedFileName, path: `/uploads/diaries/${sharedFileName}`, size: 100, mimetype: 'image/jpeg' }]);
+
+      const d2 = await diaryService.saveDiary(projectId, {
+        diary_date: '2026-10-22',
+        weather_condition: 'cloudy'
+      }, 1, [{ filename: sharedFileName, path: `/uploads/diaries/${sharedFileName}`, size: 100, mimetype: 'image/jpeg' }]);
+
+      const p1Id = getSiteDiaryPhotos(d1.id)[0].id;
+      const p2Id = getSiteDiaryPhotos(d2.id)[0].id;
+
+      // Xóa bản ghi ảnh p1Id
+      await diaryService.deletePhoto(projectId, p1Id);
+
+      // Bản ghi p1 đã mất, nhưng file vật lý vẫn PHẢI CÒN vì p2 vẫn tham chiếu
+      assert.strictEqual(fs.existsSync(testFilePath), true, 'File vật lý không được xóa vì p2 vẫn tham chiếu');
+
+      // Xóa tiếp bản ghi ảnh p2Id
+      await diaryService.deletePhoto(projectId, p2Id);
+
+      // Khi không còn bản ghi nào tham chiếu, file vật lý được dọn sạch
+      assert.strictEqual(fs.existsSync(testFilePath), false, 'File vật lý phải được dọn khi không còn bản ghi nào tham chiếu');
+    });
+
+    await tB.test('B13: Phân quyền RBAC - Người dùng Viewer bị chặn 403 Forbidden khi gọi route xóa ảnh', async () => {
+      const routes = diaryRoutesFactory({ pool: null });
+      // Tìm handler của route DELETE /projects/:projectId/diaries/photos/:photoId
+      const deleteRouteLayer = routes.stack.find(
+        layer => layer.route && layer.route.path === '/projects/:projectId/diaries/photos/:photoId' && layer.route.methods.delete
+      );
+      assert.ok(deleteRouteLayer, 'Phải có route DELETE /projects/:projectId/diaries/photos/:photoId');
+
+      const deleteHandler = deleteRouteLayer.route.stack[deleteRouteLayer.route.stack.length - 1].handle;
+
+      const mockReq = {
+        params: { projectId: '1', photoId: '99' },
+        user: { role: 'Viewer', id: 999 },
+        headers: {}
+      };
+
+      let statusCode = 0;
+      let responseBody = null;
+      const mockRes = {
+        status: (code) => {
+          statusCode = code;
+          return {
+            json: (data) => { responseBody = data; }
+          };
+        },
+        json: (data) => { responseBody = data; }
+      };
+
+      await deleteHandler(mockReq, mockRes);
+      assert.strictEqual(statusCode, 403, 'Người dùng Viewer phải bị trả về HTTP 403');
+      assert.strictEqual(responseBody.success, false);
+      assert.ok(responseBody.message.toLowerCase().includes('quyền'));
+    });
+
+    await tB.test('B14: Kiểm tra mã frontend diary.html - Giữ nguyên ảnh trên giao diện nếu API trả lỗi', () => {
+      const htmlPath = path.join(__dirname, '../../frontend/diary.html');
+      const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+
+      // Đảm bảo có confirmation
+      assert.ok(htmlContent.includes('confirm('), 'Phải có xác nhận trước khi xóa ảnh');
+
+      // Đảm bảo chỉ lọc gỡ ảnh khi res.ok && data.success
+      assert.ok(
+        htmlContent.includes('if (res.ok && data.success)'),
+        'Chỉ được gỡ ảnh khỏi giao diện sau khi máy chủ xác nhận thành công'
+      );
+
+      // Đảm bảo có bắt lỗi catch và hiển thị thông báo lỗi
+      assert.ok(htmlContent.includes('showErrorToast'), 'Phải hiển thị toast lỗi khi xóa thất bại');
+    });
+
+    await tB.test('B15: Bố cục ảnh responsive không làm tràn màn hình (mobile & desktop)', () => {
+      const htmlPath = path.join(__dirname, '../../frontend/diary.html');
+      const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+
+      assert.ok(htmlContent.includes('.photo-preview-grid'), 'Phải có class .photo-preview-grid');
+      assert.ok(htmlContent.includes('repeat(auto-fill, minmax('), 'Grid ảnh phải tự co giãn tự động');
+      assert.ok(htmlContent.includes('object-fit: cover'), 'Ảnh thumbnail phải giữ đúng tỷ lệ không méo');
+      assert.ok(htmlContent.includes('@media (max-width: 480px)'), 'Phải có media query cho màn hình nhỏ');
+      assert.ok(htmlContent.includes('width: 100%'), 'Không được gây tràn ngang khung chứa');
+    });
   });
 
   // ========================================================

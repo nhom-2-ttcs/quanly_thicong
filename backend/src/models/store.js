@@ -507,9 +507,81 @@ function getSiteDiaryByDate(projectId, date) {
   return inMemorySiteDiaries.find(d => Number(d.project_id) === pId && d.diary_date === date) || null;
 }
 
+let inMemoryAuditLogs = [];
+function logAudit({ userId, action, resourceType, resourceId, reason }) {
+  const newId = inMemoryAuditLogs.length > 0 ? Math.max(...inMemoryAuditLogs.map(l => l.id)) + 1 : 1;
+  const entry = {
+    id: newId,
+    user_id: Number(userId || 1),
+    action: String(action),
+    resource_type: String(resourceType),
+    resource_id: String(resourceId),
+    reason: String(reason || ''),
+    created_at: new Date().toISOString()
+  };
+  inMemoryAuditLogs.push(entry);
+  return entry;
+}
+
+function getAuditLogs({ resourceType, resourceId } = {}) {
+  let list = [...inMemoryAuditLogs];
+  if (resourceType) list = list.filter(l => l.resource_type === resourceType);
+  if (resourceId) list = list.filter(l => String(l.resource_id) === String(resourceId));
+  return list;
+}
+
+let inMemoryDiaryConflicts = [];
+function saveDiaryConflict({ projectId, entityType, entityId, serverVersion, clientVersion, serverData, clientData, conflictFields, autoMerged = false, mergedData = null }) {
+  const newId = inMemoryDiaryConflicts.length > 0 ? Math.max(...inMemoryDiaryConflicts.map(c => c.id)) + 1 : 1;
+  const conflict = {
+    id: newId,
+    project_id: Number(projectId),
+    entity_type: entityType,
+    entity_id: Number(entityId),
+    server_version: Number(serverVersion),
+    client_version: Number(clientVersion),
+    server_data: serverData,
+    client_data: clientData,
+    conflict_fields: conflictFields || [],
+    auto_merged: autoMerged ? 1 : 0,
+    merged_data: mergedData || null,
+    status: autoMerged ? 'resolved_merged' : 'pending',
+    resolved_by: autoMerged ? 1 : null,
+    resolved_at: autoMerged ? new Date().toISOString() : null,
+    created_at: new Date().toISOString()
+  };
+  inMemoryDiaryConflicts.push(conflict);
+  return conflict;
+}
+
+function getDiaryConflicts(projectId, status = null) {
+  const pId = Number(projectId);
+  let list = inMemoryDiaryConflicts.filter(c => c.project_id === pId);
+  if (status) list = list.filter(c => c.status === status);
+  return list;
+}
+
+function getDiaryConflictById(id) {
+  const cId = Number(id);
+  return inMemoryDiaryConflicts.find(c => c.id === cId) || null;
+}
+
+function resolveDiaryConflict(id, resolution, resolvedBy = 1) {
+  const conflict = getDiaryConflictById(id);
+  if (!conflict) return null;
+  conflict.status = resolution.status || 'resolved_client';
+  conflict.resolved_by = Number(resolvedBy || 1);
+  conflict.resolved_at = new Date().toISOString();
+  if (resolution.mergedData) {
+    conflict.merged_data = resolution.mergedData;
+  }
+  return conflict;
+}
+
 function saveSiteDiaryEntry({
   project_id,
   diary_date,
+  client_diary_id = null,
   weather_condition = 'sunny',
   is_rain_day = false,
   temperature_min = null,
@@ -522,6 +594,14 @@ function saveSiteDiaryEntry({
 }) {
   const pId = Number(project_id);
   const nowStr = new Date().toISOString();
+
+  // S-30: Ràng buộc idempotency - Nếu đã có bản ghi cùng client_diary_id thì trả về luôn bản ghi cũ (không tạo trùng)
+  if (client_diary_id) {
+    const existingByClient = inMemorySiteDiaries.find(d => Number(d.project_id) === pId && d.client_diary_id === String(client_diary_id));
+    if (existingByClient) {
+      return existingByClient;
+    }
+  }
 
   // Kiểm tra khóa sổ (S-24)
   const existing = inMemorySiteDiaries.find(d => Number(d.project_id) === pId && d.diary_date === diary_date);
@@ -543,6 +623,7 @@ function saveSiteDiaryEntry({
     existing.manpower_count = Number(manpower_count || 0);
     existing.equipment_status = equipment_status;
     existing.work_notes = work_notes;
+    existing.version = (existing.version || 1) + 1; // S-32: Tăng phiên bản khi sửa
     existing.updated_at = nowStr;
     return existing;
   } else {
@@ -551,6 +632,7 @@ function saveSiteDiaryEntry({
       id: newId,
       project_id: pId,
       diary_date,
+      client_diary_id: client_diary_id ? String(client_diary_id) : null,
       weather_condition,
       is_rain_day: calculatedIsRain ? 1 : 0,
       temperature_min,
@@ -562,6 +644,7 @@ function saveSiteDiaryEntry({
       is_locked: 0,
       locked_at: null,
       locked_by: null,
+      version: 1, // S-32: Phiên bản khởi tạo
       created_by: Number(created_by || 1),
       created_at: nowStr,
       updated_at: nowStr
@@ -584,6 +667,26 @@ function lockSiteDiary(projectId, date, userId) {
   return diary;
 }
 
+function unlockSiteDiary(projectId, date, userId, reason) {
+  const diary = getSiteDiaryByDate(projectId, date);
+  if (!diary) {
+    const err = new Error('Không tìm thấy nhật ký của ngày này để mở khóa.');
+    err.status = 404;
+    throw err;
+  }
+  diary.is_locked = 0;
+  diary.locked_at = null;
+  diary.locked_by = null;
+  logAudit({
+    userId,
+    action: 'UNLOCK_DIARY',
+    resourceType: 'site_diaries',
+    resourceId: `${projectId}_${date}`,
+    reason
+  });
+  return diary;
+}
+
 let inMemorySiteDiaryPhotos = [];
 let inMemorySiteDiaryItems = [];
 
@@ -601,9 +704,46 @@ function saveSiteDiaryPhoto({
   caption = '',
   upload_status = 'completed',
   client_photo_id = null,
-  temp_path = null
+  temp_path = null,
+  taken_at = null,
+  latitude = null,
+  longitude = null,
+  altitude = null,
+  has_metadata = false,
+  raw_metadata = null,
+  is_suspicious = false,
+  suspicious_reasons = [],
+  confidence_level = null,
+  suspicious_details = null
 }) {
   const dId = Number(diary_id);
+  const cId = client_photo_id ? String(client_photo_id) : null;
+
+  // S-34 / T-64: Idempotency & deduplication - Nếu client_photo_id đã tồn tại trong nhật ký, cập nhật bản ghi cũ
+  if (cId) {
+    const existing = inMemorySiteDiaryPhotos.find(p => p.diary_id === dId && p.client_photo_id === cId);
+    if (existing) {
+      if (file_name) existing.file_name = String(file_name).trim();
+      if (file_path) existing.file_path = String(file_path).trim();
+      if (file_size) existing.file_size = Number(file_size);
+      if (mime_type) existing.mime_type = String(mime_type);
+      if (caption !== undefined && caption !== null) existing.caption = String(caption).trim();
+      if (upload_status) existing.upload_status = upload_status;
+      if (temp_path !== undefined) existing.temp_path = temp_path;
+      if (taken_at !== undefined) existing.taken_at = taken_at;
+      if (latitude !== undefined) existing.latitude = latitude;
+      if (longitude !== undefined) existing.longitude = longitude;
+      if (altitude !== undefined) existing.altitude = altitude;
+      if (has_metadata !== undefined) existing.has_metadata = Boolean(has_metadata);
+      if (raw_metadata !== undefined) existing.raw_metadata = raw_metadata;
+      if (is_suspicious !== undefined) existing.is_suspicious = Boolean(is_suspicious);
+      if (suspicious_reasons !== undefined) existing.suspicious_reasons = Array.isArray(suspicious_reasons) ? suspicious_reasons : [];
+      if (confidence_level !== undefined) existing.confidence_level = confidence_level;
+      if (suspicious_details !== undefined) existing.suspicious_details = suspicious_details;
+      return existing;
+    }
+  }
+
   const newId = inMemorySiteDiaryPhotos.length > 0 ? Math.max(...inMemorySiteDiaryPhotos.map(p => p.id)) + 1 : 1;
   const newPhoto = {
     id: newId,
@@ -614,8 +754,18 @@ function saveSiteDiaryPhoto({
     mime_type: String(mime_type || 'image/jpeg'),
     caption: caption ? String(caption).trim() : null,
     upload_status: upload_status || 'completed',
-    client_photo_id: client_photo_id ? String(client_photo_id) : null,
+    client_photo_id: cId,
     temp_path: temp_path ? String(temp_path) : null,
+    taken_at: taken_at || null,
+    latitude: latitude !== undefined && latitude !== null ? Number(latitude) : null,
+    longitude: longitude !== undefined && longitude !== null ? Number(longitude) : null,
+    altitude: altitude !== undefined && altitude !== null ? Number(altitude) : null,
+    has_metadata: Boolean(has_metadata || taken_at || (latitude !== null && latitude !== undefined)),
+    raw_metadata: raw_metadata || null,
+    is_suspicious: Boolean(is_suspicious),
+    suspicious_reasons: Array.isArray(suspicious_reasons) ? suspicious_reasons : [],
+    confidence_level: confidence_level || null,
+    suspicious_details: suspicious_details ? String(suspicious_details) : null,
     created_at: new Date().toISOString()
   };
   inMemorySiteDiaryPhotos.push(newPhoto);
@@ -635,6 +785,16 @@ function updateSiteDiaryPhoto(photoIdOrClientId, updateData) {
   if (updateData.upload_status !== undefined) photo.upload_status = updateData.upload_status;
   if (updateData.client_photo_id !== undefined) photo.client_photo_id = updateData.client_photo_id;
   if (updateData.temp_path !== undefined) photo.temp_path = updateData.temp_path;
+  if (updateData.taken_at !== undefined) photo.taken_at = updateData.taken_at;
+  if (updateData.latitude !== undefined) photo.latitude = updateData.latitude;
+  if (updateData.longitude !== undefined) photo.longitude = updateData.longitude;
+  if (updateData.altitude !== undefined) photo.altitude = updateData.altitude;
+  if (updateData.has_metadata !== undefined) photo.has_metadata = Boolean(updateData.has_metadata);
+  if (updateData.raw_metadata !== undefined) photo.raw_metadata = updateData.raw_metadata;
+  if (updateData.is_suspicious !== undefined) photo.is_suspicious = Boolean(updateData.is_suspicious);
+  if (updateData.suspicious_reasons !== undefined) photo.suspicious_reasons = Array.isArray(updateData.suspicious_reasons) ? updateData.suspicious_reasons : [];
+  if (updateData.confidence_level !== undefined) photo.confidence_level = updateData.confidence_level;
+  if (updateData.suspicious_details !== undefined) photo.suspicious_details = updateData.suspicious_details;
   return photo;
 }
 
@@ -679,6 +839,7 @@ function getSiteDiaryItemById(itemId) {
 
 function saveSiteDiaryItem({
   diary_id,
+  client_item_id = null,
   work_item_id = null,
   work_content,
   log_time = null,
@@ -688,10 +849,21 @@ function saveSiteDiaryItem({
   has_conflict = 0
 }) {
   const dId = Number(diary_id);
+  const cId = client_item_id ? String(client_item_id) : null;
+
+  // S-30: Ràng buộc idempotency - Nếu đã có client_item_id trùng thì trả về bản ghi cũ
+  if (cId) {
+    const existing = inMemorySiteDiaryItems.find(i => Number(i.diary_id) === dId && i.client_item_id === cId);
+    if (existing) {
+      return existing;
+    }
+  }
+
   const newId = inMemorySiteDiaryItems.length > 0 ? Math.max(...inMemorySiteDiaryItems.map(i => i.id)) + 1 : 1;
   const newItem = {
     id: newId,
     diary_id: dId,
+    client_item_id: cId,
     work_item_id: work_item_id ? Number(work_item_id) : null,
     work_content: String(work_content || '').trim(),
     log_time: log_time ? String(log_time).trim() : null,
@@ -736,7 +908,11 @@ function deleteSiteDiaryItem(itemId) {
 
 function clearSiteDiaryItems(diaryId) {
   const dId = Number(diaryId);
-  inMemorySiteDiaryItems = inMemorySiteDiaryItems.filter(i => Number(i.diary_id) !== dId);
+  for (let i = inMemorySiteDiaryItems.length - 1; i >= 0; i--) {
+    if (Number(inMemorySiteDiaryItems[i].diary_id) === dId) {
+      inMemorySiteDiaryItems.splice(i, 1);
+    }
+  }
 }
 
 // ==========================================
@@ -1173,7 +1349,320 @@ function deleteTaskData(id) {
   return true;
 }
 
+// ==========================================
+// BÁO CÁO KHỐI LƯỢNG NGÀY CỦA ĐỘI (S-26 / SCRUM-118)
+// ==========================================
+let inMemoryTeamDailyProgress = [];
+
+function getTeamDailyProgress(taskId = null, teamId = null, projectId = null) {
+  return inMemoryTeamDailyProgress.filter(p => {
+    if (projectId && Number(p.project_id) !== Number(projectId)) return false;
+    if (taskId && Number(p.task_id) !== Number(taskId)) return false;
+    if (teamId && Number(p.team_id) !== Number(teamId)) return false;
+    return true;
+  });
+}
+
+function saveTeamDailyProgress({ project_id, task_id, team_id, report_date, reported_quantity, notes, created_by }) {
+  const newId = inMemoryTeamDailyProgress.length > 0 ? Math.max(...inMemoryTeamDailyProgress.map(p => p.id)) + 1 : 1;
+  const entry = {
+    id: newId,
+    project_id: Number(project_id),
+    task_id: Number(task_id),
+    team_id: Number(team_id),
+    report_date: String(report_date),
+    reported_quantity: Number(reported_quantity),
+    notes: notes ? String(notes).trim() : null,
+    created_by: Number(created_by || 1),
+    created_at: new Date().toISOString()
+  };
+  inMemoryTeamDailyProgress.push(entry);
+  return entry;
+}
+
+// ==========================================
+// PHIẾU NGHIỆM THU THEO ĐỢT (S-36 / SCRUM-165)
+// ==========================================
+let inMemoryAcceptanceSheets = [];
+let inMemoryAcceptanceSheetItems = [];
+let inMemoryAcceptanceSheetPhotos = [];
+
+function getAcceptanceSheets(projectId) {
+  const pId = Number(projectId);
+  return inMemoryAcceptanceSheets
+    .filter(s => Number(s.project_id) === pId)
+    .sort((a, b) => b.period_number - a.period_number);
+}
+
+function getAcceptanceSheetById(sheetId) {
+  const sId = Number(sheetId);
+  const sheet = inMemoryAcceptanceSheets.find(s => s.id === sId);
+  if (!sheet) return null;
+  const items = inMemoryAcceptanceSheetItems.filter(i => i.sheet_id === sId);
+  const photos = inMemoryAcceptanceSheetPhotos.filter(p => p.sheet_id === sId);
+  return { ...sheet, items, photos };
+}
+
+function getLatestApprovedAcceptanceSheet(projectId) {
+  const pId = Number(projectId);
+  const approved = inMemoryAcceptanceSheets
+    .filter(s => Number(s.project_id) === pId && s.status === 'approved')
+    .sort((a, b) => b.period_number - a.period_number);
+  if (approved.length === 0) return null;
+  const latest = approved[0];
+  const items = inMemoryAcceptanceSheetItems.filter(i => i.sheet_id === latest.id);
+  return { ...latest, items };
+}
+
+function saveAcceptanceSheet(sheetData) {
+  const newId = inMemoryAcceptanceSheets.length > 0 ? Math.max(...inMemoryAcceptanceSheets.map(s => s.id)) + 1 : 1;
+  const now = new Date().toISOString();
+  const sheet = {
+    id: newId,
+    project_id: Number(sheetData.project_id),
+    sheet_code: String(sheetData.sheet_code).trim(),
+    name: String(sheetData.name).trim(),
+    period_number: Number(sheetData.period_number || 1),
+    from_date: String(sheetData.from_date),
+    to_date: String(sheetData.to_date),
+    status: sheetData.status || 'draft',
+    notes: sheetData.notes ? String(sheetData.notes).trim() : null,
+    created_by: Number(sheetData.created_by || 1),
+    approved_by: sheetData.approved_by ? Number(sheetData.approved_by) : null,
+    approved_at: sheetData.approved_at || null,
+    created_at: now,
+    updated_at: now
+  };
+  inMemoryAcceptanceSheets.push(sheet);
+  return sheet;
+}
+
+function updateAcceptanceSheet(sheetId, updateData) {
+  const sId = Number(sheetId);
+  const sheet = inMemoryAcceptanceSheets.find(s => s.id === sId);
+  if (!sheet) return null;
+  if (updateData.name !== undefined) sheet.name = String(updateData.name).trim();
+  if (updateData.sheet_code !== undefined) sheet.sheet_code = String(updateData.sheet_code).trim();
+  if (updateData.period_number !== undefined) sheet.period_number = Number(updateData.period_number);
+  if (updateData.from_date !== undefined) sheet.from_date = String(updateData.from_date);
+  if (updateData.to_date !== undefined) sheet.to_date = String(updateData.to_date);
+  if (updateData.status !== undefined) sheet.status = updateData.status;
+  if (updateData.notes !== undefined) sheet.notes = updateData.notes;
+  if (updateData.approved_by !== undefined) sheet.approved_by = updateData.approved_by;
+  if (updateData.approved_at !== undefined) sheet.approved_at = updateData.approved_at;
+  sheet.updated_at = new Date().toISOString();
+  return sheet;
+}
+
+function deleteAcceptanceSheet(sheetId) {
+  const sId = Number(sheetId);
+  const idx = inMemoryAcceptanceSheets.findIndex(s => s.id === sId);
+  if (idx === -1) return false;
+  inMemoryAcceptanceSheets.splice(idx, 1);
+  inMemoryAcceptanceSheetItems = inMemoryAcceptanceSheetItems.filter(i => i.sheet_id !== sId);
+  inMemoryAcceptanceSheetPhotos = inMemoryAcceptanceSheetPhotos.filter(p => p.sheet_id !== sId);
+  return true;
+}
+
+function saveAcceptanceSheetItem(itemData) {
+  const newId = inMemoryAcceptanceSheetItems.length > 0 ? Math.max(...inMemoryAcceptanceSheetItems.map(i => i.id)) + 1 : 1;
+  const prevApproved = Number(itemData.previous_approved_quantity || 0);
+  const cumulative = Number(itemData.cumulative_quantity || 0);
+  const periodQty = Number(itemData.period_quantity !== undefined ? itemData.period_quantity : (cumulative - prevApproved).toFixed(2));
+  const teamReported = Number(itemData.team_reported_quantity || 0);
+  const diff = Number((periodQty - teamReported).toFixed(2));
+
+  const item = {
+    id: newId,
+    sheet_id: Number(itemData.sheet_id),
+    work_item_id: itemData.work_item_id ? Number(itemData.work_item_id) : null,
+    task_id: itemData.task_id ? Number(itemData.task_id) : null,
+    item_name: String(itemData.item_name || '').trim(),
+    unit: String(itemData.unit || 'm3').trim(),
+    previous_approved_quantity: prevApproved,
+    cumulative_quantity: cumulative,
+    period_quantity: periodQty,
+    team_reported_quantity: teamReported,
+    difference: diff,
+    notes: itemData.notes ? String(itemData.notes).trim() : null,
+    created_at: new Date().toISOString()
+  };
+  inMemoryAcceptanceSheetItems.push(item);
+  return item;
+}
+
+function saveAcceptanceSheetPhoto(photoData) {
+  const newId = inMemoryAcceptanceSheetPhotos.length > 0 ? Math.max(...inMemoryAcceptanceSheetPhotos.map(p => p.id)) + 1 : 1;
+  const photo = {
+    id: newId,
+    sheet_id: Number(photoData.sheet_id),
+    file_name: String(photoData.file_name || 'photo.jpg').trim(),
+    file_path: String(photoData.file_path || '').trim(),
+    file_size: Number(photoData.file_size || 0),
+    mime_type: String(photoData.mime_type || 'image/jpeg'),
+    caption: photoData.caption ? String(photoData.caption).trim() : null,
+    taken_at: photoData.taken_at || null,
+    latitude: photoData.latitude !== undefined && photoData.latitude !== null ? Number(photoData.latitude) : null,
+    longitude: photoData.longitude !== undefined && photoData.longitude !== null ? Number(photoData.longitude) : null,
+    has_metadata: Boolean(photoData.has_metadata || photoData.taken_at || (photoData.latitude !== null && photoData.latitude !== undefined)),
+    is_suspicious: Boolean(photoData.is_suspicious),
+    suspicious_reasons: Array.isArray(photoData.suspicious_reasons) ? photoData.suspicious_reasons : (typeof photoData.suspicious_reasons === 'string' ? JSON.parse(photoData.suspicious_reasons || '[]') : []),
+    confidence_level: photoData.confidence_level || null,
+    suspicious_details: photoData.suspicious_details ? String(photoData.suspicious_details) : null,
+    created_at: new Date().toISOString()
+  };
+  inMemoryAcceptanceSheetPhotos.push(photo);
+  return photo;
+}
+
+function deleteAcceptanceSheetPhoto(photoId) {
+  const pId = Number(photoId);
+  const idx = inMemoryAcceptanceSheetPhotos.findIndex(p => p.id === pId);
+  if (idx === -1) return false;
+  inMemoryAcceptanceSheetPhotos.splice(idx, 1);
+  return true;
+}
+
+// ==========================================
+// ĐỀ NGHỊ THANH TOÁN & TẠM GIỮ HỢP ĐỒNG (S-45 / SCRUM-E08)
+// ==========================================
+let inMemoryPaymentRequests = [];
+let inMemoryPaymentRequestItems = [];
+
+function getProjectRetentionRate(projectId) {
+  const pId = Number(projectId);
+  const proj = inMemoryProjects.find(p => p.id === pId);
+  return proj && proj.retention_rate !== undefined ? Number(proj.retention_rate) : 5.00;
+}
+
+function updateProjectRetentionRate(projectId, rate) {
+  const pId = Number(projectId);
+  const r = Number(rate);
+  let proj = inMemoryProjects.find(p => p.id === pId);
+  if (!proj) {
+    proj = { id: pId, name: `Dự án ${pId}`, code: `DA-${pId}`, retention_rate: r };
+    inMemoryProjects.push(proj);
+  } else {
+    proj.retention_rate = r;
+  }
+  return r;
+}
+
+function getPaymentRequests(projectId) {
+  const pId = Number(projectId);
+  const list = inMemoryPaymentRequests
+    .filter(pr => Number(pr.project_id) === pId)
+    .sort((a, b) => b.period_number - a.period_number);
+
+  // Tính tổng tạm giữ luỹ kế qua các đề nghị (AC 3 S-45: tổng tạm giữ luỹ kế xem được)
+  let cumulativeRetention = 0;
+  let cumulativeGross = 0;
+  let cumulativeNet = 0;
+  list.forEach(pr => {
+    cumulativeRetention += Number(pr.retention_amount || 0);
+    cumulativeGross += Number(pr.gross_amount || 0);
+    cumulativeNet += Number(pr.net_payable_amount || 0);
+  });
+
+  return {
+    requests: list,
+    summary: {
+      retention_rate: getProjectRetentionRate(pId),
+      cumulative_retention_amount: Number(cumulativeRetention.toFixed(2)),
+      cumulative_gross_amount: Number(cumulativeGross.toFixed(2)),
+      cumulative_net_payable_amount: Number(cumulativeNet.toFixed(2))
+    }
+  };
+}
+
+function getPaymentRequestById(requestId) {
+  const rId = Number(requestId);
+  const req = inMemoryPaymentRequests.find(pr => pr.id === rId);
+  if (!req) return null;
+  const items = inMemoryPaymentRequestItems.filter(it => it.payment_request_id === rId);
+  return { ...req, items };
+}
+
+function savePaymentRequest(requestData, itemsData = []) {
+  const newId = inMemoryPaymentRequests.length > 0 ? Math.max(...inMemoryPaymentRequests.map(r => r.id)) + 1 : 1;
+  const gross = Number(requestData.gross_amount || 0);
+  const rate = Number(requestData.retention_rate !== undefined ? requestData.retention_rate : 5.00);
+  const retention = Number(requestData.retention_amount !== undefined ? requestData.retention_amount : (gross * (rate / 100)).toFixed(2));
+  const net = Number(requestData.net_payable_amount !== undefined ? requestData.net_payable_amount : (gross - retention).toFixed(2));
+
+  const newReq = {
+    id: newId,
+    project_id: Number(requestData.project_id),
+    request_code: String(requestData.request_code).trim(),
+    name: String(requestData.name).trim(),
+    period_number: Number(requestData.period_number || 1),
+    from_date: String(requestData.from_date),
+    to_date: String(requestData.to_date),
+    gross_amount: Number(gross.toFixed(2)),
+    retention_rate: Number(rate.toFixed(2)),
+    retention_amount: Number(retention.toFixed(2)),
+    net_payable_amount: Number(net.toFixed(2)),
+    status: requestData.status || 'draft',
+    notes: requestData.notes ? String(requestData.notes).trim() : null,
+    created_by: Number(requestData.created_by || 1),
+    approved_by: requestData.approved_by ? Number(requestData.approved_by) : null,
+    approved_at: requestData.approved_at || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  inMemoryPaymentRequests.push(newReq);
+
+  const createdItems = [];
+  let itemCounter = inMemoryPaymentRequestItems.length > 0 ? Math.max(...inMemoryPaymentRequestItems.map(i => i.id)) + 1 : 1;
+  for (const it of itemsData) {
+    const itemGross = Number((Number(it.period_quantity || 0) * Number(it.unit_price || 0)).toFixed(2));
+    const newItem = {
+      id: itemCounter++,
+      payment_request_id: newId,
+      acceptance_sheet_id: Number(it.acceptance_sheet_id),
+      work_item_id: it.work_item_id ? Number(it.work_item_id) : null,
+      item_name: String(it.item_name || 'Hạng mục').trim(),
+      unit: String(it.unit || 'm3').trim(),
+      period_quantity: Number(it.period_quantity || 0),
+      unit_price: Number(it.unit_price || 0),
+      line_total: Number(it.line_total !== undefined ? it.line_total : itemGross),
+      created_at: new Date().toISOString()
+    };
+    inMemoryPaymentRequestItems.push(newItem);
+    createdItems.push(newItem);
+  }
+
+  return { ...newReq, items: createdItems };
+}
+
+function approvePaymentRequest(projectId, requestId, userId) {
+  const rId = Number(requestId);
+  const req = inMemoryPaymentRequests.find(pr => pr.id === rId && Number(pr.project_id) === Number(projectId));
+  if (!req) return null;
+  req.status = 'approved';
+  req.approved_by = Number(userId);
+  req.approved_at = new Date().toISOString();
+  req.updated_at = new Date().toISOString();
+  return req;
+}
+
 module.exports = {
+  inMemoryAcceptanceSheets,
+  inMemoryAcceptanceSheetItems,
+  inMemoryAcceptanceSheetPhotos,
+  getAcceptanceSheets,
+  getAcceptanceSheetById,
+  getLatestApprovedAcceptanceSheet,
+  saveAcceptanceSheet,
+  updateAcceptanceSheet,
+  deleteAcceptanceSheet,
+  saveAcceptanceSheetItem,
+  saveAcceptanceSheetPhoto,
+  deleteAcceptanceSheetPhoto,
+  inMemoryTeamDailyProgress,
+  getTeamDailyProgress,
+  saveTeamDailyProgress,
   SEED_ROLES,
   findUserByEmail,
   updateUser,
@@ -1202,6 +1691,15 @@ module.exports = {
   getSiteDiaryByDate,
   saveSiteDiaryEntry,
   lockSiteDiary,
+  unlockSiteDiary,
+  inMemoryAuditLogs,
+  logAudit,
+  getAuditLogs,
+  inMemoryDiaryConflicts,
+  saveDiaryConflict,
+  getDiaryConflicts,
+  getDiaryConflictById,
+  resolveDiaryConflict,
   inMemorySiteDiaryPhotos,
   getSiteDiaryPhotos,
   saveSiteDiaryPhoto,
@@ -1248,6 +1746,14 @@ module.exports = {
   getSiteDiaryItemConflictById,
   updateSiteDiaryItemConflict,
   saveSiteDiaryItemHistory,
-  getSiteDiaryItemHistory
+  getSiteDiaryItemHistory,
+  inMemoryPaymentRequests,
+  inMemoryPaymentRequestItems,
+  getProjectRetentionRate,
+  updateProjectRetentionRate,
+  getPaymentRequests,
+  getPaymentRequestById,
+  savePaymentRequest,
+  approvePaymentRequest
 };
 

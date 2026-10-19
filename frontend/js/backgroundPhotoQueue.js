@@ -86,14 +86,18 @@
       } catch (_) {}
     }
 
-    const parts = dataUrl.split(',');
-    const byteString = root.atob ? root.atob(parts[1] || '') : Buffer.from(parts[1] || '', 'base64').toString('binary');
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
+    try {
+      const parts = dataUrl.split(',');
+      const byteString = root.atob ? root.atob(parts[1] || '') : Buffer.from(parts[1] || '', 'base64').toString('binary');
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      return new (root.Blob || Blob)([ab], { type: mimeType || 'image/jpeg' });
+    } catch (_) {
+      return new (root.Blob || Blob)([], { type: mimeType || 'image/jpeg' });
     }
-    return new (root.Blob || Blob)([ab], { type: mimeType || 'image/jpeg' });
   }
 
   function emit(eventName, payload) {
@@ -236,10 +240,12 @@
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
         let baseUrl = '';
-        if (typeof root.location !== 'undefined' && root.location.origin) {
-          baseUrl = root.location.origin;
-        } else if (typeof BackgroundPhotoQueue.apiBaseUrl === 'string') {
+        if (typeof BackgroundPhotoQueue.apiBaseUrl === 'string') {
           baseUrl = BackgroundPhotoQueue.apiBaseUrl;
+        } else if (typeof root.location !== 'undefined' && root.location.origin) {
+          baseUrl = root.location.origin;
+        } else if (typeof process !== 'undefined' && process.env.BACKEND_BASE_URL) {
+          baseUrl = process.env.BACKEND_BASE_URL;
         } else if (typeof process !== 'undefined' && process.env.PORT) {
           baseUrl = `http://localhost:${process.env.PORT}`;
         } else {
@@ -346,6 +352,23 @@
     emitProgress();
   }
 
+  function waitForAllProcessed(timeoutMs = 60000) {
+    return new Promise((resolve, reject) => {
+      const start = Date.now();
+      const check = () => {
+        const stats = getStats();
+        if (stats.pending === 0 && stats.uploading === 0) {
+          return resolve(stats);
+        }
+        if (Date.now() - start > timeoutMs) {
+          return reject(new Error(`Timeout ${timeoutMs}ms chờ hàng đợi ảnh xử lý xong. Còn ${stats.pending} pending, ${stats.uploading} uploading`));
+        }
+        setTimeout(check, 50);
+      };
+      check();
+    });
+  }
+
   function addEventListener(eventName, fn) {
     if (!activeListeners[eventName]) activeListeners[eventName] = [];
     activeListeners[eventName].push(fn);
@@ -377,6 +400,8 @@
     resume,
     retryFailed,
     clearAll,
+    waitForAllProcessed,
+    isPaused: () => isPaused,
     on: addEventListener,
     STORAGE_KEY
   };

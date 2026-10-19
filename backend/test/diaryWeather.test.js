@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { DiaryService, getMonday, addDays, isValidDateString } = require('../src/services/diaryService');
 const { inMemorySiteDiaries } = require('../src/models/store');
 
@@ -231,6 +232,13 @@ test('=== [T51 / S-22] BỘ KIỂM THỬ FORM THỐNG KÊ & ĐÁNH DẤU NGÀY M
     // Chủ Nhật 2026-10-18 -> getMonday phải là 2026-10-12
     assert.strictEqual(getMonday('2026-10-18'), '2026-10-12');
 
+    // Ngày lịch phải cho cùng kết quả ở máy chủ có múi giờ phía tây UTC.
+    const timezoneCheck = spawnSync(process.execPath, ['-e',
+      `const { getMonday } = require(${JSON.stringify(path.join(__dirname, '../src/services/diaryService'))}); process.stdout.write(getMonday('2026-10-14'));`
+    ], { encoding: 'utf8', env: { ...process.env, TZ: 'America/Los_Angeles' } });
+    assert.strictEqual(timezoneCheck.status, 0, timezoneCheck.stderr);
+    assert.strictEqual(timezoneCheck.stdout, '2026-10-12');
+
     assert.strictEqual(addDays('2026-10-12', 4), '2026-10-16'); // T2 + 4 = T6
   });
 
@@ -243,4 +251,26 @@ test('=== [T51 / S-22] BỘ KIỂM THỬ FORM THỐNG KÊ & ĐÁNH DẤU NGÀY M
     assert.ok(content.includes('overflow-x: auto'), 'Phải hỗ trợ cuộn ngang tránh tràn màn hình');
     assert.ok(content.includes('box-sizing: border-box'), 'Phải áp dụng border-box cho layout');
   });
+
+  await t.test('TC 11: [S-22 NFR] Danh sách thiết bị và loại thời tiết được nạp từ cấu hình tập trung, không hard-code rải rác', async () => {
+    const configRes = diaryService.getDiaryConfig();
+    assert.strictEqual(configRes.success, true);
+    assert.ok(Array.isArray(configRes.data.weather_types), 'Phải có danh mục weather_types trong cấu hình');
+    assert.ok(Array.isArray(configRes.data.equipment_list), 'Phải có danh mục equipment_list trong cấu hình');
+    assert.ok(configRes.data.weather_types.length >= 4, 'Phải có tối thiểu 4 loại thời tiết');
+    assert.ok(configRes.data.equipment_list.length >= 5, 'Phải có tối thiểu 5 loại thiết bị');
+
+    // Cố ý gửi loại thời tiết không nằm trong danh mục cấu hình -> Bị từ chối
+    await assert.rejects(
+      async () => {
+        await diaryService.saveDiary(projectId, {
+          diary_date: '2026-10-22',
+          weather_condition: 'alien_storm_snow',
+          manpower_count: 5
+        }, 1);
+      },
+      (err) => err.status === 400 && err.message.includes('Điều kiện thời tiết không hợp lệ')
+    );
+  });
 });
+
