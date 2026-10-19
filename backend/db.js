@@ -601,6 +601,58 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
       await pool.query('ALTER TABLE site_diary_items ADD INDEX IF NOT EXISTS idx_diary_item_work_item (work_item_id)');
     } catch (_) {}
 
+    // Migration S-32 (SCRUM-145): Bổ sung version & has_conflict và các bảng xung đột, lịch sử
+    try {
+      await pool.query('ALTER TABLE site_diary_items ADD COLUMN IF NOT EXISTS version INT NOT NULL DEFAULT 1 AFTER unit');
+      await pool.query('ALTER TABLE site_diary_items ADD COLUMN IF NOT EXISTS has_conflict TINYINT(1) NOT NULL DEFAULT 0 AFTER version');
+      await pool.query('ALTER TABLE site_diary_items ADD INDEX IF NOT EXISTS idx_diary_item_conflict (has_conflict)');
+    } catch (_) {}
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS site_diary_item_conflicts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        item_id INT NOT NULL,
+        diary_id INT NOT NULL,
+        base_version INT NOT NULL DEFAULT 1,
+        server_version INT NOT NULL DEFAULT 1,
+        client_version_data JSON NOT NULL,
+        server_version_data JSON NOT NULL,
+        conflicted_fields JSON NOT NULL,
+        submitted_by INT NULL,
+        device_id VARCHAR(100) NULL,
+        status ENUM('pending', 'resolved') NOT NULL DEFAULT 'pending',
+        resolved_choice ENUM('keep_server', 'keep_incoming', 'manual_merge') NULL,
+        resolved_by INT NULL,
+        resolved_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (item_id) REFERENCES site_diary_items(id) ON DELETE CASCADE,
+        FOREIGN KEY (diary_id) REFERENCES site_diaries(id) ON DELETE CASCADE,
+        INDEX idx_conflict_item (item_id),
+        INDEX idx_conflict_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS site_diary_item_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        item_id INT NOT NULL,
+        diary_id INT NOT NULL,
+        version INT NOT NULL,
+        work_item_id INT NULL,
+        work_content TEXT NOT NULL,
+        log_time VARCHAR(10) NULL,
+        quantity_done DECIMAL(12, 2) DEFAULT 0,
+        unit VARCHAR(50) NULL,
+        change_type ENUM('created', 'updated', 'auto_merged', 'conflict_resolved', 'conflict_superseded') NOT NULL DEFAULT 'updated',
+        changed_by INT NULL,
+        change_summary TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (item_id) REFERENCES site_diary_items(id) ON DELETE CASCADE,
+        INDEX idx_history_item (item_id),
+        INDEX idx_history_item_ver (item_id, version)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
 
     // 12. Tạo bảng site_diary_photos (TASK T52 / S-23 & S-33: Ảnh đính kèm & Hàng đợi tải nền)
     await pool.query(`

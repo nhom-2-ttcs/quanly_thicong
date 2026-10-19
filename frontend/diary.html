@@ -1419,12 +1419,20 @@
           ? ` • <strong>Khối lượng:</strong> ${item.quantity_done} ${escapeHtml(item.unit || '')}`
           : '';
 
+        const hasConflict = Number(item.has_conflict) === 1;
+        const versionBadge = `<span style="font-size: 11px; font-weight: 700; background: #e0f2fe; color: #0284c7; padding: 2px 7px; border-radius: 6px;">v${item.version || 1}</span>`;
+        const conflictBadge = hasConflict
+          ? `<span style="font-size: 11px; font-weight: 700; background: #fee2e2; color: #dc2626; border: 1px solid #f87171; padding: 2px 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" onclick="openS32ConflictModal(${item.id})">⚠️ Xung đột ngoại tuyến (Bấm đối chiếu)</span>`
+          : '';
+
         return `
-          <div class="diary-item-card" id="diary-item-card-${item.id}">
+          <div class="diary-item-card ${hasConflict ? 'item-has-conflict' : ''}" id="diary-item-card-${item.id}" style="${hasConflict ? 'border-left: 4px solid #ef4444; background: #fffaf0;' : ''}">
             <div style="flex-grow: 1; min-width: 0;">
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <span class="item-badge-time">⏰ ${escapeHtml(timeDisplay)}</span>
                 <span class="item-work-badge">🌲 [${escapeHtml(workItemCode)}] ${escapeHtml(workItemName)}</span>
+                ${versionBadge}
+                ${conflictBadge}
                 <span style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-left: auto;">
                   📅 ${escapeHtml(dateDisplay)}
                 </span>
@@ -1433,7 +1441,15 @@
               ${qtyDisplay ? `<div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">${qtyDisplay}</div>` : ''}
             </div>
             <div style="display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;">
-              <button type="button" class="btn-nav" onclick="deleteS21Item(${item.id})" style="padding: 6px 10px; font-size: 12px; color: var(--danger);" title="Xóa mục này">
+              ${hasConflict ? `
+                <button type="button" class="btn-nav" onclick="openS32ConflictModal(${item.id})" style="padding: 5px 9px; font-size: 11.5px; color: #b91c1c; background: #fee2e2; font-weight: 700; border: 1px solid #fca5a5;" title="Xem hai bản cạnh nhau và chọn bản giữ">
+                  ⚔️ Đối chiếu
+                </button>
+              ` : ''}
+              <button type="button" class="btn-nav" onclick="openS32HistoryModal(${item.id})" style="padding: 5px 9px; font-size: 11.5px; color: var(--text-muted);" title="Xem lịch sử các phiên bản">
+                📜 Lịch sử
+              </button>
+              <button type="button" class="btn-nav" onclick="deleteS21Item(${item.id})" style="padding: 5px 9px; font-size: 11.5px; color: var(--danger);" title="Xóa mục này">
                 🗑️
               </button>
             </div>
@@ -2888,6 +2904,250 @@
       🔄 Thử lại
     </button>
   </div>
+
+  <!-- S-32 (SCRUM-145) AC 2: MODAL ĐỐI CHIẾU XUNG ĐỘT HAI BẢN CẠNH NHAU & CHỌN BẢN GIỮ -->
+  <div id="s32-conflict-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 99999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 860px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;">
+      <!-- Header -->
+      <div style="padding: 18px 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; background: #fef2f2;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 24px;">⚔️</span>
+          <div>
+            <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #991b1b;">Đối Chiếu Xung Đột Ngoại Tuyến (S-32)</h3>
+            <p style="margin: 2px 0 0; font-size: 12.5px; color: #b91c1c;">Hai người cùng sửa một mục khi ngoại tuyến. Chọn bản muốn giữ lại, bản còn lại vẫn được lưu đầy đủ trong lịch sử.</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeS32ConflictModal()" style="border: none; background: transparent; font-size: 22px; cursor: pointer; color: #64748b; line-height: 1;">&times;</button>
+      </div>
+
+      <!-- Body: Side-by-side comparison -->
+      <div style="padding: 20px 24px; overflow-y: auto; flex-grow: 1;" id="s32-conflict-modal-body">
+        <div style="text-align: center; color: #64748b; padding: 30px;">Đang tải chi tiết xung đột...</div>
+      </div>
+
+      <!-- Footer -->
+      <div style="padding: 14px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc; display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" onclick="closeS32ConflictModal()" class="btn-nav" style="padding: 8px 16px;">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- S-32 AC 2: MODAL XEM LỊCH SỬ CÁC PHIÊN BẢN CỦA MỤC NHẬT KÝ -->
+  <div id="s32-history-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 99999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 780px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;">
+      <div style="padding: 18px 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; background: #f8fafc;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 24px;">📜</span>
+          <div>
+            <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #0f172a;">Lịch Sử Các Phiên Bản Mục Nhật Ký</h3>
+            <p style="margin: 2px 0 0; font-size: 12.5px; color: #64748b;">Mọi thao tác sửa đổi, gộp tự động và các bản ghi khi giải quyết xung đột đều được lưu vết.</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeS32HistoryModal()" style="border: none; background: transparent; font-size: 22px; cursor: pointer; color: #64748b; line-height: 1;">&times;</button>
+      </div>
+
+      <div style="padding: 20px 24px; overflow-y: auto; flex-grow: 1;" id="s32-history-modal-body">
+        <div style="text-align: center; color: #64748b; padding: 30px;">Đang tải lịch sử phiên bản...</div>
+      </div>
+
+      <div style="padding: 14px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc; display: flex; justify-content: flex-end;">
+        <button type="button" onclick="closeS32HistoryModal()" class="btn-nav" style="padding: 8px 16px;">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- S-32 Script: Quản lý modal đối chiếu xung đột và lịch sử -->
+  <script>
+    let currentConflictData = null;
+
+    async function openS32ConflictModal(itemId) {
+      const modal = document.getElementById('s32-conflict-modal');
+      const body = document.getElementById('s32-conflict-modal-body');
+      if (!modal || !body) return;
+
+      modal.style.display = 'flex';
+      body.innerHTML = '<div style="text-align: center; color: #64748b; padding: 30px;">Đang tải chi tiết xung đột...</div>';
+
+      try {
+        const token = localStorage.getItem('quanly_token');
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`/api/projects/${PROJECT_ID}/diary-items/conflicts?status=pending&itemId=${itemId}`, { headers });
+        const json = await res.json();
+        const conflicts = json.data || [];
+
+        if (conflicts.length === 0) {
+          body.innerHTML = '<div style="text-align: center; color: #10b981; padding: 30px; font-weight: 700;">✅ Mục này không còn xung đột nào chưa giải quyết.</div>';
+          return;
+        }
+
+        const conflict = conflicts[0];
+        currentConflictData = conflict;
+
+        const serverData = conflict.server_version_data || {};
+        const clientData = conflict.client_version_data || {};
+        const conflictedFields = Array.isArray(conflict.conflicted_fields) ? conflict.conflicted_fields : [];
+
+        function renderFieldCompare(label, fieldKey, serverVal, clientVal) {
+          const isConflict = conflictedFields.includes(fieldKey);
+          const style = isConflict
+            ? 'background: #fef2f2; border: 1.5px solid #ef4444; border-radius: 8px; padding: 10px; margin-bottom: 10px;'
+            : 'background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 10px;';
+
+          return `
+            <div style="${style}">
+              <div style="display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 700; color: ${isConflict ? '#dc2626' : '#64748b'}; margin-bottom: 6px;">
+                <span>${label}</span>
+                ${isConflict ? '<span style="background: #dc2626; color: white; padding: 1px 6px; border-radius: 4px;">Xung đột</span>' : '<span style="color: #10b981;">Khớp nhau / không xung đột</span>'}
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="font-size: 13px; color: #0f172a; word-break: break-word;">${escapeHtml(String(serverVal ?? ''))}</div>
+                <div style="font-size: 13px; color: #0f172a; word-break: break-word;">${escapeHtml(String(clientVal ?? ''))}</div>
+              </div>
+            </div>
+          `;
+        }
+
+        body.innerHTML = `
+          <!-- Header 2 Cột Cạnh Nhau (AC 2) -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+            <div style="background: #f1f5f9; padding: 12px 16px; border-radius: 10px; border: 2px solid #cbd5e1; text-align: center;">
+              <div style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase;">🖥️ Bản Trên Máy Chủ (Hiện Tại)</div>
+              <div style="font-size: 16px; font-weight: 800; color: #0f172a; margin-top: 4px;">Phiên bản v${conflict.server_version}</div>
+            </div>
+            <div style="background: #eff6ff; padding: 12px 16px; border-radius: 10px; border: 2px solid #93c5fd; text-align: center;">
+              <div style="font-size: 12px; font-weight: 700; color: #1d4ed8; text-transform: uppercase;">📱 Bản Ngoại Tuyến Đến Sau</div>
+              <div style="font-size: 16px; font-weight: 800; color: #1e40af; margin-top: 4px;">Đồng bộ từ v${conflict.base_version}</div>
+            </div>
+          </div>
+
+          <!-- So sánh từng trường -->
+          ${renderFieldCompare('Nội dung công việc', 'work_content', serverData.work_content, clientData.work_content)}
+          ${renderFieldCompare('Thời gian', 'log_time', serverData.log_time, clientData.log_time)}
+          ${renderFieldCompare('Khối lượng thực hiện', 'quantity_done', serverData.quantity_done, clientData.quantity_done)}
+          ${renderFieldCompare('Đơn vị tính', 'unit', serverData.unit, clientData.unit)}
+
+          <!-- Nút hành động chọn bản giữ (AC 2) -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px;">
+            <button type="button" onclick="resolveS32Conflict(${conflict.id}, 'keep_server')" style="padding: 12px; font-size: 13.5px; font-weight: 700; background: #f8fafc; color: #334155; border: 2px solid #94a3b8; border-radius: 10px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f8fafc'">
+              👈 GIỮ BẢN MÁY CHỦ<br>
+              <span style="font-size: 11px; font-weight: 500; color: #64748b;">(Bản ngoại tuyến sẽ chuyển vào lịch sử)</span>
+            </button>
+            <button type="button" onclick="resolveS32Conflict(${conflict.id}, 'keep_incoming')" style="padding: 12px; font-size: 13.5px; font-weight: 700; background: #2563eb; color: #ffffff; border: 2px solid #1d4ed8; border-radius: 10px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">
+              👉 GIỮ BẢN NGOẠI TUYẾN<br>
+              <span style="font-size: 11px; font-weight: 500; color: #dbeafe;">(Bản máy chủ cũ sẽ chuyển vào lịch sử)</span>
+            </button>
+          </div>
+        `;
+      } catch (err) {
+        body.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 20px;">Lỗi khi tải dữ liệu xung đột: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function closeS32ConflictModal() {
+      const modal = document.getElementById('s32-conflict-modal');
+      if (modal) modal.style.display = 'none';
+      currentConflictData = null;
+    }
+
+    async function resolveS32Conflict(conflictId, choice) {
+      if (!confirm(choice === 'keep_server' ? 'Bạn có chắc chắn muốn GIỮ BẢN MÁY CHỦ? (Bản ngoại tuyến vẫn được lưu trong lịch sử)' : 'Bạn có chắc chắn muốn GIỮ BẢN NGOẠI TUYẾN? (Bản máy chủ cũ vẫn được lưu trong lịch sử)')) {
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('quanly_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`/api/projects/${PROJECT_ID}/diary-items/conflicts/${conflictId}/resolve`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ choice })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || 'Không thể giải quyết xung đột');
+        }
+
+        showS21SuccessToast('✅ Đã giải quyết xung đột thành công! Bản còn lại đã được lưu vào lịch sử.');
+        closeS32ConflictModal();
+        if (typeof fetchS21Items === 'function') fetchS21Items();
+      } catch (err) {
+        alert('Lỗi: ' + err.message);
+      }
+    }
+
+    async function openS32HistoryModal(itemId) {
+      const modal = document.getElementById('s32-history-modal');
+      const body = document.getElementById('s32-history-modal-body');
+      if (!modal || !body) return;
+
+      modal.style.display = 'flex';
+      body.innerHTML = '<div style="text-align: center; color: #64748b; padding: 30px;">Đang tải lịch sử phiên bản...</div>';
+
+      try {
+        const token = localStorage.getItem('quanly_token');
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`/api/projects/${PROJECT_ID}/diary-items/${itemId}/history`, { headers });
+        const json = await res.json();
+        const history = json.data || [];
+
+        if (history.length === 0) {
+          body.innerHTML = '<div style="text-align: center; color: #64748b; padding: 30px;">Chưa có lịch sử thay đổi cho mục này.</div>';
+          return;
+        }
+
+        const typeLabels = {
+          created: { text: 'Tạo mới', color: '#16a34a', bg: '#dcfce7' },
+          updated: { text: 'Cập nhật', color: '#0284c7', bg: '#e0f2fe' },
+          auto_merged: { text: 'Tự động gộp (3-way)', color: '#7c3aed', bg: '#ede9fe' },
+          conflict_resolved: { text: 'Được chọn giữ', color: '#059669', bg: '#d1fae5' },
+          conflict_superseded: { text: 'Bản lưu lịch sử (Bị thay thế)', color: '#dc2626', bg: '#fee2e2' }
+        };
+
+        body.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            ${history.map(h => {
+              const meta = typeLabels[h.change_type] || { text: h.change_type, color: '#475569', bg: '#f1f5f9' };
+              const timeDisplay = h.created_at ? new Date(h.created_at).toLocaleString('vi-VN') : '';
+              return `
+                <div style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 12px; font-weight: 800; background: #0f172a; color: white; padding: 2px 7px; border-radius: 6px;">v${h.version}</span>
+                      <span style="font-size: 11.5px; font-weight: 700; background: ${meta.bg}; color: ${meta.color}; padding: 2px 8px; border-radius: 6px;">${meta.text}</span>
+                      <span style="font-size: 12px; color: #64748b;">${escapeHtml(h.changed_by_name || 'Người dùng')}</span>
+                    </div>
+                    <span style="font-size: 11.5px; color: #94a3b8;">🕒 ${escapeHtml(timeDisplay)}</span>
+                  </div>
+                  <div style="font-size: 13.5px; font-weight: 600; color: #0f172a; margin-top: 4px;">
+                    ${escapeHtml(h.work_content)}
+                  </div>
+                  <div style="font-size: 12px; color: #64748b; margin-top: 4px; display: flex; gap: 14px;">
+                    ${h.log_time ? `<span>⏰ ${escapeHtml(h.log_time)}</span>` : ''}
+                    ${h.quantity_done ? `<span>📊 Khối lượng: ${h.quantity_done} ${escapeHtml(h.unit || '')}</span>` : ''}
+                    ${h.change_summary ? `<span style="font-style: italic; color: #94a3b8;">${escapeHtml(h.change_summary)}</span>` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      } catch (err) {
+        body.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 20px;">Lỗi khi tải lịch sử: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function closeS32HistoryModal() {
+      const modal = document.getElementById('s32-history-modal');
+      if (modal) modal.style.display = 'none';
+    }
+  </script>
 
   <script src="/js/app-navbar.js"></script>
 </body>

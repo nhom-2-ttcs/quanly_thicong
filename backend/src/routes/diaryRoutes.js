@@ -357,7 +357,104 @@ const { handleMultipartUpload } = require('../middlewares/multipartUpload');
     }
   });
 
-  // 13. S-24 / SCRUM-116: Khóa sổ nhật ký thi công phía server
+  // ==============================================================
+  // S-32: PHÁT HIỆN XUNG ĐỘT NGOẠI TUYẾN & GIẢI QUYẾT XUNG ĐỘT (SCRUM-145)
+  // ==============================================================
+
+  // 13. Đồng bộ mục nhật ký ngoại tuyến kèm kiểm tra phiên bản (AC 1 & AC 3)
+  router.post('/projects/:projectId/diary-items/sync', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId không hợp lệ' });
+    }
+
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const userId = req.user?.userId || req.user?.id || 1;
+      const result = await diaryService.syncDiaryItem(projectId, req.body, userId);
+      if (result.conflict) {
+        return res.status(409).json(result);
+      }
+      res.json(result);
+    } catch (err) {
+      const statusCode = err.status || 500;
+      res.status(statusCode).json({
+        success: false,
+        message: err.message || 'Lỗi khi đồng bộ mục nhật ký'
+      });
+    }
+  });
+
+  // 14. Lấy danh sách các xung đột mục nhật ký (AC 2)
+  router.get('/projects/:projectId/diary-items/conflicts', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId không hợp lệ' });
+    }
+
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    try {
+      const conflicts = await diaryService.getConflicts(projectId, req.query);
+      res.json({ success: true, data: conflicts });
+    } catch (err) {
+      const statusCode = err.status || 500;
+      res.status(statusCode).json({
+        success: false,
+        message: err.message || 'Lỗi khi lấy danh sách xung đột'
+      });
+    }
+  });
+
+  // 15. Kỹ sư giám sát chọn bản giữ để giải quyết xung đột (AC 2)
+  router.post('/projects/:projectId/diary-items/conflicts/:conflictId/resolve', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const conflictId = Number(req.params.conflictId);
+
+    if (!Number.isInteger(projectId) || projectId <= 0 || !Number.isInteger(conflictId) || conflictId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId hoặc conflictId không hợp lệ' });
+    }
+
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const userId = req.user?.userId || req.user?.id || 1;
+      const result = await diaryService.resolveConflict(projectId, conflictId, req.body, userId);
+      res.json(result);
+    } catch (err) {
+      const statusCode = err.status || 500;
+      res.status(statusCode).json({
+        success: false,
+        message: err.message || 'Lỗi khi giải quyết xung đột'
+      });
+    }
+  });
+
+  // 16. Xem lịch sử các phiên bản của mục nhật ký (AC 2)
+  router.get('/projects/:projectId/diary-items/:itemId/history', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const itemId = Number(req.params.itemId);
+
+    if (!Number.isInteger(projectId) || projectId <= 0 || !Number.isInteger(itemId) || itemId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId hoặc itemId không hợp lệ' });
+    }
+
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    try {
+      const history = await diaryService.getItemHistory(projectId, itemId);
+      res.json({ success: true, data: history });
+    } catch (err) {
+      const statusCode = err.status || 500;
+      res.status(statusCode).json({
+        success: false,
+        message: err.message || 'Lỗi khi lấy lịch sử mục nhật ký'
+      });
+    }
+  });
+
+  // 17. S-24 / SCRUM-116: Khóa sổ nhật ký thi công phía server
   router.post('/projects/:projectId/diaries/:date/lock', async (req, res) => {
     const projectId = Number(req.params.projectId);
     const dateStr = req.params.date;
@@ -373,7 +470,7 @@ const { handleMultipartUpload } = require('../middlewares/multipartUpload');
     }
   });
 
-  // 14. S-24 / SCRUM-116: Mở khóa sổ nhật ký thi công (Quyền Admin / PM, lý do bắt buộc và audit log)
+  // 18. S-24 / SCRUM-116: Mở khóa sổ nhật ký thi công (Quyền Admin / PM, lý do bắt buộc và audit log)
   router.post('/projects/:projectId/diaries/:date/unlock', async (req, res) => {
     const projectId = Number(req.params.projectId);
     const dateStr = req.params.date;
@@ -389,7 +486,7 @@ const { handleMultipartUpload } = require('../middlewares/multipartUpload');
     }
   });
 
-  // 15. S-24: Xem lịch sử audit log mở khóa sổ
+  // 19. S-24: Xem lịch sử audit log mở khóa sổ
   router.get('/projects/:projectId/diaries/:date/unlock-logs', async (req, res) => {
     const projectId = Number(req.params.projectId);
     const dateStr = req.params.date;
@@ -403,7 +500,7 @@ const { handleMultipartUpload } = require('../middlewares/multipartUpload');
     }
   });
 
-  // 16. S-32 / SCRUM-145: Cập nhật nhật ký có kiểm tra xung đột phiên bản (Optimistic Concurrency)
+  // 20. S-32 / SCRUM-145: Cập nhật nhật ký có kiểm tra xung đột phiên bản (Optimistic Concurrency)
   router.put('/projects/:projectId/diaries/:date', async (req, res) => {
     const projectId = Number(req.params.projectId);
     const dateStr = req.params.date;
@@ -431,7 +528,7 @@ const { handleMultipartUpload } = require('../middlewares/multipartUpload');
     }
   });
 
-  // 17. S-32: Lấy danh sách xung đột phiên bản của dự án
+  // 21. S-32: Lấy danh sách xung đột phiên bản của dự án
   router.get('/projects/:projectId/diary-conflicts', async (req, res) => {
     const projectId = Number(req.params.projectId);
     if (checkProjectReadAccess(req, res, projectId)) return;
@@ -445,7 +542,7 @@ const { handleMultipartUpload } = require('../middlewares/multipartUpload');
     }
   });
 
-  // 18. S-32: Giải quyết xung đột (Chọn giữ bản server, bản client, hoặc gộp thủ công)
+  // 22. S-32: Giải quyết xung đột (Chọn giữ bản server, bản client, hoặc gộp thủ công)
   router.post('/projects/:projectId/diary-conflicts/:id/resolve', async (req, res) => {
     const projectId = Number(req.params.projectId);
     const conflictId = Number(req.params.id);

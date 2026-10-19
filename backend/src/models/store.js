@@ -844,7 +844,9 @@ function saveSiteDiaryItem({
   work_content,
   log_time = null,
   quantity_done = 0,
-  unit = ''
+  unit = '',
+  version = 1,
+  has_conflict = 0
 }) {
   const dId = Number(diary_id);
   const cId = client_item_id ? String(client_item_id) : null;
@@ -867,7 +869,8 @@ function saveSiteDiaryItem({
     log_time: log_time ? String(log_time).trim() : null,
     quantity_done: Number(quantity_done || 0),
     unit: String(unit || '').trim(),
-    version: 1, // S-32: Phiên bản khởi tạo
+    version: Number(version || 1),
+    has_conflict: has_conflict ? 1 : 0,
     created_at: new Date().toISOString()
   };
   inMemorySiteDiaryItems.push(newItem);
@@ -882,7 +885,13 @@ function updateSiteDiaryItem(itemId, updateData = {}) {
   if (updateData.log_time !== undefined) item.log_time = updateData.log_time ? String(updateData.log_time).trim() : null;
   if (updateData.quantity_done !== undefined) item.quantity_done = Number(updateData.quantity_done || 0);
   if (updateData.unit !== undefined) item.unit = String(updateData.unit || '').trim();
-  item.version = (item.version || 1) + 1; // S-32: Tăng phiên bản khi cập nhật
+  if (updateData.has_conflict !== undefined) item.has_conflict = updateData.has_conflict ? 1 : 0;
+  if (updateData.version !== undefined) {
+    item.version = Number(updateData.version);
+  } else {
+    // NFR: Mỗi lần máy chủ ghi nhận cập nhật, version tăng +1
+    item.version = (item.version || 1) + 1;
+  }
   item.updated_at = new Date().toISOString();
   return item;
 }
@@ -904,6 +913,110 @@ function clearSiteDiaryItems(diaryId) {
       inMemorySiteDiaryItems.splice(i, 1);
     }
   }
+}
+
+// ==========================================
+// S-32: PHÁT HIỆN XUNG ĐỘT & LỊCH SỬ MỤC NHẬT KÝ (SCRUM-145)
+// ==========================================
+let inMemorySiteDiaryItemConflicts = [];
+let inMemorySiteDiaryItemHistory = [];
+
+function saveSiteDiaryItemConflict({
+  item_id,
+  diary_id,
+  base_version = 1,
+  server_version = 1,
+  client_version_data,
+  server_version_data,
+  conflicted_fields = [],
+  submitted_by = null,
+  device_id = null,
+  status = 'pending'
+}) {
+  const newId = inMemorySiteDiaryItemConflicts.length > 0 ? Math.max(...inMemorySiteDiaryItemConflicts.map(c => c.id)) + 1 : 1;
+  const newConflict = {
+    id: newId,
+    item_id: Number(item_id),
+    diary_id: Number(diary_id),
+    base_version: Number(base_version || 1),
+    server_version: Number(server_version || 1),
+    client_version_data: typeof client_version_data === 'string' ? JSON.parse(client_version_data) : client_version_data,
+    server_version_data: typeof server_version_data === 'string' ? JSON.parse(server_version_data) : server_version_data,
+    conflicted_fields: typeof conflicted_fields === 'string' ? JSON.parse(conflicted_fields) : conflicted_fields,
+    submitted_by: submitted_by ? Number(submitted_by) : null,
+    device_id: device_id ? String(device_id) : null,
+    status: status || 'pending',
+    resolved_choice: null,
+    resolved_by: null,
+    resolved_at: null,
+    created_at: new Date().toISOString()
+  };
+  inMemorySiteDiaryItemConflicts.push(newConflict);
+  return newConflict;
+}
+
+function getSiteDiaryItemConflicts({ diaryId, itemId, status } = {}) {
+  return inMemorySiteDiaryItemConflicts.filter(c => {
+    if (diaryId && Number(c.diary_id) !== Number(diaryId)) return false;
+    if (itemId && Number(c.item_id) !== Number(itemId)) return false;
+    if (status && c.status !== status) return false;
+    return true;
+  });
+}
+
+function getSiteDiaryItemConflictById(conflictId) {
+  const cId = Number(conflictId);
+  return inMemorySiteDiaryItemConflicts.find(c => Number(c.id) === cId) || null;
+}
+
+function updateSiteDiaryItemConflict(conflictId, updateData = {}) {
+  const conflict = getSiteDiaryItemConflictById(conflictId);
+  if (!conflict) return null;
+  if (updateData.status !== undefined) conflict.status = updateData.status;
+  if (updateData.resolved_choice !== undefined) conflict.resolved_choice = updateData.resolved_choice;
+  if (updateData.resolved_by !== undefined) conflict.resolved_by = updateData.resolved_by ? Number(updateData.resolved_by) : null;
+  if (updateData.resolved_at !== undefined) conflict.resolved_at = updateData.resolved_at;
+  return conflict;
+}
+
+function saveSiteDiaryItemHistory({
+  item_id,
+  diary_id,
+  version,
+  work_item_id = null,
+  work_content,
+  log_time = null,
+  quantity_done = 0,
+  unit = '',
+  change_type = 'updated',
+  changed_by = null,
+  change_summary = null
+}) {
+  const newId = inMemorySiteDiaryItemHistory.length > 0 ? Math.max(...inMemorySiteDiaryItemHistory.map(h => h.id)) + 1 : 1;
+  const historyEntry = {
+    id: newId,
+    item_id: Number(item_id),
+    diary_id: Number(diary_id),
+    version: Number(version || 1),
+    work_item_id: work_item_id ? Number(work_item_id) : null,
+    work_content: String(work_content || '').trim(),
+    log_time: log_time ? String(log_time).trim() : null,
+    quantity_done: Number(quantity_done || 0),
+    unit: String(unit || '').trim(),
+    change_type: change_type || 'updated',
+    changed_by: changed_by ? Number(changed_by) : null,
+    change_summary: change_summary ? String(change_summary) : null,
+    created_at: new Date().toISOString()
+  };
+  inMemorySiteDiaryItemHistory.push(historyEntry);
+  return historyEntry;
+}
+
+function getSiteDiaryItemHistory(itemId) {
+  const iId = Number(itemId);
+  return inMemorySiteDiaryItemHistory
+    .filter(h => Number(h.item_id) === iId)
+    .sort((a, b) => (b.version - a.version) || (new Date(b.created_at) - new Date(a.created_at)));
 }
 
 // ==========================================
@@ -1626,6 +1739,14 @@ module.exports = {
   createProjectInvitation,
   acceptProjectInvitation,
   isUserProjectManager,
+  inMemorySiteDiaryItemConflicts,
+  inMemorySiteDiaryItemHistory,
+  saveSiteDiaryItemConflict,
+  getSiteDiaryItemConflicts,
+  getSiteDiaryItemConflictById,
+  updateSiteDiaryItemConflict,
+  saveSiteDiaryItemHistory,
+  getSiteDiaryItemHistory,
   inMemoryPaymentRequests,
   inMemoryPaymentRequestItems,
   getProjectRetentionRate,
