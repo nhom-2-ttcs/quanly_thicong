@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nhật Ký Thao Tác Trên Phiếu (S-39 - Append Only) | Quản Lý Thi Công</title>
+  
+  <meta name="theme-color" content="#1e293b">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/common-nav.css">
+
+  <style>
+    :root {
+      --bg-canvas: #f8fafc;
+      --card-bg: #ffffff;
+      --border-card: #e2e8f0;
+      --border-outer: #94a3b8;
+      --brand-blue: #2563eb;
+      --brand-indigo: #4f46e5;
+      --emerald-bg: #ecfdf5;
+      --emerald-border: #a7f3d0;
+      --emerald-text: #065f46;
+      --amber-bg: #fef3c7;
+      --amber-border: #f59e0b;
+      --amber-text: #92400e;
+      --purple-bg: #f5f3ff;
+      --purple-border: #c4b5fd;
+      --purple-text: #5b21b6;
+      --cyan-bg: #ecfeff;
+      --cyan-border: #a5f3fc;
+      --cyan-text: #155e75;
+      --danger: #dc2626;
+      --danger-bg: #fee2e2;
+      --danger-text: #991b1b;
+      --text-title: #0f172a;
+      --text-body: #1e293b;
+      --text-muted: #64748b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; }
+    body { background-color: var(--bg-canvas); color: var(--text-body); min-height: 100vh; display: flex; flex-direction: column; }
+
+    .topbar {
+      height: 68px; background: #ffffff; border-bottom: 2px solid var(--border-card);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; position: sticky; top: 0; z-index: 50;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+    .brand-group { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #1e293b, #334155);
+      display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 1.1rem;
+    }
+    .brand-title { font-size: 1.15rem; font-weight: 800; color: var(--text-title); }
+    .brand-subtitle { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; }
+
+    .badge-append-only {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+      font-size: 0.75rem; font-weight: 700; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1;
+    }
+    .badge-append-only span {
+      width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block;
+    }
+
+    .main-container {
+      max-width: 1400px; width: 100%; margin: 0 auto; padding: 24px; flex: 1; display: flex; flex-direction: column; gap: 24px;
+    }
+
+    .banner-card {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      border-radius: 16px; padding: 24px 28px; color: white;
+      display: flex; justify-content: space-between; align-items: center; gap: 24px;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.3);
+    }
+    .banner-card h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+    .banner-card p { color: #94a3b8; font-size: 0.9rem; line-height: 1.5; max-width: 800px; }
+
+    /* Filter Bar */
+    .filter-card {
+      background: white; border-radius: 14px; border: 1px solid var(--border-card);
+      padding: 18px 20px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 6px; }
+    .filter-group label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .filter-input, .filter-select {
+      height: 38px; padding: 0 12px; border-radius: 8px; border: 1.5px solid var(--border-card);
+      font-size: 0.88rem; color: var(--text-body); outline: none; background: #fff;
+    }
+    .filter-input:focus, .filter-select:focus { border-color: var(--brand-blue); }
+
+    .btn {
+      height: 38px; padding: 0 16px; border-radius: 8px; font-size: 0.88rem; font-weight: 600;
+      cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: none; transition: all 0.2s;
+    }
+    .btn-primary { background: var(--brand-blue); color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+    .btn-secondary:hover { background: #e2e8f0; }
+
+    /* Table */
+    .table-container {
+      background: white; border-radius: 14px; border: 1px solid var(--border-card);
+      overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    thead tr { background: #f8fafc; border-bottom: 2px solid var(--border-card); }
+    th { padding: 14px 18px; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 14px 18px; font-size: 0.88rem; border-bottom: 1px solid var(--border-card); vertical-align: middle; }
+    tbody tr:hover { background-color: #f8fafc; }
+
+    .badge-entity {
+      padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; display: inline-block;
+    }
+    .badge-acceptance { background: var(--emerald-bg); color: var(--emerald-text); border: 1px solid var(--emerald-border); }
+    .badge-payment { background: var(--purple-bg); color: var(--purple-text); border: 1px solid var(--purple-border); }
+    .badge-contract { background: var(--cyan-bg); color: var(--cyan-text); border: 1px solid var(--cyan-border); }
+    .badge-diary { background: var(--amber-bg); color: var(--amber-text); border: 1px solid var(--amber-border); }
+
+    .badge-action {
+      padding: 3px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 800; font-family: 'JetBrains Mono', monospace;
+    }
+    .action-create { background: #dbeafe; color: #1e40af; }
+    .action-update { background: #fef3c7; color: #92400e; }
+    .action-approve { background: #d1fae5; color: #065f46; }
+    .action-lock { background: #fee2e2; color: #991b1b; }
+    .action-unlock { background: #e0e7ff; color: #3730a3; }
+
+    .mono-text { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: #334155; }
+    .time-sub { font-size: 0.75rem; color: var(--text-muted); }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-card {
+      background: white; border-radius: 16px; width: 100%; max-width: 800px; max-height: 90vh;
+      display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    .modal-header {
+      padding: 18px 24px; border-bottom: 1px solid var(--border-card);
+      display: flex; justify-content: space-between; align-items: center; background: #f8fafc;
+    }
+    .modal-header h3 { font-size: 1.15rem; font-weight: 800; color: var(--text-title); }
+    .modal-body { padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+    .modal-footer {
+      padding: 14px 24px; border-top: 1px solid var(--border-card); background: #f8fafc;
+      display: flex; justify-content: flex-end; gap: 12px;
+    }
+
+    .diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .diff-box {
+      border: 1px solid var(--border-card); border-radius: 8px; padding: 12px; background: #f8fafc;
+    }
+    .diff-box.old { border-color: #fecaca; background: #fff5f5; }
+    .diff-box.new { border-color: #bbf7d0; background: #f0fdf4; }
+    .diff-title { font-size: 0.78rem; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; }
+    .diff-content {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-all;
+      color: #1e293b; max-height: 250px; overflow-y: auto; background: white; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="brand-group">
+      <div class="brand-icon">S39</div>
+      <div>
+        <div class="brand-title">Nhật Ký Thao Tác Trên Phiếu</div>
+        <div class="brand-subtitle">Chỉ ghi thêm (Append-Only Audit Logs) — SCRUM-168</div>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div class="badge-append-only">
+        <span></span> Bảo Vệ Bất Biến (Immutable)
+      </div>
+      <a href="/acceptance.html" class="btn btn-secondary">Phiếu Nghiệm Thu</a>
+      <a href="/payment.html" class="btn btn-secondary">Đề Nghị Thanh Toán</a>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <!-- Banner -->
+    <div class="banner-card">
+      <div>
+        <h1>Truy Vết Trách Nhiệm Chủ Đầu Tư & Quản Lý</h1>
+        <p>Hệ thống ghi nhận toàn vẹn ai đã lập, sửa, khóa hoặc phê duyệt các loại phiếu (Nghiệm thu, Thanh toán, Khối lượng HĐ, Khóa sổ nhật ký). Dữ liệu chỉ ghi thêm (Append-only), tuyệt đối không thể can thiệp hay xóa bỏ.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px; text-align: right;">
+        <span class="badge-append-only" style="align-self: flex-end; background: rgba(255,255,255,0.1); color: #e2e8f0; border-color: rgba(255,255,255,0.2);">
+          <span></span> HTTP 405 Method Not Allowed trên PUT/DELETE
+        </span>
+      </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="filter-card">
+      <div class="filter-group">
+        <label>Dự Án</label>
+        <select id="projectSelect" class="filter-select" style="min-width: 160px;">
+          <option value="1">Dự án số 1</option>
+          <option value="2">Dự án số 2</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Loại Phiếu / Đối tượng</label>
+        <select id="entityFilter" class="filter-select">
+          <option value="">Tất cả loại phiếu</option>
+          <option value="acceptance_sheet">Phiếu nghiệm thu</option>
+          <option value="payment_request">Đề nghị thanh toán</option>
+          <option value="contract_volume">Khối lượng hợp đồng</option>
+          <option value="site_diary_lock">Khóa sổ nhật ký</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Thao tác</label>
+        <select id="actionFilter" class="filter-select">
+          <option value="">Tất cả thao tác</option>
+          <option value="CREATE">CREATE (Lập mới)</option>
+          <option value="UPDATE">UPDATE (Cập nhật)</option>
+          <option value="APPROVE">APPROVE (Phê duyệt)</option>
+          <option value="LOCK">LOCK (Khóa sổ)</option>
+          <option value="UNLOCK">UNLOCK (Mở khóa)</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Từ ngày</label>
+        <input type="date" id="fromDate" class="filter-input">
+      </div>
+
+      <div class="filter-group">
+        <label>Đến ngày</label>
+        <input type="date" id="toDate" class="filter-input">
+      </div>
+
+      <div class="filter-group" style="flex: 1; min-width: 200px;">
+        <label>Tìm kiếm từ khóa</label>
+        <input type="text" id="searchInput" class="filter-input" placeholder="Tìm theo mã phiếu, người làm, ghi chú...">
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 20px;">
+        <button id="btnSearch" class="btn btn-primary">Tìm kiếm</button>
+        <button id="btnReset" class="btn btn-secondary">Đặt lại</button>
+      </div>
+    </div>
+
+    <!-- Table Logs -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Thời điểm</th>
+            <th>Loại phiếu</th>
+            <th>Mã / ID đối tượng</th>
+            <th>Thao tác</th>
+            <th>Người thực hiện</th>
+            <th>Tóm tắt thay đổi</th>
+            <th>Lý do / Ghi chú</th>
+            <th style="text-align: center;">Chi tiết Diff</th>
+          </tr>
+        </thead>
+        <tbody id="logsTableBody">
+          <tr>
+            <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 32px;">Đang tải dữ liệu nhật ký...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Diff Modal -->
+  <div id="diffModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle">Chi Tiết Thay Đổi Giá Trị Trước / Sau</h3>
+        <button onclick="closeModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="modalMeta" style="font-size: 0.88rem; color: #475569; display: flex; flex-direction: column; gap: 4px;"></div>
+        
+        <div class="diff-grid">
+          <div class="diff-box old">
+            <div class="diff-title" style="color: #991b1b;">Giá trị trước khi thay đổi (Old Values)</div>
+            <pre id="oldValuesPre" class="diff-content">(Trống)</pre>
+          </div>
+          <div class="diff-box new">
+            <div class="diff-title" style="color: #166534;">Giá trị sau khi thay đổi (New Values)</div>
+            <pre id="newValuesPre" class="diff-content">(Trống)</pre>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeModal()" class="btn btn-secondary">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentLogs = [];
+
+    function getEntityBadge(type) {
+      switch(type) {
+        case 'acceptance_sheet': return '<span class="badge-entity badge-acceptance">Phiếu Nghiệm Thu</span>';
+        case 'payment_request': return '<span class="badge-entity badge-payment">Đề Nghị Thanh Toán</span>';
+        case 'contract_volume': return '<span class="badge-entity badge-contract">Khối Lượng Hợp Đồng</span>';
+        case 'site_diary_lock': return '<span class="badge-entity badge-diary">Khóa Sổ Nhật Ký</span>';
+        default: return `<span class="badge-entity">${type}</span>`;
+      }
+    }
+
+    function getActionBadge(action) {
+      const act = String(action || '').toUpperCase();
+      switch(act) {
+        case 'CREATE': return '<span class="badge-action action-create">CREATE</span>';
+        case 'UPDATE': return '<span class="badge-action action-update">UPDATE</span>';
+        case 'APPROVE': return '<span class="badge-action action-approve">APPROVE</span>';
+        case 'LOCK': return '<span class="badge-action action-lock">LOCK</span>';
+        case 'UNLOCK': return '<span class="badge-action action-unlock">UNLOCK</span>';
+        default: return `<span class="badge-action">${act}</span>`;
+      }
+    }
+
+    async function loadLogs() {
+      const projectId = document.getElementById('projectSelect').value;
+      const entityType = document.getElementById('entityFilter').value;
+      const action = document.getElementById('actionFilter').value;
+      const fromDate = document.getElementById('fromDate').value;
+      const toDate = document.getElementById('toDate').value;
+      const search = document.getElementById('searchInput').value;
+
+      const params = new URLSearchParams();
+      if (entityType) params.append('entity_type', entityType);
+      if (action) params.append('action', action);
+      if (fromDate) params.append('from_date', fromDate);
+      if (toDate) params.append('to_date', toDate);
+      if (search) params.append('search', search);
+
+      const tbody = document.getElementById('logsTableBody');
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 32px;">Đang tải nhật ký thao tác...</td></tr>';
+
+      try {
+        const res = await fetch(`/api/projects/${projectId}/sheet-audit-logs?${params.toString()}`);
+        const result = await res.json();
+
+        if (!result.success || !result.data || result.data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 32px;">Chưa có bản ghi nhật ký thao tác nào phù hợp.</td></tr>';
+          return;
+        }
+
+        currentLogs = result.data;
+        tbody.innerHTML = currentLogs.map(log => {
+          const timeStr = log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : '-';
+          const performer = log.user_name || (log.performed_by ? `User #${log.performed_by}` : 'Hệ thống');
+          const role = log.role_name ? `(${log.role_name})` : '';
+
+          return `
+            <tr>
+              <td class="mono-text">#${log.id}</td>
+              <td>
+                <div>${timeStr}</div>
+              </td>
+              <td>${getEntityBadge(log.entity_type)}</td>
+              <td class="mono-text" style="font-weight: 700;">${log.entity_id}</td>
+              <td>${getActionBadge(log.action)}</td>
+              <td>
+                <div style="font-weight: 600;">${performer}</div>
+                <div class="time-sub">${role}</div>
+              </td>
+              <td>${log.change_summary || '-'}</td>
+              <td style="color: #64748b; font-style: italic;">${log.reason || '-'}</td>
+              <td style="text-align: center;">
+                <button class="btn btn-secondary" style="height: 30px; font-size: 0.78rem;" onclick="viewDiff(${log.id})">
+                  Xem Diff
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--danger); padding: 32px;">Lỗi tải dữ liệu: ${err.message}</td></tr>`;
+      }
+    }
+
+    function viewDiff(logId) {
+      const log = currentLogs.find(l => l.id === logId);
+      if (!log) return;
+
+      document.getElementById('modalTitle').innerText = `Chi Tiết Thao Tác #${log.id} - ${log.action} trên ${log.entity_type} [${log.entity_id}]`;
+      document.getElementById('modalMeta').innerHTML = `
+        <div><strong>Người thực hiện:</strong> ${log.user_name || log.performed_by || 'Hệ thống'} ${log.role_name ? `(${log.role_name})` : ''}</div>
+        <div><strong>Thời điểm:</strong> ${log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : '-'}</div>
+        <div><strong>Tóm tắt:</strong> ${log.change_summary || '-'}</div>
+        <div><strong>Lý do:</strong> ${log.reason || '-'}</div>
+      `;
+
+      document.getElementById('oldValuesPre').innerText = log.old_values ? JSON.stringify(log.old_values, null, 2) : '(Không có giá trị trước / Lập mới)';
+      document.getElementById('newValuesPre').innerText = log.new_values ? JSON.stringify(log.new_values, null, 2) : '(Không có giá trị sau)';
+
+      document.getElementById('diffModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('diffModal').classList.remove('active');
+    }
+
+    document.getElementById('btnSearch').addEventListener('click', loadLogs);
+    document.getElementById('btnReset').addEventListener('click', () => {
+      document.getElementById('entityFilter').value = '';
+      document.getElementById('actionFilter').value = '';
+      document.getElementById('fromDate').value = '';
+      document.getElementById('toDate').value = '';
+      document.getElementById('searchInput').value = '';
+      loadLogs();
+    });
+    document.getElementById('projectSelect').addEventListener('change', loadLogs);
+    document.getElementById('entityFilter').addEventListener('change', loadLogs);
+    document.getElementById('actionFilter').addEventListener('change', loadLogs);
+
+    // Initial load
+    loadLogs();
+  </script>
+</body>
+</html>

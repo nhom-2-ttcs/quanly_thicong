@@ -1,4 +1,8 @@
 const store = require('../models/store');
+let recordSheetAuditLog;
+try {
+  ({ recordSheetAuditLog } = require('./sheetAuditService'));
+} catch (_) {}
 
 class PaymentService {
   constructor(db) {
@@ -416,6 +420,35 @@ class PaymentService {
       }, computedItems);
     }
 
+    // S-39: Ghi nhật ký thao tác lập đề nghị thanh toán (Append-Only)
+    try {
+      if (recordSheetAuditLog && createdRequest) {
+        await recordSheetAuditLog({
+          projectId: pId,
+          entityType: 'payment_request',
+          entityId: String(createdRequest.id),
+          action: 'CREATE',
+          performedBy: uId,
+          oldValues: null,
+          newValues: {
+            request_code: createdRequest.request_code,
+            name: createdRequest.name,
+            period_number: createdRequest.period_number,
+            gross_amount: createdRequest.gross_amount,
+            retention_rate: createdRequest.retention_rate,
+            retention_amount: createdRequest.retention_amount,
+            net_payable_amount: createdRequest.net_payable_amount,
+            status: createdRequest.status,
+            items_count: (createdRequest.items || []).length
+          },
+          changeSummary: `Lập đề nghị thanh toán đợt ${createdRequest.period_number} (${createdRequest.request_code})`,
+          reason: notes || 'Lập mới đề nghị thanh toán'
+        });
+      }
+    } catch (auditErr) {
+      console.warn('[PaymentService] Audit log recording failed:', auditErr.message);
+    }
+
     return {
       success: true,
       message: 'Lập đề nghị thanh toán thành công, đã khấu trừ đúng phần tạm giữ theo hợp đồng',
@@ -453,10 +486,39 @@ class PaymentService {
       store.approvePaymentRequest(pId, rId, uId);
     }
 
+    const updatedReq = await this.getPaymentRequestById(pId, rId);
+
+    // S-39: Ghi nhật ký thao tác phê duyệt đề nghị thanh toán (Append-Only)
+    try {
+      if (recordSheetAuditLog) {
+        await recordSheetAuditLog({
+          projectId: pId,
+          entityType: 'payment_request',
+          entityId: String(rId),
+          action: 'APPROVE',
+          performedBy: uId,
+          oldValues: {
+            status: req.status,
+            approved_by: req.approved_by,
+            approved_at: req.approved_at
+          },
+          newValues: {
+            status: 'approved',
+            approved_by: uId,
+            approved_at: now
+          },
+          changeSummary: `Phê duyệt đề nghị thanh toán đợt ${req.period_number || 1} (${req.request_code})`,
+          reason: 'Phê duyệt đề nghị thanh toán'
+        });
+      }
+    } catch (auditErr) {
+      console.warn('[PaymentService] Audit log approval recording failed:', auditErr.message);
+    }
+
     return {
       success: true,
       message: `Đã phê duyệt đề nghị thanh toán "${req.request_code}" thành công!`,
-      data: await this.getPaymentRequestById(pId, rId)
+      data: updatedReq
     };
   }
 }

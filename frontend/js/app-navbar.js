@@ -90,7 +90,10 @@
         (currentPath.includes('gantt.html') && href.includes('gantt.html')) ||
         (currentPath.includes('calendar.html') && href.includes('calendar.html')) ||
         (currentPath.includes('diary.html') && href.includes('diary.html')) ||
-        (currentPath.includes('teams.html') && href.includes('teams.html'))
+        (currentPath.includes('teams.html') && href.includes('teams.html')) ||
+        (currentPath.includes('acceptance.html') && href.includes('acceptance.html')) ||
+        (currentPath.includes('payment.html') && href.includes('payment.html')) ||
+        (currentPath.includes('audit-logs.html') && href.includes('audit-logs.html'))
       );
 
       if (isMatch) {

@@ -1,6 +1,10 @@
 const fs = require('fs');
 const store = require('../models/store');
 const { parseExifMetadata, extractJpegDimensions, evaluatePhotoSuspicion } = require('../utils/exifParser');
+let recordSheetAuditLog;
+try {
+  ({ recordSheetAuditLog } = require('./sheetAuditService'));
+} catch (_) {}
 
 class AcceptanceService {
   constructor(db) {
@@ -455,6 +459,33 @@ class AcceptanceService {
       createdSheet = store.getAcceptanceSheetById(sheet.id);
     }
 
+    // S-39: Ghi nhật ký thao tác lập phiếu nghiệm thu (Append-Only)
+    try {
+      if (recordSheetAuditLog && createdSheet) {
+        await recordSheetAuditLog({
+          projectId: pId,
+          entityType: 'acceptance_sheet',
+          entityId: String(createdSheet.id),
+          action: 'CREATE',
+          performedBy: uId,
+          oldValues: null,
+          newValues: {
+            sheet_code: createdSheet.sheet_code,
+            name: createdSheet.name,
+            period_number: createdSheet.period_number,
+            from_date: createdSheet.from_date,
+            to_date: createdSheet.to_date,
+            status: createdSheet.status,
+            items_count: (createdSheet.items || []).length
+          },
+          changeSummary: `Lập phiếu nghiệm thu đợt ${createdSheet.period_number} (${createdSheet.sheet_code})`,
+          reason: notes || 'Lập mới phiếu nghiệm thu'
+        });
+      }
+    } catch (auditErr) {
+      console.warn('[AcceptanceService] Audit log recording failed:', auditErr.message);
+    }
+
     return {
       success: true,
       message: 'Lập phiếu nghiệm thu theo đợt thành công',
@@ -595,10 +626,39 @@ class AcceptanceService {
       });
     }
 
+    const updatedSheet = await this.getAcceptanceSheetById(pId, sId);
+
+    // S-39: Ghi nhật ký thao tác phê duyệt phiếu nghiệm thu (Append-Only)
+    try {
+      if (recordSheetAuditLog) {
+        await recordSheetAuditLog({
+          projectId: pId,
+          entityType: 'acceptance_sheet',
+          entityId: String(sId),
+          action: 'APPROVE',
+          performedBy: uId,
+          oldValues: {
+            status: sheet.status,
+            approved_by: sheet.approved_by,
+            approved_at: sheet.approved_at
+          },
+          newValues: {
+            status: 'approved',
+            approved_by: uId,
+            approved_at: now
+          },
+          changeSummary: `Phê duyệt phiếu nghiệm thu đợt ${sheet.period_number || 1} (${sheet.sheet_code})`,
+          reason: 'Phê duyệt nghiệm thu hoàn thành'
+        });
+      }
+    } catch (auditErr) {
+      console.warn('[AcceptanceService] Audit log approval recording failed:', auditErr.message);
+    }
+
     return {
       success: true,
       message: `Đã phê duyệt phiếu nghiệm thu "${sheet.sheet_code}" thành công!`,
-      data: await this.getAcceptanceSheetById(pId, sId)
+      data: updatedSheet
     };
   }
 

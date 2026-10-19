@@ -1,5 +1,9 @@
 const fs = require('fs');
 const path = require('path');
+let recordSheetAuditLog;
+try {
+  ({ recordSheetAuditLog } = require('./sheetAuditService'));
+} catch (_) {}
 const {
   getSiteDiaries,
   getSiteDiaryByDate,
@@ -1479,6 +1483,26 @@ class DiaryService {
     } else {
       lockSiteDiary(pId, dateStr, userId);
     }
+
+    // S-39 / SCRUM-168: Ghi nhật ký thao tác khóa sổ nhật ký (Append-Only)
+    try {
+      if (recordSheetAuditLog) {
+        await recordSheetAuditLog({
+          projectId: pId,
+          entityType: 'site_diary_lock',
+          entityId: `${pId}_${dateStr}`,
+          action: 'LOCK',
+          performedBy: userId,
+          oldValues: { is_locked: 0 },
+          newValues: { is_locked: 1, locked_by: userId, date: dateStr },
+          changeSummary: `Khóa sổ nhật ký thi công ngày ${dateStr}`,
+          reason: 'Khóa sổ nhật ký công trình'
+        });
+      }
+    } catch (auditErr) {
+      console.warn('[DiaryService] Lock audit log recording failed:', auditErr.message);
+    }
+
     return { success: true, message: `Đã khóa sổ nhật ký ngày ${dateStr}` };
   }
 
@@ -1527,6 +1551,27 @@ class DiaryService {
       );
     } else {
       unlockSiteDiary(pId, dateStr, userId, cleanReason);
+    }
+
+    // S-39 / SCRUM-168: Ghi nhật ký thao tác mở khóa sổ nhật ký (Append-Only)
+    try {
+      if (recordSheetAuditLog) {
+        await recordSheetAuditLog({
+          projectId: pId,
+          entityType: 'site_diary_lock',
+          entityId: `${pId}_${dateStr}`,
+          action: 'UNLOCK',
+          performedBy: userId,
+          userName: user?.full_name || user?.name || user?.username || null,
+          roleName: user?.role_name || user?.role || null,
+          oldValues: { is_locked: 1 },
+          newValues: { is_locked: 0, unlocked_by: userId, date: dateStr },
+          changeSummary: `Mở khóa sổ nhật ký thi công ngày ${dateStr}`,
+          reason: cleanReason
+        });
+      }
+    } catch (auditErr) {
+      console.warn('[DiaryService] Unlock sheet audit log recording failed:', auditErr.message);
     }
 
     return {
