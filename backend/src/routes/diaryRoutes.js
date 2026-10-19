@@ -348,5 +348,102 @@ const { handleMultipartUpload } = require('../middlewares/multipartUpload');
     }
   });
 
+  // ==============================================================
+  // S-32: PHÁT HIỆN XUNG ĐỘT NGOẠI TUYẾN & GIẢI QUYẾT XUNG ĐỘT (SCRUM-145)
+  // ==============================================================
+
+  // 13. Đồng bộ mục nhật ký ngoại tuyến kèm kiểm tra phiên bản (AC 1 & AC 3)
+  router.post('/projects/:projectId/diary-items/sync', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId không hợp lệ' });
+    }
+
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const userId = req.user?.userId || req.user?.id || 1;
+      const result = await diaryService.syncDiaryItem(projectId, req.body, userId);
+      if (result.conflict) {
+        return res.status(409).json(result);
+      }
+      res.json(result);
+    } catch (err) {
+      const statusCode = err.status || 500;
+      res.status(statusCode).json({
+        success: false,
+        message: err.message || 'Lỗi khi đồng bộ mục nhật ký'
+      });
+    }
+  });
+
+  // 14. Lấy danh sách các xung đột mục nhật ký (AC 2)
+  router.get('/projects/:projectId/diary-items/conflicts', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId không hợp lệ' });
+    }
+
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    try {
+      const conflicts = await diaryService.getConflicts(projectId, req.query);
+      res.json({ success: true, data: conflicts });
+    } catch (err) {
+      const statusCode = err.status || 500;
+      res.status(statusCode).json({
+        success: false,
+        message: err.message || 'Lỗi khi lấy danh sách xung đột'
+      });
+    }
+  });
+
+  // 15. Kỹ sư giám sát chọn bản giữ để giải quyết xung đột (AC 2)
+  router.post('/projects/:projectId/diary-items/conflicts/:conflictId/resolve', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const conflictId = Number(req.params.conflictId);
+
+    if (!Number.isInteger(projectId) || projectId <= 0 || !Number.isInteger(conflictId) || conflictId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId hoặc conflictId không hợp lệ' });
+    }
+
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const userId = req.user?.userId || req.user?.id || 1;
+      const result = await diaryService.resolveConflict(projectId, conflictId, req.body, userId);
+      res.json(result);
+    } catch (err) {
+      const statusCode = err.status || 500;
+      res.status(statusCode).json({
+        success: false,
+        message: err.message || 'Lỗi khi giải quyết xung đột'
+      });
+    }
+  });
+
+  // 16. Xem lịch sử các phiên bản của mục nhật ký (AC 2)
+  router.get('/projects/:projectId/diary-items/:itemId/history', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const itemId = Number(req.params.itemId);
+
+    if (!Number.isInteger(projectId) || projectId <= 0 || !Number.isInteger(itemId) || itemId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId hoặc itemId không hợp lệ' });
+    }
+
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    try {
+      const history = await diaryService.getItemHistory(projectId, itemId);
+      res.json({ success: true, data: history });
+    } catch (err) {
+      const statusCode = err.status || 500;
+      res.status(statusCode).json({
+        success: false,
+        message: err.message || 'Lỗi khi lấy lịch sử mục nhật ký'
+      });
+    }
+  });
+
   return router;
 };
