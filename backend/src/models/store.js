@@ -1551,7 +1551,8 @@ function getApprovedSheetsAvailable(projectId, periodNumber = null) {
     if (Number(s.project_id) !== pId) return false;
     if (s.status !== 'approved') return false;
     if (s.payment_request_id != null) return false; // T-99: đã liên kết → bỏ
-    if (periodNumber !== null && Number(s.period_number) !== Number(periodNumber)) return false;
+    const hasPeriodFilter = periodNumber !== null && periodNumber !== undefined && periodNumber !== '';
+    if (hasPeriodFilter && Number(s.period_number) !== Number(periodNumber)) return false;
     return true;
   });
 

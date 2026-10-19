@@ -79,7 +79,9 @@ module.exports = (db) => {
     if (checkProjectReadAccess(req, res, projectId)) return;
 
     try {
-      const periodNumber = req.query.period_number != null ? Number(req.query.period_number) : null;
+      const periodNumber = (req.query.period_number !== undefined && req.query.period_number !== null && req.query.period_number !== '')
+        ? Number(req.query.period_number)
+        : null;
       const sheets = await paymentService.getApprovedSheetsAvailable(projectId, periodNumber);
       res.json({
         success: true,
@@ -101,7 +103,9 @@ module.exports = (db) => {
     if (checkProjectReadAccess(req, res, projectId)) return;
 
     try {
-      const periodNumber = req.query.period_number != null ? Number(req.query.period_number) : null;
+      const periodNumber = (req.query.period_number !== undefined && req.query.period_number !== null && req.query.period_number !== '')
+        ? Number(req.query.period_number)
+        : null;
       const prefill = await paymentService.getS43PrefillData(projectId, periodNumber);
       res.json({ success: true, data: prefill });
     } catch (err) {

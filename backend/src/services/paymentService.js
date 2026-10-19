@@ -520,7 +520,8 @@ class PaymentService {
         `;
         const params = [pId];
 
-        if (periodNumber !== null && periodNumber !== undefined) {
+        const hasPeriodFilter = periodNumber !== null && periodNumber !== undefined && periodNumber !== '';
+        if (hasPeriodFilter) {
           query += ' AND s.period_number = ?';
           params.push(Number(periodNumber));
         }
@@ -651,7 +652,9 @@ class PaymentService {
     }
 
     // T-97: Lấy phiếu NT đã duyệt, chưa liên kết
-    const optionalPeriod = (payload.filter_period_number !== undefined) ? Number(payload.filter_period_number) : null;
+    const optionalPeriod = (payload.filter_period_number !== undefined && payload.filter_period_number !== null && payload.filter_period_number !== '')
+      ? Number(payload.filter_period_number)
+      : null;
     const availableSheets = await this.getApprovedSheetsAvailable(pId, optionalPeriod);
 
     if (availableSheets.length === 0) {

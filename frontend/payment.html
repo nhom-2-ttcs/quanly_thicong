@@ -365,10 +365,17 @@
   <div class="modal-overlay" id="createPaymentModal">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>➕ Lập Đề Nghị Thanh Toán & Khấu Trừ Tạm Giữ (S-45)</h3>
+        <h3>➕ Sinh Đề Nghị Thanh Toán Từ Phiếu Nghiệm Thu Đã Duyệt (S-43)</h3>
         <button class="btn-close-modal" onclick="closeCreatePaymentModal()">&times;</button>
       </div>
       <div class="modal-body">
+        <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #1e40af; display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 20px;">ℹ️</span>
+          <div>
+            <strong>Quy tắc tự sinh (S-43):</strong> Hệ thống tự động truy vấn các phiếu nghiệm thu đã duyệt chưa đưa vào đề nghị, lấy đủ hạng mục, khối lượng đợt và đơn giá hợp đồng để tính thành tiền. <i>Một phiếu nghiệm thu chỉ vào được một đề nghị duy nhất (T-99).</i>
+          </div>
+        </div>
+
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
           <div class="form-group">
             <label>Mã đề nghị thanh toán *</label>
@@ -379,12 +386,18 @@
             <input type="text" id="inputPaymentTitle" class="form-control" placeholder="Đề nghị thanh toán Đợt 1">
           </div>
           <div class="form-group">
-            <label>Số đợt *</label>
+            <label>Số đợt đề nghị *</label>
             <input type="number" id="inputPaymentPeriod" class="form-control" value="1">
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+          <div class="form-group">
+            <label>Kỳ nghiệm thu nguồn (T-97) *</label>
+            <select id="selectSourcePeriod" class="form-control" onchange="onSourcePeriodChanged()">
+              <option value="">-- Tất cả phiếu NT chưa thanh toán --</option>
+            </select>
+          </div>
           <div class="form-group">
             <label>Từ ngày</label>
             <input type="date" id="inputPaymentFromDate" class="form-control">
@@ -708,29 +721,47 @@
       document.getElementById('createPaymentModal').style.display = 'flex';
       document.getElementById('inputPaymentFromDate').value = new Date().toISOString().slice(0, 10);
       document.getElementById('inputPaymentToDate').value = new Date().toISOString().slice(0, 10);
-      await loadPrefillPayment();
+      await loadPrefillPayment(null);
     }
 
     function closeCreatePaymentModal() {
       document.getElementById('createPaymentModal').style.display = 'none';
     }
 
-    async function loadPrefillPayment() {
+    async function loadPrefillPayment(filterPeriod = null) {
       const tbody = document.getElementById('prefillItemsBody');
       tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">Đang tải danh sách hạng mục từ phiếu nghiệm thu đã duyệt chưa đưa vào đề nghị (T-97)...</td></tr>`;
 
       try {
         // T-97: Sử dụng endpoint S-43 prefill chỉ lấy phiếu đã duyệt chưa liên kết
-        const res = await fetch(`/api/projects/${projectId}/payment-requests/s43-prefill`, {
+        const query = (filterPeriod !== null && filterPeriod !== undefined && filterPeriod !== '')
+          ? `?period_number=${filterPeriod}`
+          : '';
+        const res = await fetch(`/api/projects/${projectId}/payment-requests/s43-prefill${query}`, {
           headers: { 'Authorization': `Bearer ${getToken()}` }
         });
         const data = await res.json();
         if (data.success && data.data) {
           currentPrefillData = data.data;
-          document.getElementById('inputPaymentCode').value = currentPrefillData.suggested_request_code || 'DNTT-01';
-          document.getElementById('inputPaymentTitle').value = currentPrefillData.suggested_name || 'Đề nghị thanh toán Đợt 1';
-          document.getElementById('inputPaymentPeriod').value = currentPrefillData.suggested_period_number || 1;
-          document.getElementById('inputPaymentRetentionRate').value = (currentPrefillData.retention_rate || 5.00).toFixed(2);
+
+          if (filterPeriod === null) {
+            document.getElementById('inputPaymentCode').value = currentPrefillData.suggested_request_code || 'DNTT-01';
+            document.getElementById('inputPaymentTitle').value = currentPrefillData.suggested_name || 'Đề nghị thanh toán Đợt 1';
+            document.getElementById('inputPaymentPeriod').value = currentPrefillData.suggested_period_number || 1;
+            document.getElementById('inputPaymentRetentionRate').value = (currentPrefillData.retention_rate || 5.00).toFixed(2);
+
+            // Populate options cho selectSourcePeriod
+            const selectEl = document.getElementById('selectSourcePeriod');
+            if (selectEl) {
+              const sourceSheets = currentPrefillData.source_sheets || [];
+              const periods = [...new Set(sourceSheets.map(s => s.period_number).filter(Boolean))].sort((a,b) => a - b);
+              selectEl.innerHTML = `<option value="">-- Tất cả phiếu NT chưa thanh toán (${sourceSheets.length} phiếu) --</option>` +
+                periods.map(p => {
+                  const count = sourceSheets.filter(s => s.period_number === p).length;
+                  return `<option value="${p}">Kỳ / Đợt nghiệm thu ${p} (${count} phiếu NT)</option>`;
+                }).join('');
+            }
+          }
 
           renderPrefillItems(currentPrefillData.items || []);
           recalculateFormula();
@@ -740,6 +771,11 @@
       } catch (err) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 20px;">Lỗi kết nối: ${err.message}</td></tr>`;
       }
+    }
+
+    function onSourcePeriodChanged() {
+      const selectedPeriod = document.getElementById('selectSourcePeriod')?.value;
+      loadPrefillPayment(selectedPeriod || null);
     }
 
     function renderPrefillItems(items) {
@@ -792,6 +828,7 @@
       const toDate = document.getElementById('inputPaymentToDate').value;
       const rate = parseFloat(document.getElementById('inputPaymentRetentionRate').value) || 0;
       const notes = document.getElementById('inputPaymentNotes').value.trim();
+      const selectedSourcePeriod = document.getElementById('selectSourcePeriod')?.value;
 
       if (!code || !title) {
         showToast('Vui lòng nhập mã đề nghị và tên đợt thanh toán', false);
@@ -802,6 +839,20 @@
       btn.disabled = true;
       btn.innerText = '⏳ Đang tự sinh đề nghị & khoá liên kết...';
 
+      const bodyPayload = {
+        request_code: code,
+        name: title,
+        period_number: period,
+        from_date: fromDate,
+        to_date: toDate,
+        retention_rate: rate,
+        notes
+      };
+
+      if (selectedSourcePeriod !== undefined && selectedSourcePeriod !== null && selectedSourcePeriod !== '') {
+        bodyPayload.filter_period_number = Number(selectedSourcePeriod);
+      }
+
       try {
         // T-99: Gọi endpoint tự sinh từ phiếu nghiệm thu đã duyệt với transaction bảo vệ
         const res = await fetch(`/api/projects/${projectId}/payment-requests/from-acceptance-sheets`, {
@@ -810,16 +861,7 @@
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${getToken()}`
           },
-          body: JSON.stringify({
-            request_code: code,
-            name: title,
-            period_number: period,
-            from_date: fromDate,
-            to_date: toDate,
-            retention_rate: rate,
-            notes,
-            filter_period_number: period
-          })
+          body: JSON.stringify(bodyPayload)
         });
         const data = await res.json();
         if (res.ok && data.success) {
