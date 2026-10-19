@@ -54,7 +54,7 @@ module.exports = (db) => {
     }
   });
 
-  // 3. S-43 & S-45: Lấy dữ liệu điền sẵn cho đề nghị thanh toán từ phiếu nghiệm thu đã duyệt
+  // 3. S-43 & S-45: Lấy dữ liệu điền sẵn cho đề nghị thanh toán từ phiếu nghiệm thu đã duyệt (cũ)
   router.get('/projects/:projectId/payment-requests/prefill', async (req, res) => {
     const projectId = Number(req.params.projectId);
     if (!Number.isInteger(projectId) || projectId <= 0) {
@@ -69,6 +69,47 @@ module.exports = (db) => {
       res.status(err.status || 500).json({ success: false, message: err.message });
     }
   });
+
+  // S-43 / T-97: Lấy danh sách phiếu NT đã duyệt CHƯA đưa vào đề nghị (kèm hạng mục + đơn giá)
+  router.get('/projects/:projectId/payment-requests/available-sheets', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId không hợp lệ.' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    try {
+      const periodNumber = req.query.period_number != null ? Number(req.query.period_number) : null;
+      const sheets = await paymentService.getApprovedSheetsAvailable(projectId, periodNumber);
+      res.json({
+        success: true,
+        project_id: projectId,
+        count: sheets.length,
+        data: sheets
+      });
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
+  // S-43 / T-97+T-98: Lấy dữ liệu điền sẵn preview đề nghị từ phiếu NT đã duyệt chưa liên kết
+  router.get('/projects/:projectId/payment-requests/s43-prefill', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId không hợp lệ.' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    try {
+      const periodNumber = req.query.period_number != null ? Number(req.query.period_number) : null;
+      const prefill = await paymentService.getS43PrefillData(projectId, periodNumber);
+      res.json({ success: true, data: prefill });
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
+
 
   // 4. AC 5 (S-45): Lấy danh sách đề nghị thanh toán kèm tổng tạm giữ luỹ kế
   router.get('/projects/:projectId/payment-requests', async (req, res) => {
@@ -111,7 +152,7 @@ module.exports = (db) => {
     }
   });
 
-  // 6. AC 2, 3, 4 (S-45): Lập đề nghị thanh toán và trừ đúng phần tạm giữ hợp đồng
+  // 6. AC 2, 3, 4 (S-45): Lập đề nghị thanh toán và trừ đúng phần tạm giữ hợp đồng (thủ công)
   router.post('/projects/:projectId/payment-requests', async (req, res) => {
     const projectId = Number(req.params.projectId);
     if (!Number.isInteger(projectId) || projectId <= 0) {
@@ -123,6 +164,25 @@ module.exports = (db) => {
     try {
       const userId = req.user?.id || req.user?.userId || 1;
       const result = await paymentService.createPaymentRequest(projectId, req.body, userId);
+      res.status(201).json(result);
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message, details: err.details });
+    }
+  });
+
+  // S-43 / T-98+T-99: Tự sinh đề nghị thanh toán từ phiếu NT đã duyệt chưa liên kết
+  // (khoá liên kết nguyên tử tại tầng lưu trữ — một phiếu chỉ vào được một đề nghị)
+  router.post('/projects/:projectId/payment-requests/from-acceptance-sheets', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId không hợp lệ.' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const userId = req.user?.id || req.user?.userId || 1;
+      const result = await paymentService.createFromAcceptanceSheets(projectId, req.body, userId);
       res.status(201).json(result);
     } catch (err) {
       res.status(err.status || 500).json({ success: false, message: err.message, details: err.details });

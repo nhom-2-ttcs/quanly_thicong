@@ -1524,6 +1524,144 @@ function deleteAcceptanceSheetPhoto(photoId) {
 }
 
 // ==========================================
+// S-43 (SCRUM-172): SINH ĐỀ NGHỊ THANH TOÁN TỪ PHIẾU NGHIỆM THU ĐÃ DUYỆT
+// ==========================================
+
+// S-43 NFR: Hàm làm tròn HALF_UP 2 chữ số thập phân chính xác
+function roundMoney(v) {
+  const n = Number(v);
+  if (isNaN(n)) return 0;
+  return Number(Math.round(Number(n + 'e2')) + 'e-2');
+}
+
+/**
+ * T-97: Lấy danh sách phiếu NT đã duyệt, chưa đưa vào đề nghị nào,
+ *        kèm đủ hạng mục, khối lượng đợt và đơn giá hợp đồng.
+ * AC: Chỉ lấy phiếu đã duyệt; thuộc đúng project + period nếu chỉ định;
+ *     không lấy phiếu đã được đưa vào đề nghị khác.
+ *
+ * @param {number} projectId
+ * @param {number|null} periodNumber  - nếu null thì lấy tất cả kỳ
+ */
+function getApprovedSheetsAvailable(projectId, periodNumber = null) {
+  const pId = Number(projectId);
+
+  // Lọc phiếu: đã duyệt + chưa liên kết (payment_request_id === null/undefined)
+  const sheets = inMemoryAcceptanceSheets.filter(s => {
+    if (Number(s.project_id) !== pId) return false;
+    if (s.status !== 'approved') return false;
+    if (s.payment_request_id != null) return false; // T-99: đã liên kết → bỏ
+    if (periodNumber !== null && Number(s.period_number) !== Number(periodNumber)) return false;
+    return true;
+  });
+
+  // Ghép từng hạng mục kèm đơn giá hợp đồng (T-97 AC: kết quả có đủ hạng mục, khối lượng đợt, đơn giá)
+  const result = [];
+  for (const s of sheets) {
+    const items = inMemoryAcceptanceSheetItems.filter(i => i.sheet_id === s.id);
+    const workItemIds = [...new Set(items.map(i => i.work_item_id).filter(Boolean))];
+    const workItemsMap = new Map();
+    inMemoryWorkItems
+      .filter(w => workItemIds.includes(w.id))
+      .forEach(w => workItemsMap.set(w.id, w));
+
+    const enrichedItems = items.map(i => {
+      const w = i.work_item_id ? workItemsMap.get(Number(i.work_item_id)) : null;
+      // T-98 NFR: đơn giá từ hợp đồng (don_gia_hop_dong)
+      const unitPrice = (w && w.don_gia_hop_dong != null)
+        ? Number(w.don_gia_hop_dong)
+        : (i.unit_price != null ? Number(i.unit_price) : 0);
+      // T-98: thành tiền = khối lượng đợt × đơn giá, làm tròn HALF_UP 2 chữ số
+      const periodQty = Number(i.period_quantity || 0);
+      const lineTotal = roundMoney(periodQty * unitPrice); // HALF_UP 2 chữ số
+
+      return {
+        acceptance_sheet_id: s.id,
+        acceptance_sheet_code: s.sheet_code,
+        work_item_id: i.work_item_id || null,
+        item_name: i.item_name,
+        unit: i.unit,
+        period_quantity: periodQty,
+        unit_price: unitPrice,
+        line_total: lineTotal
+      };
+    });
+
+    result.push({
+      sheet_id: s.id,
+      sheet_code: s.sheet_code,
+      sheet_name: s.name,
+      period_number: s.period_number,
+      from_date: s.from_date,
+      to_date: s.to_date,
+      approved_at: s.approved_at,
+      items: enrichedItems
+    });
+  }
+  return result;
+}
+
+/**
+ * T-99: Khoá liên kết phiếu NT → payment_request (nguyên tử trong in-memory).
+ * Ràng buộc: một phiếu chỉ được liên kết với 1 đề nghị duy nhất.
+ * Nếu phiếu đã bị liên kết (race condition giữa hai request đồng thời), trả về false.
+ *
+ * @param {number} projectId
+ * @param {number} paymentRequestId
+ * @param {number[]} sheetIds  - danh sách sheet_id cần khoá
+ * @returns {{ ok: boolean, alreadyLinked: number[] }}
+ */
+function linkSheetsToPaymentRequest(projectId, paymentRequestId, sheetIds) {
+  const pId = Number(projectId);
+  const reqId = Number(paymentRequestId);
+  const ids = sheetIds.map(Number);
+
+  // Kiểm tra từng phiếu: phải thuộc project + đã duyệt + chưa liên kết
+  const alreadyLinked = [];
+  for (const sid of ids) {
+    const s = inMemoryAcceptanceSheets.find(sh => sh.id === sid && Number(sh.project_id) === pId);
+    if (!s) {
+      alreadyLinked.push(sid);
+      continue;
+    }
+    if (s.status !== 'approved') {
+      alreadyLinked.push(sid);
+      continue;
+    }
+    if (s.payment_request_id != null) {
+      alreadyLinked.push(sid); // T-99: đã liên kết với đề nghị khác
+    }
+  }
+
+  if (alreadyLinked.length > 0) {
+    return { ok: false, alreadyLinked };
+  }
+
+  // Khoá liên kết — đặt payment_request_id
+  for (const sid of ids) {
+    const s = inMemoryAcceptanceSheets.find(sh => sh.id === sid);
+    if (s) {
+      s.payment_request_id = reqId;
+      s.updated_at = new Date().toISOString();
+    }
+  }
+  return { ok: true, alreadyLinked: [] };
+}
+
+/**
+ * T-99: Rollback khoá liên kết khi tạo đề nghị thất bại (không để lại liên kết dở dang).
+ */
+function unlinkSheetsFromPaymentRequest(paymentRequestId) {
+  const reqId = Number(paymentRequestId);
+  inMemoryAcceptanceSheets.forEach(s => {
+    if (s.payment_request_id === reqId) {
+      s.payment_request_id = null;
+      s.updated_at = new Date().toISOString();
+    }
+  });
+}
+
+// ==========================================
 // ĐỀ NGHỊ THANH TOÁN & TẠM GIỮ HỢP ĐỒNG (S-45 / SCRUM-E08)
 // ==========================================
 let inMemoryPaymentRequests = [];
@@ -1579,16 +1717,24 @@ function getPaymentRequestById(requestId) {
   const rId = Number(requestId);
   const req = inMemoryPaymentRequests.find(pr => pr.id === rId);
   if (!req) return null;
-  const items = inMemoryPaymentRequestItems.filter(it => it.payment_request_id === rId);
+  const items = inMemoryPaymentRequestItems
+    .filter(it => it.payment_request_id === rId)
+    .map(it => {
+      const sheet = inMemoryAcceptanceSheets.find(s => s.id === it.acceptance_sheet_id);
+      return {
+        ...it,
+        acceptance_sheet_code: sheet ? sheet.sheet_code : (it.acceptance_sheet_code || null)
+      };
+    });
   return { ...req, items };
 }
 
 function savePaymentRequest(requestData, itemsData = []) {
   const newId = inMemoryPaymentRequests.length > 0 ? Math.max(...inMemoryPaymentRequests.map(r => r.id)) + 1 : 1;
-  const gross = Number(requestData.gross_amount || 0);
+  const gross = roundMoney(requestData.gross_amount || 0);
   const rate = Number(requestData.retention_rate !== undefined ? requestData.retention_rate : 5.00);
-  const retention = Number(requestData.retention_amount !== undefined ? requestData.retention_amount : (gross * (rate / 100)).toFixed(2));
-  const net = Number(requestData.net_payable_amount !== undefined ? requestData.net_payable_amount : (gross - retention).toFixed(2));
+  const retention = Number(requestData.retention_amount !== undefined ? requestData.retention_amount : roundMoney(gross * (rate / 100)));
+  const net = Number(requestData.net_payable_amount !== undefined ? requestData.net_payable_amount : roundMoney(gross - retention));
 
   const newReq = {
     id: newId,
@@ -1842,6 +1988,10 @@ module.exports = {
   getPaymentRequestById,
   savePaymentRequest,
   approvePaymentRequest,
+  // S-43 / SCRUM-172: Sinh đề nghị thanh toán từ phiếu nghiệm thu đã duyệt (T-97, T-98, T-99)
+  getApprovedSheetsAvailable,
+  linkSheetsToPaymentRequest,
+  unlinkSheetsFromPaymentRequest,
   // S-39 / SCRUM-168: Nhật ký thao tác trên phiếu chỉ ghi thêm (Append-only Audit Logs)
   inMemorySheetAuditLogs,
   saveSheetAuditLog,
