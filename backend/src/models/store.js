@@ -1534,6 +1534,93 @@ function approvePaymentRequest(projectId, requestId, userId) {
   return req;
 }
 
+// ==========================================
+// S-39 (SCRUM-168): NHẬT KÝ THAO TÁC TRÊN PHIẾU CHỈ GHI THÊM (APPEND-ONLY)
+// ==========================================
+let inMemorySheetAuditLogs = [];
+
+function saveSheetAuditLog({
+  project_id,
+  entity_type,
+  entity_id,
+  action,
+  performed_by,
+  user_name = null,
+  role_name = null,
+  old_values = null,
+  new_values = null,
+  change_summary = null,
+  reason = null,
+  ip_address = null
+}) {
+  const newId = inMemorySheetAuditLogs.length > 0 ? Math.max(...inMemorySheetAuditLogs.map(l => l.id)) + 1 : 1;
+  const newLog = {
+    id: newId,
+    project_id: Number(project_id),
+    entity_type: String(entity_type),
+    entity_id: String(entity_id),
+    action: String(action).toUpperCase(),
+    performed_by: Number(performed_by || 1),
+    user_name: user_name ? String(user_name) : null,
+    role_name: role_name ? String(role_name) : null,
+    old_values: typeof old_values === 'string' ? JSON.parse(old_values) : old_values,
+    new_values: typeof new_values === 'string' ? JSON.parse(new_values) : new_values,
+    change_summary: change_summary ? String(change_summary) : null,
+    reason: reason ? String(reason) : null,
+    ip_address: ip_address ? String(ip_address) : null,
+    created_at: new Date().toISOString()
+  };
+  inMemorySheetAuditLogs.push(newLog);
+  return newLog;
+}
+
+function getSheetAuditLogs(projectIdOrFilters, maybeFilters = {}) {
+  let projectId;
+  let filters;
+  if (typeof projectIdOrFilters === 'object' && projectIdOrFilters !== null) {
+    filters = projectIdOrFilters;
+    projectId = filters.projectId || filters.project_id;
+  } else {
+    projectId = projectIdOrFilters;
+    filters = maybeFilters || {};
+  }
+
+  const { entityType, entityId, action, fromDate, toDate, search, limit = 50, offset = 0 } = filters;
+
+  const filtered = inMemorySheetAuditLogs.filter(l => {
+    if (projectId && Number(l.project_id) !== Number(projectId)) return false;
+    if (entityType && l.entity_type !== entityType) return false;
+    if (entityId && String(l.entity_id) !== String(entityId)) return false;
+    if (action && l.action.toUpperCase() !== String(action).toUpperCase()) return false;
+    if (fromDate && l.created_at < fromDate) return false;
+    if (toDate && l.created_at > `${toDate} 23:59:59`) return false;
+    if (search) {
+      const s = String(search).toLowerCase();
+      const match = (l.change_summary && l.change_summary.toLowerCase().includes(s)) ||
+                    (l.reason && l.reason.toLowerCase().includes(s)) ||
+                    (l.entity_id && l.entity_id.toLowerCase().includes(s)) ||
+                    (l.user_name && l.user_name.toLowerCase().includes(s));
+      if (!match) return false;
+    }
+    return true;
+  }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  const total = filtered.length;
+  const paged = filtered.slice(Number(offset), Number(offset) + Number(limit));
+
+  return {
+    total,
+    limit: Number(limit),
+    offset: Number(offset),
+    data: paged
+  };
+}
+
+function getSheetAuditLogById(logId) {
+  const lId = Number(logId);
+  return inMemorySheetAuditLogs.find(l => Number(l.id) === lId) || null;
+}
+
 module.exports = {
   inMemoryAcceptanceSheets,
   inMemoryAcceptanceSheetItems,
@@ -1633,6 +1720,12 @@ module.exports = {
   getPaymentRequests,
   getPaymentRequestById,
   savePaymentRequest,
-  approvePaymentRequest
+  approvePaymentRequest,
+  // S-39 / SCRUM-168: Nhật ký thao tác trên phiếu chỉ ghi thêm (Append-only Audit Logs)
+  inMemorySheetAuditLogs,
+  saveSheetAuditLog,
+  getSheetAuditLogs,
+  getSheetAuditLogById
 };
+
 

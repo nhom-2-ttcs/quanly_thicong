@@ -685,6 +685,31 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    // S-39 (SCRUM-168): Bảng sheet_audit_logs - Nhật ký thao tác trên phiếu chỉ ghi thêm (Append-Only)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sheet_audit_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        entity_type ENUM('acceptance_sheet', 'payment_request', 'contract_volume', 'site_diary_lock') NOT NULL,
+        entity_id VARCHAR(100) NOT NULL,
+        action VARCHAR(50) NOT NULL,
+        performed_by INT NOT NULL,
+        user_name VARCHAR(100) NULL,
+        role_name VARCHAR(50) NULL,
+        old_values JSON NULL,
+        new_values JSON NULL,
+        change_summary TEXT NULL,
+        reason TEXT NULL,
+        ip_address VARCHAR(45) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_sheet_audit_project (project_id),
+        INDEX idx_sheet_audit_entity (entity_type, entity_id),
+        INDEX idx_sheet_audit_action (action),
+        INDEX idx_sheet_audit_user (performed_by),
+        INDEX idx_sheet_audit_created (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
     // 13. Tạo bảng project_teams & task_assignments (S-25 / SCRUM-125 / T-50: Đội thi công & Giao việc)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS project_teams (

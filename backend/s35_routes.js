@@ -62,10 +62,49 @@ module.exports = (db) => {
       );
 
       const [updatedRows] = await pool.query('SELECT * FROM work_items WHERE id = ?', [itemId]);
+      const updatedItem = updatedRows[0];
+
+      // S-39 / SCRUM-168: Ghi nhật ký thao tác cập nhật khối lượng hợp đồng (Append-Only)
+      try {
+        let recordSheetAuditLog;
+        try {
+          ({ recordSheetAuditLog } = require('./src/services/sheetAuditService'));
+        } catch (_) {}
+
+        if (recordSheetAuditLog) {
+          const pId = currentItem.project_id || project_id;
+          const uId = req.user?.id || req.user?.userId || null;
+          await recordSheetAuditLog({
+            projectId: pId,
+            entityType: 'contract_volume',
+            entityId: String(itemId),
+            action: 'UPDATE',
+            performedBy: uId,
+            userName: req.user?.name || req.user?.username || null,
+            roleName: req.user?.role_name || req.user?.role || null,
+            oldValues: {
+              unit: currentItem.unit,
+              khoi_luong_hop_dong: currentItem.khoi_luong_hop_dong,
+              don_gia_hop_dong: currentItem.don_gia_hop_dong
+            },
+            newValues: {
+              unit: validUnit,
+              khoi_luong_hop_dong: formattedQty,
+              don_gia_hop_dong: formattedPrice
+            },
+            changeSummary: `Cập nhật khối lượng & đơn giá hợp đồng hạng mục "${currentItem.name || currentItem.code || itemId}"`,
+            reason: req.body?.reason || 'Cập nhật khối lượng hợp đồng',
+            ipAddress: req.ip || req.connection?.remoteAddress || null
+          });
+        }
+      } catch (auditErr) {
+        console.warn('[s35_routes] Audit log recording failed:', auditErr.message);
+      }
+
       return res.json({
         success: true,
         message: 'Cập nhật hợp đồng thành công.',
-        data: updatedRows[0]
+        data: updatedItem
       });
     } catch (err) {
       return res.status(500).json({ success: false, message: err.message });

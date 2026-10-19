@@ -169,6 +169,10 @@ app.use("/api", acceptanceRoutes(db));
 const paymentRoutes = require("./src/routes/paymentRoutes");
 app.use("/api", paymentRoutes(db));
 
+// S-39 / SCRUM-168: Nhật ký thao tác trên phiếu chỉ ghi thêm (Append-Only Audit Logs)
+const auditLogRoutes = require("./src/routes/auditLogRoutes");
+app.use("/api", auditLogRoutes(db));
+
 // ==========================================
 // CÁC ENDPOINT CHO SAO LƯU & KHÔI PHỤC CSDL (S-20, T-46, T-47)
 // ==========================================
