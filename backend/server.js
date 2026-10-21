@@ -131,6 +131,10 @@ app.get('/budget', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/budget.html'));
 });
 
+app.get('/progress-summary', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/progress-summary.html'));
+});
+
 
 // Middleware xác thực token phiên
 const { authenticate } = require('./src/utils/rbac');
@@ -181,6 +185,10 @@ app.use("/api", auditLogRoutes(db));
 // S-48 / SCRUM-224: So sánh và cảnh báo dự toán - thực chi theo cây WBS (T-113, T-114)
 const budgetVarianceRoutes = require("./src/routes/budgetVarianceRoutes");
 app.use("/api", budgetVarianceRoutes(db));
+
+// S-49 / SCRUM-225: Trang tổng hợp tiến trình cho Chủ đầu tư (T-115, T-116)
+const progressSummaryRoutes = require("./src/routes/progressSummaryRoutes");
+app.use("/api", progressSummaryRoutes(db));
 
 
 // ==========================================

@@ -94,6 +94,7 @@
         (currentPath.includes('acceptance.html') && href.includes('acceptance.html')) ||
         (currentPath.includes('payment.html') && href.includes('payment.html')) ||
         (currentPath.includes('budget.html') && href.includes('budget.html')) ||
+        (currentPath.includes('progress-summary.html') && href.includes('progress-summary.html')) ||
         (currentPath.includes('audit-logs.html') && href.includes('audit-logs.html'))
       );
 
