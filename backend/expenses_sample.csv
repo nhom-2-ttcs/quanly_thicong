@@ -1,0 +1,5 @@
+expense_date,amount,expense_type,work_item_id,notes
+2026-10-22,12500000,nhan_cong,2,Tien cong dao dat dot 1
+2026-10-22,18000000,vat_lieu,3,Mua xi mang do mong
+2026-10-23,4500000,khac,,Chi phi tiep khach giam sat (Chua phan bo)
+2026-10-23,3200000,may_thi_cong,999,Thue may bom (Ma sai - Cho phan bo)
