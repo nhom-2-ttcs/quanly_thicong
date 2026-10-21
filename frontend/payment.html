@@ -216,6 +216,23 @@
       font-size: 13.5px;
     }
 
+    /* Badges & Buttons (S-44) */
+    .badge-status {
+      display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px;
+      border-radius: 9999px; font-size: 11px; font-weight: 800; letter-spacing: 0.3px;
+    }
+    .badge-approved { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .badge-rejected { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+    .badge-draft { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .btn-danger {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      color: #ffffff; border: none; padding: 8px 14px; border-radius: 8px;
+      font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex;
+      align-items: center; gap: 6px; transition: all 0.2s;
+      box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+    }
+    .btn-danger:hover { background: #991b1b; }
+
     /* Toast */
     #toast-msg {
       position: fixed; bottom: 24px; right: 24px; z-index: 2000;
@@ -548,13 +565,51 @@
           </div>
         </div>
 
+        <!-- Khung trạng thái phê duyệt / trả lại (S-44) -->
+        <div id="detailWorkflowAlert" style="display: none; padding: 14px 18px; border-radius: 10px; font-size: 13px; line-height: 1.5;"></div>
+
         <div id="detailNotesContainer" style="font-size: 12.5px; color: var(--text-muted); display: none;">
           <strong>Ghi chú:</strong> <span id="detailNotesText"></span>
         </div>
       </div>
       <div class="modal-footer">
+        <div id="detailActionButtons" style="display: inline-flex; gap: 8px; margin-right: auto;"></div>
         <button type="button" class="btn-secondary" onclick="window.print()">🖨️ In / Xuất Đề Nghị</button>
         <button type="button" class="btn-primary" onclick="closePaymentDetailModal()">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TRẢ LẠI ĐỀ NGHỊ THANH TOÁN (S-44 / T-101 & T-103) -->
+  <div class="modal-overlay" id="rejectPaymentModal" style="display: none;">
+    <div class="modal-card" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3 style="color: #991b1b;">
+          <span>↩️ Trả Lại Đề Nghị Thanh Toán</span>
+        </h3>
+        <button class="btn-close-modal" onclick="closeRejectModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: 10px; padding: 14px 16px; font-size: 13px; color: #991b1b; line-height: 1.5;">
+          <strong>⚠️ Quy tắc nghiệp vụ (S-44 AC / T-101 & T-103):</strong>
+          <ul style="margin: 6px 0 0 18px;">
+            <li>Đề xuất: <strong id="lblRejectTargetCode" style="font-family: 'JetBrains Mono';">---</strong></li>
+            <li>Lý do trả lại là <strong>bắt buộc</strong> phải nhập để lưu lịch sử tra cứu (T-101).</li>
+            <li>Toàn bộ phiếu nghiệm thu nguồn trong đợt này sẽ được <strong>giải phóng</strong> để đưa vào đợt đề nghị thanh toán khác (T-103).</li>
+            <li>Đề xuất cũ vẫn được lưu trong lịch sử với trạng thái <em>Đã trả lại</em>.</li>
+          </ul>
+        </div>
+
+        <div class="form-group">
+          <label for="inputRejectReason"><strong>Lý do trả lại đề nghị thanh toán (Bắt buộc) <span style="color: var(--danger);">*</span>:</strong></label>
+          <textarea id="inputRejectReason" class="form-control" rows="4" placeholder="Nhập lý do chi tiết yêu cầu điều chỉnh, ví dụ: Thiếu biên bản nghiệm thu cốt thép, cần rà soát lại khối lượng đợt,..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeRejectModal()">Hủy Bỏ</button>
+        <button type="button" class="btn-danger" id="btnSubmitReject" onclick="submitRejectPayment()">
+          ↩️ Xác Nhận Trả Lại & Giải Phóng Phiếu
+        </button>
       </div>
     </div>
   </div>
@@ -638,7 +693,19 @@
       }
 
       tbody.innerHTML = allRequests.map(r => {
-        const isApproved = String(r.status).toLowerCase() === 'approved';
+        const statusLower = String(r.status || 'draft').toLowerCase();
+        const isApproved = statusLower === 'approved';
+        const isRejected = statusLower === 'rejected' || statusLower === 'returned';
+
+        let badgeHtml = '';
+        if (isApproved) {
+          badgeHtml = '<span class="badge-status badge-approved">✅ ĐÃ DUYỆT</span>';
+        } else if (isRejected) {
+          badgeHtml = '<span class="badge-status badge-rejected">❌ ĐÃ TRẢ LẠI</span>';
+        } else {
+          badgeHtml = '<span class="badge-status badge-draft">⏳ BẢN NHÁP</span>';
+        }
+
         return `
           <tr>
             <td>
@@ -657,21 +724,24 @@
             <td style="text-align: right; font-family: 'JetBrains Mono'; font-weight: 800; color: #b91c1c;">${formatMoney(r.retention_amount)}</td>
             <td style="text-align: right; font-family: 'JetBrains Mono'; font-weight: 800; color: #059669;">${formatMoney(r.net_payable_amount)}</td>
             <td style="text-align: center;">
-              <span class="badge-status ${isApproved ? 'badge-approved' : 'badge-draft'}">
-                ${isApproved ? '✅ ĐÃ DUYỆT' : '⏳ BẢN NHÁP'}
-              </span>
+              ${badgeHtml}
             </td>
             <td style="text-align: right; white-space: nowrap;">
               <div style="display: inline-flex; gap: 6px; align-items: center;">
                 <button class="btn-secondary" style="font-size: 11.5px; padding: 4px 8px;" onclick="viewPaymentDetail(${r.id})" title="Xem chi tiết các dòng hạng mục & tổng tiền (T-100)">
                   👁️ Chi tiết
                 </button>
-                ${!isApproved ? `
-                  <button class="btn-primary" style="font-size: 11.5px; padding: 4px 8px;" onclick="approvePayment(${r.id})">
+                ${(!isApproved && !isRejected) ? `
+                  <button class="btn-primary" style="font-size: 11.5px; padding: 4px 8px;" onclick="approvePayment(${r.id}, '${r.request_code}')" title="Chủ đầu tư phê duyệt đề nghị (S-44)">
                     ✔️ Duyệt
                   </button>
+                  <button class="btn-danger" style="font-size: 11.5px; padding: 4px 8px;" onclick="openRejectModal(${r.id}, '${r.request_code}')" title="Trả lại đề nghị & giải phóng phiếu nghiệm thu (S-44)">
+                    ↩️ Trả lại
+                  </button>
+                ` : isApproved ? `
+                  <span style="font-size: 11.5px; color: #059669; font-weight: 700; padding: 0 4px;" title="Đề xuất và phiếu nghiệm thu nguồn đã khóa">🔒 Đã khóa</span>
                 ` : `
-                  <span style="font-size: 11.5px; color: #059669; font-weight: 700; padding: 0 4px;">Đã chốt</span>
+                  <span style="font-size: 11.5px; color: #dc2626; font-weight: 700; padding: 0 4px;" title="Phiếu nghiệm thu nguồn đã được giải phóng">↩️ Đã giải phóng</span>
                 `}
               </div>
             </td>
@@ -882,7 +952,9 @@
       }
     }
 
-    // T-100: Xem chi tiết các dòng đề nghị và tổng tiền (hiển thị đủ cột AC)
+    let currentRejectTargetId = null;
+
+    // T-100 & S-44: Xem chi tiết các dòng đề nghị và tổng tiền (hiển thị đủ cột AC & trạng thái khóa/giải phóng)
     async function viewPaymentDetail(requestId) {
       try {
         const res = await fetch(`/api/projects/${projectId}/payment-requests/${requestId}`, {
@@ -899,17 +971,94 @@
         document.getElementById('detailName').innerText = r.name;
         document.getElementById('detailPeriod').innerText = `Đợt ${r.period_number}`;
         document.getElementById('detailDateRange').innerText = `${r.from_date || '---'} đến ${r.to_date || '---'}`;
-        const isApproved = String(r.status).toLowerCase() === 'approved';
-        document.getElementById('detailStatus').innerHTML = `
-          <span class="badge-status ${isApproved ? 'badge-approved' : 'badge-draft'}">
-            ${isApproved ? '✅ ĐÃ DUYỆT' : '⏳ BẢN NHÁP'}
-          </span>
-        `;
+        
+        const statusLower = String(r.status || 'draft').toLowerCase();
+        const isApproved = statusLower === 'approved';
+        const isRejected = statusLower === 'rejected' || statusLower === 'returned';
+
+        if (isApproved) {
+          document.getElementById('detailStatus').innerHTML = '<span class="badge-status badge-approved">✅ ĐÃ DUYỆT</span>';
+        } else if (isRejected) {
+          document.getElementById('detailStatus').innerHTML = '<span class="badge-status badge-rejected">❌ ĐÃ TRẢ LẠI</span>';
+        } else {
+          document.getElementById('detailStatus').innerHTML = '<span class="badge-status badge-draft">⏳ BẢN NHÁP</span>';
+        }
+
         const rate = Number(r.retention_rate || 5);
         document.getElementById('detailRetentionPercent').innerText = `${rate.toFixed(2)}%`;
         document.getElementById('detailGrossAmount').innerText = formatMoney(r.gross_amount);
         document.getElementById('detailRetentionAmount').innerText = '- ' + formatMoney(r.retention_amount);
         document.getElementById('detailNetAmount').innerText = formatMoney(r.net_payable_amount);
+
+        const items = r.items || [];
+        document.getElementById('detailItemsCount').innerText = `${items.length} hạng mục`;
+
+        // S-44: Hiển thị banner trạng thái workflow phê duyệt / trả lại / khóa dữ liệu (T-101, T-102, T-103)
+        const alertEl = document.getElementById('detailWorkflowAlert');
+        if (isApproved) {
+          alertEl.style.display = 'block';
+          alertEl.style.background = '#ecfdf5';
+          alertEl.style.border = '1.5px solid #a7f3d0';
+          alertEl.style.color = '#065f46';
+          alertEl.innerHTML = `
+            <div style="font-weight: 800; font-size: 13.5px; display: flex; align-items: center; gap: 6px;">
+              <span>🔒 ĐÃ PHÊ DUYỆT BỞI CHỦ ĐẦU TƯ (T-101 & T-102)</span>
+            </div>
+            <div style="margin-top: 4px;">
+              Người duyệt: <strong>${r.approver_name || (r.approved_by ? 'User #' + r.approved_by : 'Chủ đầu tư')}</strong>
+              ${r.approved_at ? ` | Thời điểm duyệt: <strong>${r.approved_at}</strong>` : ''}
+            </div>
+            <div style="font-size: 12px; color: #047857; margin-top: 4px;">
+              🛡️ Toàn bộ dữ liệu đề xuất và ${items.length} hạng mục nghiệm thu nguồn đã được <strong>KHÓA CHẶT CHỐNG SỬA ĐỔI / XÓA (T-102)</strong>.
+            </div>
+          `;
+        } else if (isRejected) {
+          alertEl.style.display = 'block';
+          alertEl.style.background = '#fef2f2';
+          alertEl.style.border = '1.5px solid #fca5a5';
+          alertEl.style.color = '#991b1b';
+          alertEl.innerHTML = `
+            <div style="font-weight: 800; font-size: 13.5px; display: flex; align-items: center; gap: 6px;">
+              <span>↩️ ĐÃ BỊ TRẢ LẠI BỞI CHỦ ĐẦU TƯ (T-101 & T-103)</span>
+            </div>
+            <div style="margin-top: 4px;">
+              Người trả lại: <strong>${r.rejecter_name || (r.rejected_by ? 'User #' + r.rejected_by : 'Chủ đầu tư')}</strong>
+              ${r.rejected_at ? ` | Thời điểm trả lại: <strong>${r.rejected_at}</strong>` : ''}
+            </div>
+            <div style="margin-top: 6px; padding: 6px 10px; background: rgba(255,255,255,0.7); border-radius: 6px; border: 1px dashed #f87171;">
+              <strong>Lý do trả lại:</strong> <em>"${r.rejection_reason || 'Không có lý do chi tiết'}"</em>
+            </div>
+            <div style="font-size: 12px; color: #b91c1c; margin-top: 6px;">
+              🔄 Toàn bộ phiếu nghiệm thu nguồn trong đợt này đã được <strong>GIẢI PHÓNG để đưa vào đề xuất khác (T-103)</strong>. Đề xuất này vẫn được lưu giữ lịch sử tra cứu.
+            </div>
+          `;
+        } else {
+          alertEl.style.display = 'block';
+          alertEl.style.background = '#eff6ff';
+          alertEl.style.border = '1.5px solid #bfdbfe';
+          alertEl.style.color = '#1d4ed8';
+          alertEl.innerHTML = `
+            <div style="font-weight: 800; font-size: 13.5px;">⏳ ĐANG CHỜ CHỦ ĐẦU TƯ DUYỆT (T-101)</div>
+            <div style="font-size: 12px; color: #1e40af; margin-top: 4px;">
+              Chủ đầu tư có thể duyệt để khóa đề xuất và nguồn phiếu (T-102), hoặc trả lại kèm lý do để giải phóng phiếu nghiệm thu đưa vào đợt khác (T-103).
+            </div>
+          `;
+        }
+
+        // Action buttons trong footer modal
+        const actionBtnContainer = document.getElementById('detailActionButtons');
+        if (!isApproved && !isRejected) {
+          actionBtnContainer.innerHTML = `
+            <button type="button" class="btn-primary" style="font-size: 12px; padding: 8px 14px;" onclick="approvePayment(${r.id}, '${r.request_code}')">
+              ✔️ Phê Duyệt Đề Xuất
+            </button>
+            <button type="button" class="btn-danger" style="font-size: 12px; padding: 8px 14px;" onclick="closePaymentDetailModal(); openRejectModal(${r.id}, '${r.request_code}')">
+              ↩️ Trả Lại Đề Xuất
+            </button>
+          `;
+        } else {
+          actionBtnContainer.innerHTML = '';
+        }
 
         if (r.notes) {
           document.getElementById('detailNotesContainer').style.display = 'block';
@@ -918,8 +1067,6 @@
           document.getElementById('detailNotesContainer').style.display = 'none';
         }
 
-        const items = r.items || [];
-        document.getElementById('detailItemsCount').innerText = `${items.length} hạng mục`;
         const tbody = document.getElementById('detailItemsTableBody');
         if (items.length === 0) {
           tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 25px; color: var(--text-muted);">Không có dòng hạng mục nào trong đề nghị này.</td></tr>`;
@@ -947,8 +1094,10 @@
       document.getElementById('paymentDetailModal').style.display = 'none';
     }
 
-    async function approvePayment(id) {
-      if (!confirm('Bạn có chắc chắn muốn phê duyệt đề nghị thanh toán này?')) return;
+    // S-44 / T-101: Phê duyệt đề nghị thanh toán
+    async function approvePayment(id, code = '') {
+      const codeStr = code ? ` "${code}"` : '';
+      if (!confirm(`Xác nhận phê duyệt đề nghị thanh toán${codeStr}?\n\nLưu ý: Sau khi duyệt, đề xuất và toàn bộ các phiếu nghiệm thu liên kết sẽ bị KHÓA không thể sửa đổi hoặc xóa (T-102).`)) return;
       try {
         const res = await fetch(`/api/projects/${projectId}/payment-requests/${id}/approve`, {
           method: 'POST',
@@ -959,13 +1108,68 @@
         });
         const data = await res.json();
         if (res.ok && data.success) {
-          showToast(data.message || 'Đã phê duyệt đề nghị thanh toán!');
-          loadPaymentRequests();
+          showToast(data.message || 'Đã phê duyệt đề nghị thanh toán thành công!');
+          closePaymentDetailModal();
+          await loadPaymentRequests();
         } else {
           showToast(data.message || 'Lỗi phê duyệt', false);
         }
       } catch (err) {
         showToast(`Lỗi: ${err.message}`, false);
+      }
+    }
+
+    // S-44 / T-101 & T-103: Mở modal trả lại đề nghị thanh toán
+    function openRejectModal(id, code = '') {
+      currentRejectTargetId = id;
+      document.getElementById('lblRejectTargetCode').innerText = code || (`DNTT-${id}`);
+      document.getElementById('inputRejectReason').value = '';
+      document.getElementById('rejectPaymentModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('inputRejectReason').focus(), 100);
+    }
+
+    function closeRejectModal() {
+      document.getElementById('rejectPaymentModal').style.display = 'none';
+      currentRejectTargetId = null;
+    }
+
+    // S-44 / T-101 & T-103: Gửi yêu cầu trả lại đề nghị thanh toán & giải phóng phiếu
+    async function submitRejectPayment() {
+      if (!currentRejectTargetId) return;
+      const reason = document.getElementById('inputRejectReason').value.trim();
+      if (!reason) {
+        showToast('Vui lòng nhập lý do trả lại đề nghị thanh toán (bắt buộc theo T-101 & T-103)', false);
+        document.getElementById('inputRejectReason').focus();
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmitReject');
+      btn.disabled = true;
+      btn.innerText = '⏳ Đang xử lý trả lại & giải phóng phiếu...';
+
+      try {
+        const res = await fetch(`/api/projects/${projectId}/payment-requests/${currentRejectTargetId}/reject`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getToken()}`
+          },
+          body: JSON.stringify({ reason })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(data.message || 'Đã trả lại đề nghị và giải phóng phiếu nghiệm thu thành công!');
+          closeRejectModal();
+          closePaymentDetailModal();
+          await loadPaymentRequests();
+        } else {
+          showToast(data.message || 'Lỗi khi trả lại đề nghị thanh toán', false);
+        }
+      } catch (err) {
+        showToast(`Lỗi: ${err.message}`, false);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '↩️ Xác Nhận Trả Lại & Giải Phóng Phiếu';
       }
     }
   </script>

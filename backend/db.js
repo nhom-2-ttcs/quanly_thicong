@@ -1021,16 +1021,20 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
         retention_rate DECIMAL(5, 2) NOT NULL DEFAULT 5.00,
         retention_amount DECIMAL(18, 2) NOT NULL DEFAULT 0.00,
         net_payable_amount DECIMAL(18, 2) NOT NULL DEFAULT 0.00,
-        status ENUM('draft', 'approved', 'paid', 'cancelled') NOT NULL DEFAULT 'draft',
+        status ENUM('draft', 'submitted', 'approved', 'rejected', 'returned', 'paid', 'cancelled') NOT NULL DEFAULT 'draft',
         notes TEXT NULL,
         created_by INT NOT NULL DEFAULT 1,
         approved_by INT NULL,
         approved_at DATETIME NULL,
+        rejected_by INT NULL,
+        rejected_at DATETIME NULL,
+        rejection_reason TEXT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
         FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT,
         FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (rejected_by) REFERENCES users(id) ON DELETE SET NULL,
         UNIQUE KEY uq_project_payment_code (project_id, request_code),
         INDEX idx_payment_project_period (project_id, period_number)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -1054,6 +1058,24 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
         INDEX idx_pri_request (payment_request_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // S-44 / T-101 + T-103: Bổ sung các cột rejected_by, rejected_at, rejection_reason và ENUM cho payment_requests
+    try {
+      const [colCheckPr] = await pool.query(`
+        SELECT COLUMN_NAME FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payment_requests' AND COLUMN_NAME = 'rejected_by'
+      `);
+      if (!colCheckPr || colCheckPr.length === 0) {
+        await pool.query(`
+          ALTER TABLE payment_requests
+          MODIFY COLUMN status ENUM('draft', 'submitted', 'approved', 'rejected', 'returned', 'paid', 'cancelled') NOT NULL DEFAULT 'draft',
+          ADD COLUMN rejected_by INT NULL AFTER approved_at,
+          ADD COLUMN rejected_at DATETIME NULL AFTER rejected_by,
+          ADD COLUMN rejection_reason TEXT NULL AFTER rejected_at,
+          ADD CONSTRAINT fk_payment_rejecter FOREIGN KEY (rejected_by) REFERENCES users(id) ON DELETE SET NULL
+        `);
+      }
+    } catch (_) {}
 
     // S-43 / T-99: Bổ sung payment_request_id vào acceptance_sheets để khoá liên kết
     try {

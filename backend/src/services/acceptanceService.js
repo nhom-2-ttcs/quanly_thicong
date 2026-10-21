@@ -611,6 +611,25 @@ class AcceptanceService {
       throw err;
     }
 
+    // S-44 / T-102: Khóa không cho sửa đổi nếu phiếu nghiệm thu thuộc đề nghị thanh toán đã duyệt
+    if (sheet.payment_request_id) {
+      let isPaymentApproved = false;
+      if (this.isConnected) {
+        try {
+          const [pRows] = await this.pool.query('SELECT status FROM payment_requests WHERE id = ?', [sheet.payment_request_id]);
+          if (pRows && pRows.length > 0 && pRows[0].status === 'approved') isPaymentApproved = true;
+        } catch (_) {}
+      } else {
+        const pr = store.getPaymentRequestById(sheet.payment_request_id);
+        if (pr && pr.status === 'approved') isPaymentApproved = true;
+      }
+      if (isPaymentApproved) {
+        const err = new Error('Phiếu nghiệm thu thuộc đề nghị thanh toán đã được phê duyệt (đã bị khóa), không thể sửa đổi.');
+        err.status = 409;
+        throw err;
+      }
+    }
+
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     if (this.isConnected) {
@@ -674,6 +693,25 @@ class AcceptanceService {
       const err = new Error('Không tìm thấy phiếu nghiệm thu để đính kèm ảnh');
       err.status = 404;
       throw err;
+    }
+
+    // S-44 / T-102: Khóa không cho đính kèm ảnh nếu phiếu nghiệm thu thuộc đề nghị thanh toán đã duyệt
+    if (sheet.payment_request_id) {
+      let isPaymentApproved = false;
+      if (this.isConnected) {
+        try {
+          const [pRows] = await this.pool.query('SELECT status FROM payment_requests WHERE id = ?', [sheet.payment_request_id]);
+          if (pRows && pRows.length > 0 && pRows[0].status === 'approved') isPaymentApproved = true;
+        } catch (_) {}
+      } else {
+        const pr = store.getPaymentRequestById(sheet.payment_request_id);
+        if (pr && pr.status === 'approved') isPaymentApproved = true;
+      }
+      if (isPaymentApproved) {
+        const err = new Error('Phiếu nghiệm thu thuộc đề nghị thanh toán đã được phê duyệt (đã bị khóa), không thể thêm ảnh hiện trường.');
+        err.status = 409;
+        throw err;
+      }
     }
 
     if (!Array.isArray(files) || files.length === 0) {
@@ -806,6 +844,24 @@ class AcceptanceService {
     }
 
     if (sheet.status === 'approved') {
+      // S-44 / T-102: Khóa không cho xóa nếu phiếu nghiệm thu thuộc đề nghị thanh toán đã duyệt
+      if (sheet.payment_request_id) {
+        let isPaymentApproved = false;
+        if (this.isConnected) {
+          try {
+            const [pRows] = await this.pool.query('SELECT status FROM payment_requests WHERE id = ?', [sheet.payment_request_id]);
+            if (pRows && pRows.length > 0 && pRows[0].status === 'approved') isPaymentApproved = true;
+          } catch (_) {}
+        } else {
+          const pr = store.getPaymentRequestById(sheet.payment_request_id);
+          if (pr && pr.status === 'approved') isPaymentApproved = true;
+        }
+        if (isPaymentApproved) {
+          const err = new Error('Phiếu nghiệm thu thuộc đề nghị thanh toán đã được phê duyệt (đã bị khóa), không thể xóa.');
+          err.status = 409;
+          throw err;
+        }
+      }
       const err = new Error('Phiếu nghiệm thu đã phê duyệt không thể xóa.');
       err.status = 409;
       throw err;

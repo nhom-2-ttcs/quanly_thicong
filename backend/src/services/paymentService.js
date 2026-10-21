@@ -197,11 +197,12 @@ class PaymentService {
     if (this.isConnected) {
       try {
         const [rows] = await this.pool.query(
-          `SELECT pr.*, u.full_name as creator_name, app.full_name as approver_name,
+          `SELECT pr.*, u.full_name as creator_name, app.full_name as approver_name, rej.full_name as rejecter_name,
                   (SELECT COUNT(i.id) FROM payment_request_items i WHERE i.payment_request_id = pr.id) as item_count
            FROM payment_requests pr
            LEFT JOIN users u ON pr.created_by = u.id
            LEFT JOIN users app ON pr.approved_by = app.id
+           LEFT JOIN users rej ON pr.rejected_by = rej.id
            WHERE pr.project_id = ?
            ORDER BY pr.period_number DESC, pr.id DESC`,
           [pId]
@@ -243,10 +244,11 @@ class PaymentService {
     if (this.isConnected) {
       try {
         const [rows] = await this.pool.query(
-          `SELECT pr.*, u.full_name as creator_name, app.full_name as approver_name
+          `SELECT pr.*, u.full_name as creator_name, app.full_name as approver_name, rej.full_name as rejecter_name
            FROM payment_requests pr
            LEFT JOIN users u ON pr.created_by = u.id
            LEFT JOIN users app ON pr.approved_by = app.id
+           LEFT JOIN users rej ON pr.rejected_by = rej.id
            WHERE pr.id = ? AND pr.project_id = ?`,
           [rId, pId]
         );
@@ -898,13 +900,27 @@ class PaymentService {
       throw err;
     }
 
+    // S-44 / T-102: Khóa không cho duyệt lại nếu đã duyệt
+    if (req.status === 'approved') {
+      const err = new Error('Đề nghị thanh toán đã được duyệt trước đó và đã bị khóa.');
+      err.status = 409;
+      throw err;
+    }
+
+    // S-44: Không cho duyệt đề nghị đã bị từ chối / trả lại
+    if (req.status === 'rejected' || req.status === 'returned') {
+      const err = new Error('Đề nghị thanh toán đã bị từ chối/trả lại, không thể phê duyệt.');
+      err.status = 409;
+      throw err;
+    }
+
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     if (this.isConnected) {
       try {
         await this.pool.query(
-          'UPDATE payment_requests SET status = "approved", approved_by = ?, approved_at = ? WHERE id = ?',
-          [uId, now, rId]
+          'UPDATE payment_requests SET status = "approved", approved_by = ?, approved_at = ? WHERE id = ? AND project_id = ?',
+          [uId, now, rId, pId]
         );
       } catch (_) {
         store.approvePaymentRequest(pId, rId, uId);
@@ -946,6 +962,192 @@ class PaymentService {
       success: true,
       message: `Đã phê duyệt đề nghị thanh toán "${req.request_code}" thành công!`,
       data: updatedReq
+    };
+  }
+
+  /**
+   * S-44 / T-101 & T-103: Chủ đầu tư trả lại đề nghị thanh toán và giải phóng các phiếu nghiệm thu liên kết
+   */
+  async rejectPaymentRequest(projectId, requestId, userId, reason) {
+    const pId = Number(projectId);
+    const rId = Number(requestId);
+    const uId = Number(userId);
+
+    // T-101 & T-103: Lý do trả lại là bắt buộc
+    if (!reason || !String(reason).trim()) {
+      const err = new Error('Lý do trả lại đề nghị thanh toán là bắt buộc.');
+      err.status = 400;
+      throw err;
+    }
+
+    const req = await this.getPaymentRequestById(pId, rId);
+    if (!req) {
+      const err = new Error('Không tìm thấy đề nghị thanh toán để trả lại');
+      err.status = 404;
+      throw err;
+    }
+
+    // T-102: Đề nghị đã duyệt bị khóa, không thể trả lại
+    if (req.status === 'approved') {
+      const err = new Error('Đề nghị thanh toán đã được phê duyệt và bị khóa, không thể trả lại.');
+      err.status = 409;
+      throw err;
+    }
+
+    // Đề nghị đã bị trả lại trước đó
+    if (req.status === 'rejected' || req.status === 'returned') {
+      const err = new Error('Đề nghị thanh toán đã được trả lại trước đó.');
+      err.status = 409;
+      throw err;
+    }
+
+    const cleanReason = String(reason).trim();
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    if (this.isConnected) {
+      try {
+        await this.pool.query(
+          'UPDATE payment_requests SET status = "rejected", rejected_by = ?, rejected_at = ?, rejection_reason = ? WHERE id = ? AND project_id = ?',
+          [uId, now, cleanReason, rId, pId]
+        );
+        // T-103: Giải phóng nguồn phiếu - gỡ payment_request_id trên acceptance_sheets
+        await this.pool.query(
+          'UPDATE acceptance_sheets SET payment_request_id = NULL WHERE project_id = ? AND payment_request_id = ?',
+          [pId, rId]
+        );
+      } catch (_) {
+        store.rejectPaymentRequest(pId, rId, uId, cleanReason);
+      }
+    } else {
+      store.rejectPaymentRequest(pId, rId, uId, cleanReason);
+    }
+
+    const updatedReq = await this.getPaymentRequestById(pId, rId);
+
+    // S-39: Ghi nhật ký thao tác trả lại đề nghị thanh toán (Append-Only)
+    try {
+      if (recordSheetAuditLog) {
+        await recordSheetAuditLog({
+          projectId: pId,
+          entityType: 'payment_request',
+          entityId: String(rId),
+          action: 'REJECT',
+          performedBy: uId,
+          oldValues: {
+            status: req.status
+          },
+          newValues: {
+            status: 'rejected',
+            rejected_by: uId,
+            rejected_at: now,
+            rejection_reason: cleanReason,
+            sheets_released: true
+          },
+          changeSummary: `Chủ đầu tư trả lại đề nghị thanh toán đợt ${req.period_number || 1} (${req.request_code}) và giải phóng các phiếu nghiệm thu liên kết`,
+          reason: cleanReason
+        });
+      }
+    } catch (auditErr) {
+      console.warn('[PaymentService] Audit log rejection recording failed:', auditErr.message);
+    }
+
+    return {
+      success: true,
+      message: `Đã trả lại đề nghị thanh toán "${req.request_code}" và giải phóng các phiếu nghiệm thu liên kết thành công!`,
+      data: updatedReq
+    };
+  }
+
+  /**
+   * S-44 / T-102: Cập nhật thông tin đề nghị thanh toán (Khóa khi đã approved hoặc rejected)
+   */
+  async updatePaymentRequest(projectId, requestId, updateData, userId = 1) {
+    const pId = Number(projectId);
+    const rId = Number(requestId);
+
+    const req = await this.getPaymentRequestById(pId, rId);
+    if (!req) {
+      const err = new Error('Không tìm thấy đề nghị thanh toán');
+      err.status = 404;
+      throw err;
+    }
+
+    // T-102: Đề xuất đã duyệt không thể sửa được
+    if (req.status === 'approved') {
+      const err = new Error('Đề nghị thanh toán đã được phê duyệt (đã bị khóa), không thể chỉnh sửa.');
+      err.status = 409;
+      throw err;
+    }
+
+    if (req.status === 'rejected' || req.status === 'returned') {
+      const err = new Error('Đề nghị thanh toán đã bị trả lại, không thể chỉnh sửa.');
+      err.status = 409;
+      throw err;
+    }
+
+    const name = updateData.name ? String(updateData.name).trim() : req.name;
+    const notes = updateData.notes !== undefined ? updateData.notes : req.notes;
+
+    if (this.isConnected) {
+      try {
+        await this.pool.query(
+          'UPDATE payment_requests SET name = ?, notes = ? WHERE id = ? AND project_id = ?',
+          [name, notes, rId, pId]
+        );
+      } catch (_) {
+        store.updatePaymentRequest(pId, rId, { name, notes });
+      }
+    } else {
+      store.updatePaymentRequest(pId, rId, { name, notes });
+    }
+
+    const updated = await this.getPaymentRequestById(pId, rId);
+    return {
+      success: true,
+      message: 'Cập nhật đề nghị thanh toán thành công',
+      data: updated
+    };
+  }
+
+  /**
+   * S-44 / T-102: Xóa đề nghị thanh toán (Khóa khi đã approved)
+   */
+  async deletePaymentRequest(projectId, requestId) {
+    const pId = Number(projectId);
+    const rId = Number(requestId);
+
+    const req = await this.getPaymentRequestById(pId, rId);
+    if (!req) {
+      const err = new Error('Không tìm thấy đề nghị thanh toán để xóa');
+      err.status = 404;
+      throw err;
+    }
+
+    // T-102: Đề xuất đã duyệt không thể xóa
+    if (req.status === 'approved') {
+      const err = new Error('Đề nghị thanh toán đã được phê duyệt (đã bị khóa), không thể xóa.');
+      err.status = 409;
+      throw err;
+    }
+
+    if (this.isConnected) {
+      try {
+        // Gỡ liên kết các phiếu nghiệm thu
+        await this.pool.query(
+          'UPDATE acceptance_sheets SET payment_request_id = NULL WHERE project_id = ? AND payment_request_id = ?',
+          [pId, rId]
+        );
+        await this.pool.query('DELETE FROM payment_requests WHERE id = ? AND project_id = ?', [rId, pId]);
+      } catch (_) {
+        store.deletePaymentRequest(pId, rId);
+      }
+    } else {
+      store.deletePaymentRequest(pId, rId);
+    }
+
+    return {
+      success: true,
+      message: 'Đã xóa đề nghị thanh toán thành công'
     };
   }
 }

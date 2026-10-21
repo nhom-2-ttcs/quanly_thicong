@@ -1441,6 +1441,15 @@ function updateAcceptanceSheet(sheetId, updateData) {
   const sId = Number(sheetId);
   const sheet = inMemoryAcceptanceSheets.find(s => s.id === sId);
   if (!sheet) return null;
+  // S-44 / T-102: Khóa phiếu nghiệm thu nếu thuộc đề nghị thanh toán đã duyệt
+  if (sheet.payment_request_id) {
+    const linkedPr = inMemoryPaymentRequests.find(pr => pr.id === sheet.payment_request_id);
+    if (linkedPr && linkedPr.status === 'approved') {
+      const err = new Error('Phiếu nghiệm thu thuộc đề nghị thanh toán đã được phê duyệt (đã bị khóa), không thể chỉnh sửa.');
+      err.status = 409;
+      throw err;
+    }
+  }
   if (updateData.name !== undefined) sheet.name = String(updateData.name).trim();
   if (updateData.sheet_code !== undefined) sheet.sheet_code = String(updateData.sheet_code).trim();
   if (updateData.period_number !== undefined) sheet.period_number = Number(updateData.period_number);
@@ -1458,6 +1467,16 @@ function deleteAcceptanceSheet(sheetId) {
   const sId = Number(sheetId);
   const idx = inMemoryAcceptanceSheets.findIndex(s => s.id === sId);
   if (idx === -1) return false;
+  const sheet = inMemoryAcceptanceSheets[idx];
+  // S-44 / T-102: Khóa phiếu nghiệm thu nếu thuộc đề nghị thanh toán đã duyệt
+  if (sheet && sheet.payment_request_id) {
+    const linkedPr = inMemoryPaymentRequests.find(pr => pr.id === sheet.payment_request_id);
+    if (linkedPr && linkedPr.status === 'approved') {
+      const err = new Error('Phiếu nghiệm thu thuộc đề nghị thanh toán đã được phê duyệt (đã bị khóa), không thể xóa.');
+      err.status = 409;
+      throw err;
+    }
+  }
   inMemoryAcceptanceSheets.splice(idx, 1);
   inMemoryAcceptanceSheetItems = inMemoryAcceptanceSheetItems.filter(i => i.sheet_id !== sId);
   inMemoryAcceptanceSheetPhotos = inMemoryAcceptanceSheetPhotos.filter(p => p.sheet_id !== sId);
@@ -1492,6 +1511,17 @@ function saveAcceptanceSheetItem(itemData) {
 }
 
 function saveAcceptanceSheetPhoto(photoData) {
+  // S-44 / T-102: Khóa không cho thêm ảnh nếu phiếu nghiệm thu thuộc đề nghị đã duyệt
+  const parentSheet = inMemoryAcceptanceSheets.find(s => s.id === Number(photoData.sheet_id));
+  if (parentSheet && parentSheet.payment_request_id) {
+    const linkedPr = inMemoryPaymentRequests.find(pr => pr.id === parentSheet.payment_request_id);
+    if (linkedPr && linkedPr.status === 'approved') {
+      const err = new Error('Phiếu nghiệm thu thuộc đề nghị thanh toán đã được phê duyệt (đã bị khóa), không thể thêm ảnh hiện trường.');
+      err.status = 409;
+      throw err;
+    }
+  }
+
   const newId = inMemoryAcceptanceSheetPhotos.length > 0 ? Math.max(...inMemoryAcceptanceSheetPhotos.map(p => p.id)) + 1 : 1;
   const photo = {
     id: newId,
@@ -1519,6 +1549,19 @@ function deleteAcceptanceSheetPhoto(photoId) {
   const pId = Number(photoId);
   const idx = inMemoryAcceptanceSheetPhotos.findIndex(p => p.id === pId);
   if (idx === -1) return false;
+  // S-44 / T-102: Khóa không cho xóa ảnh nếu phiếu nghiệm thu thuộc đề nghị đã duyệt
+  const photo = inMemoryAcceptanceSheetPhotos[idx];
+  if (photo) {
+    const parentSheet = inMemoryAcceptanceSheets.find(s => s.id === photo.sheet_id);
+    if (parentSheet && parentSheet.payment_request_id) {
+      const linkedPr = inMemoryPaymentRequests.find(pr => pr.id === parentSheet.payment_request_id);
+      if (linkedPr && linkedPr.status === 'approved') {
+        const err = new Error('Phiếu nghiệm thu thuộc đề nghị thanh toán đã được phê duyệt (đã bị khóa), không thể xóa ảnh hiện trường.');
+        err.status = 409;
+        throw err;
+      }
+    }
+  }
   inMemoryAcceptanceSheetPhotos.splice(idx, 1);
   return true;
 }
@@ -1727,7 +1770,16 @@ function getPaymentRequestById(requestId) {
         acceptance_sheet_code: sheet ? sheet.sheet_code : (it.acceptance_sheet_code || null)
       };
     });
-  return { ...req, items };
+  const creator = inMemoryUsers.find(u => u.id === req.created_by);
+  const approver = inMemoryUsers.find(u => u.id === req.approved_by);
+  const rejecter = inMemoryUsers.find(u => u.id === req.rejected_by);
+  return {
+    ...req,
+    creator_name: creator ? creator.full_name : null,
+    approver_name: approver ? approver.full_name : null,
+    rejecter_name: rejecter ? rejecter.full_name : null,
+    items
+  };
 }
 
 function savePaymentRequest(requestData, itemsData = []) {
@@ -1754,6 +1806,9 @@ function savePaymentRequest(requestData, itemsData = []) {
     created_by: Number(requestData.created_by || 1),
     approved_by: requestData.approved_by ? Number(requestData.approved_by) : null,
     approved_at: requestData.approved_at || null,
+    rejected_by: requestData.rejected_by ? Number(requestData.rejected_by) : null,
+    rejected_at: requestData.rejected_at || null,
+    rejection_reason: requestData.rejection_reason ? String(requestData.rejection_reason).trim() : null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
@@ -1787,10 +1842,93 @@ function approvePaymentRequest(projectId, requestId, userId) {
   const rId = Number(requestId);
   const req = inMemoryPaymentRequests.find(pr => pr.id === rId && Number(pr.project_id) === Number(projectId));
   if (!req) return null;
+  // S-44 / T-102: Khóa không cho duyệt lại nếu đã duyệt
+  if (req.status === 'approved') {
+    const err = new Error('Đề nghị thanh toán đã được duyệt trước đó và đã bị khóa.');
+    err.status = 409;
+    throw err;
+  }
+  // S-44: Không cho duyệt đề nghị đã bị từ chối / trả lại
+  if (req.status === 'rejected' || req.status === 'returned') {
+    const err = new Error('Đề nghị thanh toán đã bị từ chối/trả lại, không thể phê duyệt.');
+    err.status = 409;
+    throw err;
+  }
   req.status = 'approved';
   req.approved_by = Number(userId);
   req.approved_at = new Date().toISOString();
   req.updated_at = new Date().toISOString();
+  return req;
+}
+
+// S-44 / T-101 & T-103: Chủ đầu tư trả lại đề nghị thanh toán và giải phóng các phiếu nghiệm thu liên kết
+function rejectPaymentRequest(projectId, requestId, userId, reason) {
+  const rId = Number(requestId);
+  const req = inMemoryPaymentRequests.find(pr => pr.id === rId && Number(pr.project_id) === Number(projectId));
+  if (!req) return null;
+  // S-44 / T-102: Đề nghị đã duyệt bị khóa, không thể trả lại
+  if (req.status === 'approved') {
+    const err = new Error('Đề nghị thanh toán đã được phê duyệt và bị khóa, không thể trả lại.');
+    err.status = 409;
+    throw err;
+  }
+  if (req.status === 'rejected' || req.status === 'returned') {
+    const err = new Error('Đề nghị thanh toán đã được trả lại trước đó.');
+    err.status = 409;
+    throw err;
+  }
+  if (!reason || !String(reason).trim()) {
+    const err = new Error('Lý do trả lại đề nghị thanh toán là bắt buộc.');
+    err.status = 400;
+    throw err;
+  }
+  req.status = 'rejected';
+  req.rejected_by = Number(userId);
+  req.rejected_at = new Date().toISOString();
+  req.rejection_reason = String(reason).trim();
+  req.updated_at = new Date().toISOString();
+
+  // T-103: Giải phóng các phiếu nghiệm thu liên kết để đưa vào đề xuất khác
+  unlinkSheetsFromPaymentRequest(rId);
+
+  return req;
+}
+
+// S-44 / T-102: Khóa chỉnh sửa đề nghị đã duyệt hoặc đã trả lại
+function updatePaymentRequest(projectId, requestId, updateData) {
+  const rId = Number(requestId);
+  const req = inMemoryPaymentRequests.find(pr => pr.id === rId && Number(pr.project_id) === Number(projectId));
+  if (!req) return null;
+  if (req.status === 'approved') {
+    const err = new Error('Đề nghị thanh toán đã được phê duyệt (đã bị khóa), không thể chỉnh sửa.');
+    err.status = 409;
+    throw err;
+  }
+  if (req.status === 'rejected' || req.status === 'returned') {
+    const err = new Error('Đề nghị thanh toán đã bị trả lại, không thể chỉnh sửa.');
+    err.status = 409;
+    throw err;
+  }
+  if (updateData.name !== undefined) req.name = String(updateData.name).trim();
+  if (updateData.notes !== undefined) req.notes = updateData.notes;
+  req.updated_at = new Date().toISOString();
+  return req;
+}
+
+// S-44 / T-102: Khóa xóa đề nghị đã duyệt
+function deletePaymentRequest(projectId, requestId) {
+  const rId = Number(requestId);
+  const idx = inMemoryPaymentRequests.findIndex(pr => pr.id === rId && Number(pr.project_id) === Number(projectId));
+  if (idx === -1) return null;
+  const req = inMemoryPaymentRequests[idx];
+  if (req.status === 'approved') {
+    const err = new Error('Đề nghị thanh toán đã được phê duyệt (đã bị khóa), không thể xóa.');
+    err.status = 409;
+    throw err;
+  }
+  unlinkSheetsFromPaymentRequest(rId);
+  inMemoryPaymentRequests.splice(idx, 1);
+  inMemoryPaymentRequestItems = inMemoryPaymentRequestItems.filter(it => it.payment_request_id !== rId);
   return req;
 }
 
@@ -1989,6 +2127,10 @@ module.exports = {
   getPaymentRequestById,
   savePaymentRequest,
   approvePaymentRequest,
+  // S-44 / SCRUM-173: Chủ đầu tư duyệt hoặc trả lại đề nghị thanh toán (T-101, T-102, T-103)
+  rejectPaymentRequest,
+  updatePaymentRequest,
+  deletePaymentRequest,
   // S-43 / SCRUM-172: Sinh đề nghị thanh toán từ phiếu nghiệm thu đã duyệt (T-97, T-98, T-99)
   getApprovedSheetsAvailable,
   linkSheetsToPaymentRequest,

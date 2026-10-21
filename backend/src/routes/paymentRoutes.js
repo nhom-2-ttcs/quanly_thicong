@@ -193,7 +193,23 @@ module.exports = (db) => {
     }
   });
 
-  // 7. Phê duyệt đề nghị thanh toán (Chỉ huy trưởng / Chủ đầu tư / Admin)
+  // Helper kiểm tra quyền duyệt / trả lại đề nghị thanh toán (Chủ đầu tư / Admin / Chỉ huy trưởng)
+  function checkPaymentApprovalAccess(req, res) {
+    if (!req.user) return true;
+    const roleStr = String(req.user.role_name || req.user.role || '').toLowerCase();
+    const canAct = req.user.role_id === 1 || req.user.role_id === 2 || req.user.role_id === 6 ||
+                   roleStr.includes('admin') || roleStr.includes('project_manager') || roleStr.includes('client');
+    if (!canAct) {
+      res.status(403).json({
+        success: false,
+        message: 'Quyền truy cập bị từ chối: Chỉ Chủ đầu tư hoặc Quản trị viên mới được duyệt hoặc trả lại đề nghị thanh toán.'
+      });
+      return false;
+    }
+    return true;
+  }
+
+  // 7. S-44 / T-101: Phê duyệt đề nghị thanh toán (Chủ đầu tư / Admin)
   router.post('/projects/:projectId/payment-requests/:id/approve', async (req, res) => {
     const projectId = Number(req.params.projectId);
     const requestId = Number(req.params.id);
@@ -202,20 +218,80 @@ module.exports = (db) => {
     }
     if (checkProjectReadAccess(req, res, projectId)) return;
     if (checkViewerForbidden(req, res)) return;
+    if (!checkPaymentApprovalAccess(req, res)) return;
 
-    const roleStr = String(req.user?.role_name || req.user?.role || '').toLowerCase();
-    const canApprove = req.user?.role_id === 1 || req.user?.role_id === 2 || req.user?.role_id === 6 ||
-                       roleStr.includes('admin') || roleStr.includes('project_manager') || roleStr.includes('client');
-    if (req.user && !canApprove) {
-      return res.status(403).json({
+    try {
+      const userId = req.user?.id || req.user?.userId || 1;
+      const result = await paymentService.approvePaymentRequest(projectId, requestId, userId);
+      res.json(result);
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
+  // 8. S-44 / T-101 & T-103: Trả lại đề nghị thanh toán và giải phóng các phiếu nghiệm thu liên kết
+  const handleRejectPayment = async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const requestId = Number(req.params.id);
+    if (!Number.isInteger(projectId) || projectId <= 0 || !Number.isInteger(requestId) || requestId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId hoặc requestId không hợp lệ.' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+    if (checkViewerForbidden(req, res)) return;
+    if (!checkPaymentApprovalAccess(req, res)) return;
+
+    // T-101 & T-103: Bắt buộc phải có lý do trả lại
+    const reason = req.body?.reason || req.body?.rejection_reason || req.body?.return_reason;
+    if (!reason || !String(reason).trim()) {
+      return res.status(400).json({
         success: false,
-        message: 'Quyền truy cập bị từ chối: Chỉ Ban quản lý, Chỉ huy trưởng hoặc Chủ đầu tư mới được duyệt đề nghị thanh toán.'
+        message: 'Lý do trả lại đề nghị thanh toán là bắt buộc.'
       });
     }
 
     try {
       const userId = req.user?.id || req.user?.userId || 1;
-      const result = await paymentService.approvePaymentRequest(projectId, requestId, userId);
+      const result = await paymentService.rejectPaymentRequest(projectId, requestId, userId, String(reason).trim());
+      res.json(result);
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  };
+
+  router.post('/projects/:projectId/payment-requests/:id/reject', handleRejectPayment);
+  router.post('/projects/:projectId/payment-requests/:id/return', handleRejectPayment);
+
+  // 9. S-44 / T-102: Cập nhật đề nghị thanh toán (Khóa khi đã approved hoặc rejected)
+  router.put('/projects/:projectId/payment-requests/:id', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const requestId = Number(req.params.id);
+    if (!Number.isInteger(projectId) || projectId <= 0 || !Number.isInteger(requestId) || requestId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId hoặc requestId không hợp lệ.' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const userId = req.user?.id || req.user?.userId || 1;
+      const result = await paymentService.updatePaymentRequest(projectId, requestId, req.body, userId);
+      res.json(result);
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
+  // 10. S-44 / T-102: Xóa đề nghị thanh toán (Khóa khi đã approved)
+  router.delete('/projects/:projectId/payment-requests/:id', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const requestId = Number(req.params.id);
+    if (!Number.isInteger(projectId) || projectId <= 0 || !Number.isInteger(requestId) || requestId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId hoặc requestId không hợp lệ.' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const result = await paymentService.deletePaymentRequest(projectId, requestId);
       res.json(result);
     } catch (err) {
       res.status(err.status || 500).json({ success: false, message: err.message });
