@@ -107,6 +107,56 @@ module.exports = (db) => {
     }
   });
 
+  // 5b. S-38 (SCRUM-167 / AC 2): Ban quản lý trả lại phiếu nghiệm thu kèm lý do
+  router.post('/projects/:projectId/acceptance-sheets/:id/reject', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const sheetId = Number(req.params.id);
+    if (!Number.isInteger(projectId) || projectId <= 0 || !Number.isInteger(sheetId) || sheetId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId hoặc sheetId không hợp lệ.' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+    if (checkViewerForbidden(req, res)) return;
+
+    // Chỉ Admin hoặc Chỉ huy trưởng/Ban QLDA được trả lại phiếu
+    const roleStr = String(req.user?.role_name || req.user?.role || '').toLowerCase();
+    const isManagerOrAdmin = req.user?.role_id === 1 || req.user?.role_id === 2 || req.user?.role_id === 3 ||
+                             roleStr.includes('admin') || roleStr.includes('project_manager') || roleStr.includes('site_manager');
+    if (req.user && !isManagerOrAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Quyền truy cập bị từ chối: Chỉ Ban quản trị hoặc Chỉ huy trưởng mới được phép trả lại phiếu nghiệm thu.'
+      });
+    }
+
+    try {
+      const userId = req.user?.id || req.user?.userId || 1;
+      const { reason } = req.body || {};
+      const result = await acceptanceService.rejectAcceptanceSheet(projectId, sheetId, userId, reason);
+      res.json(result);
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
+  // 5c. S-38 (SCRUM-167 / AC 2 & AC 3): Cập nhật/sửa phiếu nghiệm thu (Chặn sửa phiếu đã duyệt)
+  router.put('/projects/:projectId/acceptance-sheets/:id', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const sheetId = Number(req.params.id);
+    if (!Number.isInteger(projectId) || projectId <= 0 || !Number.isInteger(sheetId) || sheetId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId hoặc sheetId không hợp lệ.' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+    if (checkViewerForbidden(req, res)) return;
+
+    try {
+      const userId = req.user?.id || req.user?.userId || 1;
+      const result = await acceptanceService.updateAcceptanceSheet(projectId, sheetId, req.body, userId);
+      res.json(result);
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
   // 6. Đính kèm ảnh hiện trường vào phiếu nghiệm thu (AC 4)
   router.post('/projects/:projectId/acceptance-sheets/:id/photos', async (req, res) => {
     const projectId = Number(req.params.projectId);

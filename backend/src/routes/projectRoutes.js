@@ -19,7 +19,9 @@ const {
   removeProjectMember,
   getProjectInvitations,
   findPendingInvitation,
-  createProjectInvitation
+  createProjectInvitation,
+  getProjectSiteLocation,
+  updateProjectSiteLocation
 } = require('../models/store');
 const { isValidCalendarDate, withStartDate } = require('../utils/projectStartDate');
 
@@ -125,10 +127,34 @@ module.exports = (db) => {
     if (checkViewerForbidden(req, res)) return;
 
     const projectId = Number(req.params.id);
-    const { name, code, description, start_date } = req.body;
+    const { name, code, description, start_date, site_latitude, site_longitude, site_radius_meters, latitude, longitude, radius_meters } = req.body;
     if (start_date !== undefined && start_date !== null && !isValidCalendarDate(start_date)) {
       return res.status(400).json({ success: false, message: 'Ngày khởi công không hợp lệ (định dạng YYYY-MM-DD)' });
     }
+
+    const latVal = site_latitude !== undefined ? site_latitude : latitude;
+    const lonVal = site_longitude !== undefined ? site_longitude : longitude;
+    const radVal = site_radius_meters !== undefined ? site_radius_meters : radius_meters;
+
+    if (latVal !== undefined && latVal !== null && latVal !== '') {
+      const nLat = Number(latVal);
+      if (isNaN(nLat) || nLat < -90 || nLat > 90) {
+        return res.status(400).json({ success: false, message: 'Vĩ độ tâm công trường không hợp lệ (-90 đến 90 độ)' });
+      }
+    }
+    if (lonVal !== undefined && lonVal !== null && lonVal !== '') {
+      const nLon = Number(lonVal);
+      if (isNaN(nLon) || nLon < -180 || nLon > 180) {
+        return res.status(400).json({ success: false, message: 'Kinh độ tâm công trường không hợp lệ (-180 đến 180 độ)' });
+      }
+    }
+    if (radVal !== undefined && radVal !== null && radVal !== '') {
+      const nRad = Number(radVal);
+      if (isNaN(nRad) || nRad <= 0) {
+        return res.status(400).json({ success: false, message: 'Bán kính công trường phải là số dương lớn hơn 0 mét' });
+      }
+    }
+
     if (checkProjectReadAccess(req, res, projectId)) return;
 
     if (db && db.isConnected === false) {
@@ -138,6 +164,9 @@ module.exports = (db) => {
       if (code) proj.code = code.trim();
       if (description) proj.description = description.trim();
       if (start_date) proj.start_date = start_date;
+      if (latVal !== undefined) proj.site_latitude = latVal !== null && latVal !== '' ? Number(latVal) : null;
+      if (lonVal !== undefined) proj.site_longitude = lonVal !== null && lonVal !== '' ? Number(lonVal) : null;
+      if (radVal !== undefined) proj.site_radius_meters = radVal !== null && radVal !== '' ? Number(radVal) : null;
       return res.json({ success: true, message: 'Cập nhật dự án thành công', data: withStartDate(proj) });
     }
 
@@ -148,10 +177,143 @@ module.exports = (db) => {
       }
 
       await pool.query(
-        'UPDATE projects SET name = COALESCE(?, name), code = COALESCE(?, code), description = COALESCE(?, description), start_date = COALESCE(?, start_date) WHERE id = ?',
-        [name ? name.trim() : null, code ? code.trim() : null, description ? description.trim() : null, start_date || null, projectId]
+        `UPDATE projects
+         SET name = COALESCE(?, name),
+             code = COALESCE(?, code),
+             description = COALESCE(?, description),
+             start_date = COALESCE(?, start_date),
+             site_latitude = COALESCE(?, site_latitude),
+             site_longitude = COALESCE(?, site_longitude),
+             site_radius_meters = COALESCE(?, site_radius_meters)
+         WHERE id = ?`,
+        [
+          name ? name.trim() : null,
+          code ? code.trim() : null,
+          description ? description.trim() : null,
+          start_date || null,
+          latVal !== undefined && latVal !== '' ? Number(latVal) : null,
+          lonVal !== undefined && lonVal !== '' ? Number(lonVal) : null,
+          radVal !== undefined && radVal !== '' ? Number(radVal) : null,
+          projectId
+        ]
       );
       res.json({ success: true, message: 'Cập nhật dự án thành công' });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // 4b. S-41 (SCRUM-170 / AC 1): Lấy toạ độ tâm và bán kính công trường dự án
+  router.get('/projects/:id/site-location', async (req, res) => {
+    const projectId = Number(req.params.id);
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({ success: false, message: 'Mã dự án không hợp lệ' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    if (db && db.isConnected === false) {
+      const loc = getProjectSiteLocation(projectId);
+      if (!loc) return res.status(404).json({ success: false, message: 'Dự án không tồn tại' });
+      return res.json({ success: true, data: loc });
+    }
+
+    try {
+      const [rows] = await pool.query('SELECT site_latitude, site_longitude, site_radius_meters FROM projects WHERE id = ?', [projectId]);
+      if (rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Dự án không tồn tại' });
+      }
+      res.json({
+        success: true,
+        data: {
+          site_latitude: rows[0].site_latitude !== null ? Number(rows[0].site_latitude) : null,
+          site_longitude: rows[0].site_longitude !== null ? Number(rows[0].site_longitude) : null,
+          site_radius_meters: rows[0].site_radius_meters !== null ? Number(rows[0].site_radius_meters) : null
+        }
+      });
+    } catch (err) {
+      const loc = getProjectSiteLocation(projectId);
+      if (!loc) return res.status(404).json({ success: false, message: 'Dự án không tồn tại' });
+      res.json({ success: true, data: loc });
+    }
+  });
+
+  // 4c. S-41 (SCRUM-170 / AC 1): Khai báo/cập nhật toạ độ tâm và bán kính công trường dự án
+  router.put('/projects/:id/site-location', async (req, res) => {
+    if (checkViewerForbidden(req, res)) return;
+    const projectId = Number(req.params.id);
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({ success: false, message: 'Mã dự án không hợp lệ' });
+    }
+    if (checkProjectManagerAccess(req, res, projectId)) return;
+
+    const { site_latitude, site_longitude, site_radius_meters, latitude, longitude, radius_meters } = req.body || {};
+    const latVal = site_latitude !== undefined ? site_latitude : latitude;
+    const lonVal = site_longitude !== undefined ? site_longitude : longitude;
+    const radVal = site_radius_meters !== undefined ? site_radius_meters : radius_meters;
+
+    if (latVal !== undefined && latVal !== null && latVal !== '') {
+      const nLat = Number(latVal);
+      if (isNaN(nLat) || nLat < -90 || nLat > 90) {
+        return res.status(400).json({ success: false, message: 'Vĩ độ tâm công trường không hợp lệ (-90 đến 90 độ).' });
+      }
+    }
+    if (lonVal !== undefined && lonVal !== null && lonVal !== '') {
+      const nLon = Number(lonVal);
+      if (isNaN(nLon) || nLon < -180 || nLon > 180) {
+        return res.status(400).json({ success: false, message: 'Kinh độ tâm công trường không hợp lệ (-180 đến 180 độ).' });
+      }
+    }
+    if (radVal !== undefined && radVal !== null && radVal !== '') {
+      const nRad = Number(radVal);
+      if (isNaN(nRad) || nRad <= 0) {
+        return res.status(400).json({ success: false, message: 'Bán kính công trường phải là số dương lớn hơn 0 mét.' });
+      }
+    }
+
+    const newLat = (latVal !== undefined && latVal !== null && latVal !== '') ? Number(latVal) : null;
+    const newLon = (lonVal !== undefined && lonVal !== null && lonVal !== '') ? Number(lonVal) : null;
+    const newRad = (radVal !== undefined && radVal !== null && radVal !== '') ? Number(radVal) : null;
+
+    if (db && db.isConnected === false) {
+      const updated = updateProjectSiteLocation(projectId, {
+        site_latitude: newLat,
+        site_longitude: newLon,
+        site_radius_meters: newRad
+      });
+      return res.json({
+        success: true,
+        message: 'Khai báo toạ độ tâm và bán kính công trường thành công.',
+        data: updated
+      });
+    }
+
+    try {
+      const [existing] = await pool.query('SELECT id FROM projects WHERE id = ?', [projectId]);
+      if (existing.length === 0) {
+        return res.status(404).json({ success: false, message: 'Dự án không tồn tại' });
+      }
+
+      await pool.query(
+        'UPDATE projects SET site_latitude = ?, site_longitude = ?, site_radius_meters = ? WHERE id = ?',
+        [newLat, newLon, newRad, projectId]
+      );
+
+      // Đồng bộ in-memory
+      updateProjectSiteLocation(projectId, {
+        site_latitude: newLat,
+        site_longitude: newLon,
+        site_radius_meters: newRad
+      });
+
+      res.json({
+        success: true,
+        message: 'Khai báo toạ độ tâm và bán kính công trường thành công.',
+        data: {
+          site_latitude: newLat,
+          site_longitude: newLon,
+          site_radius_meters: newRad
+        }
+      });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
     }

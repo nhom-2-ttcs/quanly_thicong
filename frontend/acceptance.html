@@ -388,6 +388,7 @@
       <div class="filter-tabs">
         <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">Tất cả phiếu</button>
         <button class="filter-tab" data-filter="draft" onclick="setFilter('draft')">⏳ Bản nháp (Draft)</button>
+        <button class="filter-tab" data-filter="rejected" onclick="setFilter('rejected')">❌ Bị trả lại (Rejected)</button>
         <button class="filter-tab" data-filter="approved" onclick="setFilter('approved')">✅ Đã duyệt (Approved)</button>
       </div>
       <div style="font-size: 13px; color: var(--text-muted);" id="tableSummaryText">
@@ -547,6 +548,34 @@
     </div>
   </div>
 
+  <!-- MODAL: TRẢ LẠI PHIẾU NGHIỆM THU (S-38 AC 2) -->
+  <div class="modal-overlay" id="rejectSheetModal">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 style="color: #dc2626;">↩️ Trả Lại Phiếu Nghiệm Thu (S-38 AC 2)</h3>
+        <button class="btn-close-modal" onclick="closeRejectModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="gap: 14px;">
+        <p style="font-size: 13px; color: var(--text-body); margin: 0; line-height: 1.5;">
+          Bạn đang yêu cầu sửa đối với phiếu <strong id="rejectModalSheetCode" style="font-family: 'JetBrains Mono'; color: var(--brand-blue);"></strong>.
+          Theo quy định, trả lại phiếu bắt buộc phải nhập lý do cụ thể để người lập căn cứ sửa lại.
+        </p>
+        <div class="form-group">
+          <label for="rejectReasonInput" style="font-weight: 800; font-size: 12.5px;">
+            Lý do trả lại phiếu (bắt buộc) <span style="color: #dc2626;">*</span>:
+          </label>
+          <textarea id="rejectReasonInput" class="form-control" rows="4" placeholder="Ví dụ: Sai số khối lượng đào đất hố móng trụ T1 vượt báo cáo thực tế, cần kiểm tra lại cao độ..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeRejectModal()">Hủy</button>
+        <button type="button" class="btn-primary" id="btnConfirmReject" style="background: #dc2626;" onclick="submitRejectSheet()">
+          Xác Nhận Trả Lại Phiếu
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast-msg"></div>
 
   <script src="/js/app-navbar.js"></script>
@@ -649,6 +678,8 @@
       let filtered = allAcceptanceSheets;
       if (currentFilter === 'draft') {
         filtered = allAcceptanceSheets.filter(s => String(s.status).toLowerCase() === 'draft');
+      } else if (currentFilter === 'rejected') {
+        filtered = allAcceptanceSheets.filter(s => String(s.status).toLowerCase() === 'rejected');
       } else if (currentFilter === 'approved') {
         filtered = allAcceptanceSheets.filter(s => String(s.status).toLowerCase() === 'approved');
       }
@@ -666,8 +697,9 @@
 
       tbody.innerHTML = filtered.map(s => {
         const isApproved = String(s.status).toLowerCase() === 'approved';
-        const badgeClass = isApproved ? 'badge-approved' : 'badge-draft';
-        const badgeText = isApproved ? '✅ ĐÃ DUYỆT' : '⏳ BẢN NHÁP';
+        const isRejected = String(s.status).toLowerCase() === 'rejected';
+        const badgeClass = isApproved ? 'badge-approved' : (isRejected ? 'badge-rejected' : 'badge-draft');
+        const badgeText = isApproved ? '✅ ĐÃ DUYỆT' : (isRejected ? '❌ BỊ TRẢ LẠI' : '⏳ BẢN NHÁP');
 
         return `
           <tr>
@@ -1014,12 +1046,15 @@
         const sheet = data.data;
         document.getElementById('detailModalTitle').innerHTML = `📄 ${sheet.sheet_code} — ${sheet.name}`;
         const isApproved = String(sheet.status).toLowerCase() === 'approved';
+        const isRejected = String(sheet.status).toLowerCase() === 'rejected';
+        const badgeClass = isApproved ? 'badge-approved' : (isRejected ? 'badge-rejected' : 'badge-draft');
+        const badgeText = isApproved ? '✅ ĐÃ PHÊ DUYỆT' : (isRejected ? '❌ BỊ TRẢ LẠI' : '⏳ BẢN NHÁP (CHỜ DUYỆT)');
 
         body.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px 16px; border-radius: 8px;">
             <div>
-              <span class="badge-status ${isApproved ? 'badge-approved' : 'badge-draft'}">
-                ${isApproved ? '✅ ĐÃ PHÊ DUYỆT' : '⏳ BẢN NHÁP (CHỜ DUYỆT)'}
+              <span class="badge-status ${badgeClass}">
+                ${badgeText}
               </span>
               <span style="margin-left: 10px; font-size: 13px; color: var(--text-muted);">
                 Đợt: <strong>${sheet.period_number}</strong> | Ngày chốt: <strong>${sheet.to_date || sheet.cutoff_date || '—'}</strong>
@@ -1027,6 +1062,29 @@
             </div>
             ${sheet.approved_at ? `<div style="font-size: 12px; color: #059669; font-weight: 700;">Duyệt lúc: ${sheet.approved_at}</div>` : ''}
           </div>
+
+          ${isRejected ? `
+            <div style="margin-top: 10px; background: #fee2e2; border: 1.5px solid #f87171; border-radius: 8px; padding: 12px 16px; color: #991b1b;">
+              <div style="font-weight: 800; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                <span>⚠️ PHIẾU BỊ BAN QUẢN LÝ TRẢ LẠI (S-38 AC 2):</span>
+              </div>
+              <div style="font-size: 13px; margin-top: 6px; font-weight: 600;">
+                "${sheet.rejection_reason || 'Không có lý do chi tiết'}"
+              </div>
+              <div style="font-size: 11.5px; margin-top: 4px; color: #7f1d1d;">
+                ${sheet.rejected_at ? `Thời điểm: ${sheet.rejected_at}` : ''}
+                ${sheet.rejecter_name ? ` | Người trả lại: ${sheet.rejecter_name}` : ''}
+              </div>
+              <div style="margin-top: 8px; font-size: 12px; color: #b91c1c;">
+                👉 Phiếu đã quay về cho người lập. Bạn có thể bấm nút <b>"✏️ Sửa Lại Phiếu"</b> bên dưới để chỉnh sửa và nộp lại.
+              </div>
+            </div>
+          ` : ''}
+          ${isApproved ? `
+            <div style="margin-top: 10px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; padding: 10px 14px; color: #166534; font-size: 12.5px;">
+              🔒 <strong>Phiếu đã được phê duyệt (S-38 AC 3):</strong> Số liệu đã chốt làm mốc luỹ kế và cơ sở thanh toán. Phiếu đã duyệt không được phép sửa trực tiếp; muốn sửa phải lập phiếu điều chỉnh.
+            </div>
+          ` : ''}
 
           <h4 style="font-size: 14px; font-weight: 800; margin-top: 10px;">📋 Chi Tiết Khối Lượng Phát Sinh Trong Đợt (AC 1 & AC 2)</h4>
           <div class="items-table-box">
@@ -1059,7 +1117,7 @@
           </div>
 
           <h4 style="font-size: 14px; font-weight: 800; margin-top: 10px;">
-            📸 Ảnh Hiện Trường Đính Kèm (${(sheet.photos || []).length} ảnh) — S-40 & S-42
+            📸 Ảnh Hiện Trường Đính Kèm (${(sheet.photos || []).length} ảnh) — S-40, S-41 & S-42
           </h4>
           ${(sheet.photos && sheet.photos.length > 0) ? `
             <div class="photos-preview-grid">
@@ -1081,6 +1139,7 @@
                             if (r === 'missing_camera_metadata') return '• Thiếu siêu dữ liệu máy ảnh gốc';
                             if (r === 'screenshot_detected') return '• Nghi vấn chụp lại màn hình điện thoại';
                             if (r === 'taken_time_too_far') return '• Ngày chụp cách xa ngày nghiệm thu';
+                            if (r === 'outside_site_radius') return `• 📍 Ngoài bán kính công trường${p.distance_to_center_meters !== null && p.distance_to_center_meters !== undefined ? ` (${p.distance_to_center_meters}m)` : ''}`;
                             return '• ' + r;
                           }).join('<br>')}
                         </div>
@@ -1088,6 +1147,7 @@
                       ${hasExif ? `
                         <div class="photo-exif-pill has-exif">
                           📍 ${p.latitude ? `${Number(p.latitude).toFixed(4)}, ${Number(p.longitude).toFixed(4)}` : ''}
+                          ${p.distance_to_center_meters !== null && p.distance_to_center_meters !== undefined ? `| 📏 ${p.distance_to_center_meters}m` : ''}
                           ${p.taken_at ? `| 🕒 ${p.taken_at}` : ''}
                         </div>
                         ${p.latitude ? `<a href="https://www.google.com/maps?q=${p.latitude},${p.longitude}" target="_blank" style="font-size: 11px; color: #1d4ed8; font-weight: 700;">🗺️ Xem bản đồ</a>` : ''}
@@ -1112,8 +1172,16 @@
         footer.innerHTML = `
           <button type="button" class="btn-secondary" onclick="closeDetailModal()">Đóng</button>
           ${!isApproved ? `
+            <button type="button" class="btn-secondary" style="color: #dc2626; border-color: #fca5a5;" onclick="openRejectModal(${sheet.id}, '${sheet.sheet_code}')">
+              ↩️ Trả Lại Phiếu (Yêu Cầu Sửa)
+            </button>
             <button type="button" class="btn-primary" onclick="approveSheet(${sheet.id})">
               ✔️ Phê Duyệt Phiếu Nghiệm Thu Này
+            </button>
+          ` : ''}
+          ${(isRejected || (!isApproved && sheet.status === 'draft')) ? `
+            <button type="button" class="btn-primary" style="background: linear-gradient(135deg, #059669, #10b981);" onclick="openEditSheetModal(${sheet.id})">
+              ✏️ Sửa Lại Phiếu
             </button>
           ` : ''}
         `;
@@ -1124,6 +1192,53 @@
 
     function closeDetailModal() {
       document.getElementById('detailSheetModal').style.display = 'none';
+    }
+
+    // Modal Trả lại phiếu (S-38 AC 2)
+    let currentRejectingSheetId = null;
+
+    function openRejectModal(sheetId, sheetCode) {
+      currentRejectingSheetId = sheetId;
+      document.getElementById('rejectModalSheetCode').innerText = sheetCode || `#${sheetId}`;
+      document.getElementById('rejectReasonInput').value = '';
+      document.getElementById('rejectSheetModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('rejectReasonInput').focus(), 100);
+    }
+
+    function closeRejectModal() {
+      currentRejectingSheetId = null;
+      document.getElementById('rejectSheetModal').style.display = 'none';
+    }
+
+    async function submitRejectSheet() {
+      if (!currentRejectingSheetId) return;
+      const reason = document.getElementById('rejectReasonInput').value.trim();
+      if (!reason) {
+        showToast('Vui lòng nhập lý do trả lại phiếu nghiệm thu.', false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/projects/${projectId}/acceptance-sheets/${currentRejectingSheetId}/reject`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getToken()}`
+          },
+          body: JSON.stringify({ reason })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(data.message || 'Đã trả lại phiếu nghiệm thu thành công!');
+          closeRejectModal();
+          closeDetailModal();
+          loadAcceptanceSheets();
+        } else {
+          showToast(data.message || 'Không thể trả lại phiếu', false);
+        }
+      } catch (err) {
+        showToast(`Lỗi kết nối: ${err.message}`, false);
+      }
     }
 
     // 5. Phê duyệt phiếu (Chỉ huy trưởng / PM)
@@ -1147,6 +1262,109 @@
           loadAcceptanceSheets();
         } else {
           showToast(data.message || 'Không thể phê duyệt phiếu', false);
+        }
+      } catch (err) {
+        showToast(`Lỗi: ${err.message}`, false);
+      }
+    }
+
+    // 6. Mở modal sửa lại phiếu bị trả lại hoặc nháp (S-38 AC 2)
+    async function openEditSheetModal(sheetId) {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/acceptance-sheets/${sheetId}`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        const data = await res.json();
+        if (!data.success || !data.data) {
+          showToast(data.message || 'Lỗi tải phiếu để sửa', false);
+          return;
+        }
+
+        const sheet = data.data;
+        if (sheet.status === 'approved') {
+          showToast('Phiếu đã duyệt không được sửa trực tiếp. Muốn sửa phải lập phiếu điều chỉnh (S-38 AC 3).', false);
+          return;
+        }
+
+        closeDetailModal();
+
+        document.getElementById('createSheetModal').style.display = 'flex';
+        document.querySelector('#createSheetModal .modal-header h3').innerHTML = `✏️ Chỉnh Sửa Phiếu Nghiệm Thu (${sheet.sheet_code})`;
+        document.getElementById('sheet_code').value = sheet.sheet_code;
+        document.getElementById('sheet_code').readOnly = true;
+        document.getElementById('sheet_name').value = sheet.name;
+        document.getElementById('period_number').value = sheet.period_number;
+        document.getElementById('sheet_notes').value = sheet.notes || '';
+        document.getElementById('to_date').value = sheet.to_date || new Date().toISOString().slice(0, 10);
+
+        // Render các hạng mục hiện có
+        currentPrefill = {
+          next_period_number: sheet.period_number,
+          work_items: (sheet.items || []).map(it => ({
+            id: it.work_item_id,
+            work_item_id: it.work_item_id,
+            name: it.item_name,
+            code: it.item_name,
+            unit: it.unit,
+            previous_approved_quantity: it.previous_approved_quantity,
+            cumulative_quantity: it.cumulative_quantity,
+            team_reported_quantity: it.team_reported_quantity,
+            difference: it.difference,
+            khoi_luong_hop_dong: it.contract_quantity || null
+          }))
+        };
+        renderPrefillTable(currentPrefill);
+
+        // Thay nút lưu
+        const btnSave = document.getElementById('btnSubmitCreateSheet');
+        btnSave.innerText = '💾 Cập Nhật & Nộp Lại Phiếu';
+        btnSave.onclick = () => submitUpdateSheet(sheetId);
+      } catch (err) {
+        showToast(`Lỗi: ${err.message}`, false);
+      }
+    }
+
+    async function submitUpdateSheet(sheetId) {
+      const name = document.getElementById('sheet_name').value.trim();
+      const notes = document.getElementById('sheet_notes').value.trim();
+
+      const items = [];
+      const rows = document.querySelectorAll('#prefillTableBody tr');
+      rows.forEach(row => {
+        const wId = Number(row.getAttribute('data-item-id'));
+        const inputCum = row.querySelector('.input-cum-qty');
+        const prevQty = Number(row.getAttribute('data-prev-approved') || 0);
+        const itemName = row.querySelector('td:nth-child(1) strong')?.innerText || '';
+        const unit = row.querySelector('td:nth-child(2)')?.innerText || 'm3';
+
+        if (inputCum) {
+          const cumQty = Number(inputCum.value || 0);
+          items.push({
+            work_item_id: wId,
+            item_name: itemName,
+            unit,
+            previous_approved_quantity: prevQty,
+            cumulative_quantity: cumQty
+          });
+        }
+      });
+
+      try {
+        const res = await fetch(`/api/projects/${projectId}/acceptance-sheets/${sheetId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getToken()}`
+          },
+          body: JSON.stringify({ name, notes, items })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(data.message || 'Cập nhật phiếu thành công!');
+          closeCreateModal();
+          loadAcceptanceSheets();
+        } else {
+          showToast(data.message || 'Không thể cập nhật phiếu', false);
         }
       } catch (err) {
         showToast(`Lỗi: ${err.message}`, false);

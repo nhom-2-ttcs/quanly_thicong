@@ -1400,7 +1400,7 @@ function getAcceptanceSheetById(sheetId) {
   if (!sheet) return null;
   const items = inMemoryAcceptanceSheetItems.filter(i => i.sheet_id === sId);
   const photos = inMemoryAcceptanceSheetPhotos.filter(p => p.sheet_id === sId);
-  return { ...sheet, items, photos };
+  return { ...sheet, note: sheet.notes, items, photos };
 }
 
 function getLatestApprovedAcceptanceSheet(projectId) {
@@ -1427,6 +1427,9 @@ function saveAcceptanceSheet(sheetData) {
     to_date: String(sheetData.to_date),
     status: sheetData.status || 'draft',
     notes: sheetData.notes ? String(sheetData.notes).trim() : null,
+    rejection_reason: sheetData.rejection_reason ? String(sheetData.rejection_reason).trim() : null,
+    rejected_by: sheetData.rejected_by ? Number(sheetData.rejected_by) : null,
+    rejected_at: sheetData.rejected_at || null,
     created_by: Number(sheetData.created_by || 1),
     approved_by: sheetData.approved_by ? Number(sheetData.approved_by) : null,
     approved_at: sheetData.approved_at || null,
@@ -1448,8 +1451,23 @@ function updateAcceptanceSheet(sheetId, updateData) {
   if (updateData.to_date !== undefined) sheet.to_date = String(updateData.to_date);
   if (updateData.status !== undefined) sheet.status = updateData.status;
   if (updateData.notes !== undefined) sheet.notes = updateData.notes;
+  if (updateData.rejection_reason !== undefined) sheet.rejection_reason = updateData.rejection_reason;
+  if (updateData.rejected_by !== undefined) sheet.rejected_by = updateData.rejected_by;
+  if (updateData.rejected_at !== undefined) sheet.rejected_at = updateData.rejected_at;
   if (updateData.approved_by !== undefined) sheet.approved_by = updateData.approved_by;
   if (updateData.approved_at !== undefined) sheet.approved_at = updateData.approved_at;
+  sheet.updated_at = new Date().toISOString();
+  return sheet;
+}
+
+function rejectAcceptanceSheet(sheetId, { reason, rejected_by } = {}) {
+  const sId = Number(sheetId);
+  const sheet = inMemoryAcceptanceSheets.find(s => s.id === sId);
+  if (!sheet) return null;
+  sheet.status = 'rejected';
+  sheet.rejection_reason = String(reason || '').trim();
+  sheet.rejected_by = rejected_by ? Number(rejected_by) : null;
+  sheet.rejected_at = new Date().toISOString();
   sheet.updated_at = new Date().toISOString();
   return sheet;
 }
@@ -1504,6 +1522,7 @@ function saveAcceptanceSheetPhoto(photoData) {
     taken_at: photoData.taken_at || null,
     latitude: photoData.latitude !== undefined && photoData.latitude !== null ? Number(photoData.latitude) : null,
     longitude: photoData.longitude !== undefined && photoData.longitude !== null ? Number(photoData.longitude) : null,
+    distance_to_center_meters: photoData.distance_to_center_meters !== undefined && photoData.distance_to_center_meters !== null ? Number(photoData.distance_to_center_meters) : null,
     has_metadata: Boolean(photoData.has_metadata || photoData.taken_at || (photoData.latitude !== null && photoData.latitude !== undefined)),
     is_suspicious: Boolean(photoData.is_suspicious),
     suspicious_reasons: Array.isArray(photoData.suspicious_reasons) ? photoData.suspicious_reasons : (typeof photoData.suspicious_reasons === 'string' ? JSON.parse(photoData.suspicious_reasons || '[]') : []),
@@ -1685,6 +1704,40 @@ function updateProjectRetentionRate(projectId, rate) {
     proj.retention_rate = r;
   }
   return r;
+}
+
+// S-41 / SCRUM-170: Quản lý vị trí tâm và bán kính công trường dự án
+function getProjectSiteLocation(projectId) {
+  const pId = Number(projectId);
+  const proj = inMemoryProjects.find(p => p.id === pId);
+  if (!proj) return null;
+  return {
+    site_latitude: proj.site_latitude !== undefined && proj.site_latitude !== null ? Number(proj.site_latitude) : null,
+    site_longitude: proj.site_longitude !== undefined && proj.site_longitude !== null ? Number(proj.site_longitude) : null,
+    site_radius_meters: proj.site_radius_meters !== undefined && proj.site_radius_meters !== null ? Number(proj.site_radius_meters) : null
+  };
+}
+
+function updateProjectSiteLocation(projectId, { latitude, longitude, radius_meters, site_latitude, site_longitude, site_radius_meters } = {}) {
+  const pId = Number(projectId);
+  let proj = inMemoryProjects.find(p => p.id === pId);
+  if (!proj) {
+    proj = { id: pId, name: `Dự án ${pId}`, code: `DA-${pId}` };
+    inMemoryProjects.push(proj);
+  }
+  const lat = site_latitude !== undefined ? site_latitude : latitude;
+  const lon = site_longitude !== undefined ? site_longitude : longitude;
+  const rad = site_radius_meters !== undefined ? site_radius_meters : radius_meters;
+
+  if (lat !== undefined) proj.site_latitude = lat !== null ? Number(lat) : null;
+  if (lon !== undefined) proj.site_longitude = lon !== null ? Number(lon) : null;
+  if (rad !== undefined) proj.site_radius_meters = rad !== null ? Number(rad) : null;
+
+  return {
+    site_latitude: proj.site_latitude ?? null,
+    site_longitude: proj.site_longitude ?? null,
+    site_radius_meters: proj.site_radius_meters ?? null
+  };
 }
 
 function getPaymentRequests(projectId) {
@@ -1890,10 +1943,13 @@ module.exports = {
   getLatestApprovedAcceptanceSheet,
   saveAcceptanceSheet,
   updateAcceptanceSheet,
+  rejectAcceptanceSheet,
   deleteAcceptanceSheet,
   saveAcceptanceSheetItem,
   saveAcceptanceSheetPhoto,
   deleteAcceptanceSheetPhoto,
+  getProjectSiteLocation,
+  updateProjectSiteLocation,
   inMemoryTeamDailyProgress,
   getTeamDailyProgress,
   saveTeamDailyProgress,

@@ -611,6 +611,12 @@ class AcceptanceService {
       throw err;
     }
 
+    if (sheet.status === 'approved') {
+      const err = new Error('Phiếu nghiệm thu này đã được phê duyệt trước đó.');
+      err.status = 400;
+      throw err;
+    }
+
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     if (this.isConnected) {
@@ -663,7 +669,296 @@ class AcceptanceService {
   }
 
   /**
-   * Đính kèm ảnh hiện trường vào phiếu nghiệm thu (AC 4 & S-40 EXIF & S-42 Anti-fraud)
+   * S-38 (SCRUM-167 / AC 2): Ban quản lý trả lại phiếu nghiệm thu kèm lý do bắt buộc
+   * Phiếu quay về cho người lập sửa
+   */
+  async rejectAcceptanceSheet(projectId, sheetId, userId, reason) {
+    const pId = Number(projectId);
+    const sId = Number(sheetId);
+    const uId = Number(userId);
+
+    const sheet = await this.getAcceptanceSheetById(pId, sId);
+    if (!sheet) {
+      const err = new Error('Không tìm thấy phiếu nghiệm thu để trả lại');
+      err.status = 404;
+      throw err;
+    }
+
+    const cleanReason = String(reason || '').trim();
+    if (!cleanReason) {
+      const err = new Error('Lý do trả lại phiếu nghiệm thu là bắt buộc và không được để trống.');
+      err.status = 400;
+      throw err;
+    }
+
+    if (sheet.status === 'approved') {
+      const err = new Error('Phiếu nghiệm thu đã phê duyệt không thể trả lại. Muốn điều chỉnh phải lập phiếu điều chỉnh.');
+      err.status = 422;
+      throw err;
+    }
+
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    if (this.isConnected) {
+      await this.pool.query(
+        'UPDATE acceptance_sheets SET status = "rejected", rejection_reason = ?, rejected_by = ?, rejected_at = ? WHERE id = ? AND project_id = ?',
+        [cleanReason, uId, now, sId, pId]
+      );
+    } else {
+      store.rejectAcceptanceSheet(sId, {
+        reason: cleanReason,
+        rejected_by: uId
+      });
+    }
+
+    const updatedSheet = await this.getAcceptanceSheetById(pId, sId);
+
+    // Ghi nhật ký audit log thao tác trả lại phiếu nghiệm thu (Append-Only)
+    try {
+      if (recordSheetAuditLog) {
+        await recordSheetAuditLog({
+          projectId: pId,
+          entityType: 'acceptance_sheet',
+          entityId: String(sId),
+          action: 'REJECT',
+          performedBy: uId,
+          oldValues: {
+            status: sheet.status,
+            rejection_reason: sheet.rejection_reason || null
+          },
+          newValues: {
+            status: 'rejected',
+            rejection_reason: cleanReason,
+            rejected_by: uId,
+            rejected_at: now
+          },
+          changeSummary: `Trả lại phiếu nghiệm thu đợt ${sheet.period_number || 1} (${sheet.sheet_code}) kèm lý do: ${cleanReason}`,
+          reason: cleanReason
+        });
+      }
+    } catch (auditErr) {
+      console.warn('[AcceptanceService] Audit log rejection recording failed:', auditErr.message);
+    }
+
+    return {
+      success: true,
+      message: `Đã trả lại phiếu nghiệm thu "${sheet.sheet_code}". Phiếu đã được chuyển về cho người lập sửa.`,
+      data: updatedSheet
+    };
+  }
+
+  /**
+   * S-38 (SCRUM-167 / AC 2 & AC 3): Cập nhật / sửa phiếu nghiệm thu
+   * AC 2: Phiếu bị trả lại quay về cho người lập sửa
+   * AC 3: Chặn sửa trực tiếp phiếu đã duyệt; muốn sửa phải lập phiếu điều chỉnh
+   */
+  async updateAcceptanceSheet(projectId, sheetId, payload = {}, userId = 1) {
+    const pId = Number(projectId);
+    const sId = Number(sheetId);
+    const uId = Number(userId);
+
+    const sheet = await this.getAcceptanceSheetById(pId, sId);
+    if (!sheet) {
+      const err = new Error('Không tìm thấy phiếu nghiệm thu để cập nhật');
+      err.status = 404;
+      throw err;
+    }
+
+    // AC 3: Chặn sửa trực tiếp phiếu đã duyệt
+    if (sheet.status === 'approved') {
+      const err = new Error('Phiếu nghiệm thu đã được phê duyệt không được phép chỉnh sửa trực tiếp. Vui lòng lập phiếu điều chỉnh.');
+      err.status = 422;
+      throw err;
+    }
+
+    const name = payload.name !== undefined ? String(payload.name).trim() : (payload.title !== undefined ? String(payload.title).trim() : sheet.name);
+    const notes = payload.notes !== undefined ? String(payload.notes).trim() : (payload.note !== undefined ? String(payload.note).trim() : (sheet.notes || sheet.note));
+    const rawItems = Array.isArray(payload.items) ? payload.items : null;
+
+    if (rawItems && rawItems.length > 0) {
+      // 1. Lấy previous approved quantities
+      const prevApprovedMap = new Map();
+      if (this.isConnected) {
+        try {
+          const [prevSheets] = await this.pool.query(
+            'SELECT id FROM acceptance_sheets WHERE project_id = ? AND status = "approved" AND id != ? ORDER BY period_number DESC LIMIT 1',
+            [pId, sId]
+          );
+          if (prevSheets && prevSheets.length > 0) {
+            const [itRows] = await this.pool.query(
+              'SELECT work_item_id, cumulative_quantity FROM acceptance_sheet_items WHERE sheet_id = ?',
+              [prevSheets[0].id]
+            );
+            (itRows || []).forEach(it => {
+              if (it.work_item_id) prevApprovedMap.set(Number(it.work_item_id), Number(it.cumulative_quantity || 0));
+            });
+          }
+        } catch (_) {}
+      } else {
+        const latestApproved = store.getLatestApprovedAcceptanceSheet(pId);
+        if (latestApproved && latestApproved.id !== sId) {
+          latestApproved.items.forEach(it => {
+            if (it.work_item_id) prevApprovedMap.set(Number(it.work_item_id), Number(it.cumulative_quantity || 0));
+          });
+        }
+      }
+
+      // 2. Tính toán & kiểm tra luỹ kế
+      const computedItems = rawItems.map(it => {
+        const wId = it.work_item_id ? Number(it.work_item_id) : null;
+        const cumulative = Number(it.cumulative_quantity || 0);
+        const previousApproved = it.previous_approved_quantity !== undefined && it.previous_approved_quantity !== null
+          ? Number(it.previous_approved_quantity)
+          : (wId && prevApprovedMap.has(wId) ? prevApprovedMap.get(wId) : 0);
+
+        if (cumulative < previousApproved) {
+          const err = new Error(`Khối lượng luỹ kế (${cumulative}) không thể nhỏ hơn luỹ kế đã duyệt đợt trước (${previousApproved}) cho hạng mục "${it.item_name || it.name || wId}"`);
+          err.status = 400;
+          throw err;
+        }
+
+        const periodQty = Number((cumulative - previousApproved).toFixed(2));
+        const teamReported = it.team_reported_quantity !== undefined && it.team_reported_quantity !== null
+          ? Number(it.team_reported_quantity)
+          : Number(it.period_quantity || 0);
+        const diff = Number((periodQty - teamReported).toFixed(2));
+
+        return {
+          work_item_id: wId,
+          task_id: it.task_id ? Number(it.task_id) : null,
+          item_name: String(it.item_name || it.name || 'Hạng mục nghiệm thu').trim(),
+          unit: String(it.unit || 'm3').trim(),
+          previous_approved_quantity: previousApproved,
+          cumulative_quantity: cumulative,
+          period_quantity: periodQty,
+          team_reported_quantity: teamReported,
+          difference: diff,
+          notes: it.notes || it.note ? String(it.notes || it.note).trim() : null
+        };
+      });
+
+      if (this.isConnected) {
+        const conn = await this.pool.getConnection();
+        await conn.beginTransaction();
+        try {
+          // Khóa work_items và kiểm tra giới hạn hợp đồng S-37
+          const [workItemsRows] = await conn.query(
+            'SELECT id, code, name, khoi_luong_hop_dong FROM work_items WHERE project_id = ? FOR UPDATE',
+            [pId]
+          );
+          const workItemsMap = new Map();
+          (workItemsRows || []).forEach(w => workItemsMap.set(Number(w.id), w));
+
+          for (const it of computedItems) {
+            const wInfo = it.work_item_id ? workItemsMap.get(Number(it.work_item_id)) : null;
+            const contractLimit = (wInfo && wInfo.khoi_luong_hop_dong !== null && wInfo.khoi_luong_hop_dong !== undefined)
+              ? Number(wInfo.khoi_luong_hop_dong)
+              : (it.contract_quantity !== undefined && it.contract_quantity !== null ? Number(it.contract_quantity) : null);
+
+            if (contractLimit !== null && !isNaN(contractLimit) && contractLimit > 0) {
+              if (it.cumulative_quantity > contractLimit) {
+                const itemCode = wInfo?.code || `CV-${it.work_item_id || 'X'}`;
+                const itemName = it.item_name || wInfo?.name || 'Hạng mục';
+                const err = new Error(`Khối lượng luỹ kế (${it.cumulative_quantity}) vượt quá khối lượng hợp đồng (${contractLimit}) của hạng mục "${itemName}" (${itemCode})`);
+                err.status = 400;
+                throw err;
+              }
+            }
+          }
+
+          // Cập nhật thông tin phiếu (chuyển status thành draft sau khi sửa)
+          await conn.query(
+            'UPDATE acceptance_sheets SET name = ?, notes = ?, status = "draft" WHERE id = ? AND project_id = ?',
+            [name, notes, sId, pId]
+          );
+
+          // Xóa các item cũ và thêm item mới
+          await conn.query('DELETE FROM acceptance_sheet_items WHERE sheet_id = ?', [sId]);
+          for (const it of computedItems) {
+            await conn.query(
+              `INSERT INTO acceptance_sheet_items (sheet_id, work_item_id, task_id, item_name, unit, previous_approved_quantity, cumulative_quantity, period_quantity, team_reported_quantity, difference, notes)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [sId, it.work_item_id, it.task_id, it.item_name, it.unit, it.previous_approved_quantity, it.cumulative_quantity, it.period_quantity, it.team_reported_quantity, it.difference, it.notes]
+            );
+          }
+          await conn.commit();
+        } catch (err) {
+          await conn.rollback();
+          throw err;
+        } finally {
+          conn.release();
+        }
+      } else {
+        // In-memory S-37 validation & update
+        const inMemWorkItems = (store.inMemoryWorkItems || []).filter(w => Number(w.project_id) === pId);
+        for (const it of computedItems) {
+          let contractLimit = null;
+          if (it.work_item_id) {
+            const wi = inMemWorkItems.find(w => Number(w.id) === Number(it.work_item_id));
+            if (wi) {
+              contractLimit = (wi.khoi_luong_hop_dong !== undefined && wi.khoi_luong_hop_dong !== null)
+                ? Number(wi.khoi_luong_hop_dong)
+                : (wi.quantity !== undefined ? Number(wi.quantity) : (wi.contract_quantity !== undefined ? Number(wi.contract_quantity) : null));
+            }
+          }
+          if (it.contract_quantity !== undefined && it.contract_quantity !== null) {
+            contractLimit = Number(it.contract_quantity);
+          }
+          if (contractLimit !== null && !isNaN(contractLimit) && contractLimit > 0) {
+            if (it.cumulative_quantity > contractLimit) {
+              const err = new Error(`Khối lượng luỹ kế (${it.cumulative_quantity}) vượt quá khối lượng hợp đồng (${contractLimit}) của hạng mục "${it.item_name}"`);
+              err.status = 400;
+              throw err;
+            }
+          }
+        }
+
+        store.updateAcceptanceSheet(sId, { name, notes, status: 'draft' });
+        const filtered = store.inMemoryAcceptanceSheetItems.filter(i => i.sheet_id !== sId);
+        store.inMemoryAcceptanceSheetItems.length = 0;
+        store.inMemoryAcceptanceSheetItems.push(...filtered);
+        computedItems.forEach(it => store.saveAcceptanceSheetItem({ sheet_id: sId, ...it }));
+      }
+    } else {
+      // Chỉ cập nhật thông tin chung
+      if (this.isConnected) {
+        await this.pool.query(
+          'UPDATE acceptance_sheets SET name = ?, notes = ? WHERE id = ? AND project_id = ?',
+          [name, notes, sId, pId]
+        );
+      } else {
+        store.updateAcceptanceSheet(sId, { name, notes });
+      }
+    }
+
+    const updatedSheet = await this.getAcceptanceSheetById(pId, sId);
+
+    // Ghi audit log
+    try {
+      if (recordSheetAuditLog) {
+        await recordSheetAuditLog({
+          projectId: pId,
+          entityType: 'acceptance_sheet',
+          entityId: String(sId),
+          action: 'UPDATE',
+          performedBy: uId,
+          oldValues: { name: sheet.name, status: sheet.status },
+          newValues: { name: updatedSheet.name, status: updatedSheet.status },
+          changeSummary: `Người lập sửa lại phiếu nghiệm thu (${sheet.sheet_code})`,
+          reason: notes || 'Cập nhật nội dung phiếu nghiệm thu'
+        });
+      }
+    } catch (_) {}
+
+    return {
+      success: true,
+      message: `Cập nhật phiếu nghiệm thu "${sheet.sheet_code}" thành công!`,
+      data: updatedSheet
+    };
+  }
+
+  /**
+   * Đính kèm ảnh hiện trường vào phiếu nghiệm thu (AC 4 & S-40 EXIF & S-41 Site Radius & S-42 Anti-fraud)
    */
   async addPhotos(projectId, sheetId, files = []) {
     const pId = Number(projectId);
@@ -680,6 +975,22 @@ class AcceptanceService {
       const err = new Error('Không có tệp ảnh nào được gửi lên');
       err.status = 400;
       throw err;
+    }
+
+    // S-41 (AC 1): Lấy tọa độ tâm và bán kính công trường của đúng dự án này
+    let projectLocation = null;
+    if (this.isConnected) {
+      try {
+        const [projRows] = await this.pool.query(
+          'SELECT site_latitude, site_longitude, site_radius_meters FROM projects WHERE id = ?',
+          [pId]
+        );
+        if (projRows && projRows.length > 0) {
+          projectLocation = projRows[0];
+        }
+      } catch (_) {}
+    } else {
+      projectLocation = store.getProjectSiteLocation ? store.getProjectSiteLocation(pId) : null;
     }
 
     const added = [];
@@ -706,24 +1017,36 @@ class AcceptanceService {
       const longitude = file.longitude !== undefined && file.longitude !== null ? Number(file.longitude) : exif.longitude;
       const hasMetadata = Boolean(exif.has_metadata || takenAt || (latitude !== null && latitude !== undefined));
 
-      // SCRUM-S42 / T-75: Phát hiện ảnh thiếu siêu dữ liệu hoặc chụp lại màn hình
+      // SCRUM-S42 & S-41: Phát hiện ảnh thiếu siêu dữ liệu, chụp lại màn hình, hoặc ngoài bán kính công trường
       const suspicion = evaluatePhotoSuspicion({
-        metadata: { ...exif, taken_at: takenAt, latitude, longitude, has_metadata: hasMetadata },
+        metadata: {
+          ...exif,
+          taken_at: takenAt,
+          latitude,
+          longitude,
+          has_metadata: hasMetadata,
+          camera_make: file.camera_make || file.make || exif.camera_make || exif.make,
+          camera_model: file.camera_model || file.model || exif.camera_model || exif.model
+        },
         fileName,
         width: file.width || dims?.width,
         height: file.height || dims?.height,
-        inspectionDate: sheet.to_date || sheet.from_date || new Date().toISOString().slice(0, 10)
+        inspectionDate: sheet.to_date || sheet.from_date || new Date().toISOString().slice(0, 10),
+        projectLocation
       });
 
       const isSuspicious = file.is_suspicious !== undefined ? Boolean(file.is_suspicious) : suspicion.is_suspicious;
       const suspiciousReasons = file.suspicious_reasons || suspicion.suspicious_reasons || [];
       const confidenceLevel = file.confidence_level || suspicion.confidence_level || 'none';
       const suspiciousDetails = file.suspicious_details || (suspicion.suspicious_details ? JSON.stringify(suspicion.suspicious_details) : null);
+      const distanceToCenter = file.distance_to_center_meters !== undefined && file.distance_to_center_meters !== null
+        ? Number(file.distance_to_center_meters)
+        : (suspicion.distance_to_center_meters !== undefined ? suspicion.distance_to_center_meters : null);
 
       if (this.isConnected) {
         const [res] = await this.pool.query(
-          `INSERT INTO acceptance_sheet_photos (sheet_id, file_name, file_path, file_size, mime_type, caption, taken_at, latitude, longitude, has_metadata, is_suspicious, suspicious_reasons, confidence_level, suspicious_details)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO acceptance_sheet_photos (sheet_id, file_name, file_path, file_size, mime_type, caption, taken_at, latitude, longitude, distance_to_center_meters, has_metadata, is_suspicious, suspicious_reasons, confidence_level, suspicious_details)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             sId,
             fileName,
@@ -734,6 +1057,7 @@ class AcceptanceService {
             takenAt,
             latitude,
             longitude,
+            distanceToCenter,
             hasMetadata,
             isSuspicious,
             JSON.stringify(suspiciousReasons),
@@ -751,6 +1075,7 @@ class AcceptanceService {
           taken_at: takenAt,
           latitude,
           longitude,
+          distance_to_center_meters: distanceToCenter,
           has_metadata: hasMetadata,
           is_suspicious: isSuspicious,
           suspicious_reasons: suspiciousReasons,
@@ -769,6 +1094,7 @@ class AcceptanceService {
           taken_at: takenAt,
           latitude,
           longitude,
+          distance_to_center_meters: distanceToCenter,
           has_metadata: hasMetadata,
           is_suspicious: isSuspicious,
           suspicious_reasons: suspiciousReasons,
@@ -778,6 +1104,7 @@ class AcceptanceService {
         added.push({
           ...photo,
           url: filePath,
+          distance_to_center_meters: distanceToCenter,
           metadata_status_text: hasMetadata ? 'Đã có siêu dữ liệu' : 'Không có siêu dữ liệu'
         });
       }

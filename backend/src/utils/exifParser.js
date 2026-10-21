@@ -277,17 +277,65 @@ function extractJpegDimensions(buffer, targetResult = null) {
 }
 
 /**
- * SCRUM-E07 / S-42: Phát hiện dấu hiệu ảnh chụp lại màn hình hoặc thiếu siêu dữ liệu
- * AC: Ảnh thiếu siêu dữ liệu máy ảnh, có kích thước đúng bằng màn hình điện thoại,
+ * Tính khoảng cách trắc địa giữa hai điểm toạ độ (WGS84) theo công thức Haversine (S-41 / SCRUM-170 / T-73)
+ * @param {number} lat1 Vĩ độ điểm 1 (độ thập phân)
+ * @param {number} lon1 Kinh độ điểm 1 (độ thập phân)
+ * @param {number} lat2 Vĩ độ điểm 2 (độ thập phân)
+ * @param {number} lon2 Kinh độ điểm 2 (độ thập phân)
+ * @returns {number|null} Khoảng cách tính bằng mét, làm tròn 2 chữ số thập phân, hoặc null nếu toạ độ không hợp lệ
+ */
+function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+  if (lat1 === null || lat1 === undefined || lon1 === null || lon1 === undefined ||
+      lat2 === null || lat2 === undefined || lon2 === null || lon2 === undefined) {
+    return null;
+  }
+
+  const nLat1 = Number(lat1);
+  const nLon1 = Number(lon1);
+  const nLat2 = Number(lat2);
+  const nLon2 = Number(lon2);
+
+  if (isNaN(nLat1) || isNaN(nLon1) || isNaN(nLat2) || isNaN(nLon2)) {
+    return null;
+  }
+
+  // Toạ độ phải nằm trong giới hạn địa lý hợp lệ
+  if (nLat1 < -90 || nLat1 > 90 || nLat2 < -90 || nLat2 > 90 ||
+      nLon1 < -180 || nLon1 > 180 || nLon2 < -180 || nLon2 > 180) {
+    return null;
+  }
+
+  const R = 6371000; // Bán kính trung bình Trái Đất theo WGS84 (mét)
+  const toRad = (deg) => (deg * Math.PI) / 180;
+
+  const dLat = toRad(nLat2 - nLat1);
+  const dLon = toRad(nLon2 - nLon1);
+  const phi1 = toRad(nLat1);
+  const phi2 = toRad(nLat2);
+
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(phi1) * Math.cos(phi2) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c;
+
+  return Number(distance.toFixed(2));
+}
+
+/**
+ * SCRUM-E07 / S-42 & S-41: Phát hiện dấu hiệu ảnh chụp lại màn hình, thiếu siêu dữ liệu hoặc ngoài bán kính công trường
+ * AC S-42: Ảnh thiếu siêu dữ liệu máy ảnh, có kích thước đúng bằng màn hình điện thoại,
  * hoặc thời điểm chụp cách ngày nghiệm thu quá xa thì bị đánh dấu để người duyệt xem kỹ.
- * NFR: Đây là phát hiện theo dấu hiệu, không phải bằng chứng chắc chắn; phải ghi rõ mức độ tin cậy.
+ * AC S-41: Ảnh có tọa độ nằm ngoài bán kính công trường bị đánh dấu nghi vấn và kèm khoảng cách.
+ * NFR: Không coi ảnh thiếu GPS là ngoài bán kính; ghi rõ mức độ tin cậy.
  */
 function evaluatePhotoSuspicion({
   metadata = null,
   fileName = '',
   width = null,
   height = null,
-  inspectionDate = null
+  inspectionDate = null,
+  projectLocation = null
 } = {}) {
   const reasons = [];
   const details = [];
@@ -362,11 +410,33 @@ function evaluatePhotoSuspicion({
     } catch (_) {}
   }
 
+  // 4. SCRUM-170 / S-41: Kiểm tra toạ độ ảnh nằm ngoài bán kính công trường
+  let distanceToCenter = null;
+  const siteLat = projectLocation?.site_latitude ?? projectLocation?.latitude;
+  const siteLon = projectLocation?.site_longitude ?? projectLocation?.longitude;
+  const siteRadius = projectLocation?.site_radius_meters ?? projectLocation?.radius_meters ?? projectLocation?.radius;
+
+  if (siteLat !== null && siteLat !== undefined &&
+      siteLon !== null && siteLon !== undefined &&
+      siteRadius !== null && siteRadius !== undefined) {
+    const numRadius = Number(siteRadius);
+    if (!isNaN(numRadius) && numRadius > 0) {
+      if (meta.latitude !== null && meta.latitude !== undefined &&
+          meta.longitude !== null && meta.longitude !== undefined) {
+        distanceToCenter = calculateHaversineDistance(siteLat, siteLon, meta.latitude, meta.longitude);
+        if (distanceToCenter !== null && distanceToCenter > numRadius) {
+          reasons.push('outside_site_radius');
+          details.push(`Tọa độ chụp (${Number(meta.latitude).toFixed(6)}, ${Number(meta.longitude).toFixed(6)}) cách tâm công trường ${distanceToCenter}m, vượt quá bán kính cho phép (${numRadius}m)`);
+        }
+      }
+    }
+  }
+
   const isSuspicious = reasons.length > 0;
   let confidenceLevel = 'none';
 
   if (isSuspicious) {
-    if (reasons.length >= 2 || (reasons.includes('screenshot_detected') && reasons.includes('missing_camera_metadata'))) {
+    if (reasons.includes('outside_site_radius') || reasons.length >= 2 || (reasons.includes('screenshot_detected') && reasons.includes('missing_camera_metadata'))) {
       confidenceLevel = 'high';
     } else if (reasons.includes('screenshot_detected') || reasons.includes('taken_time_too_far')) {
       confidenceLevel = 'medium';
@@ -379,7 +449,8 @@ function evaluatePhotoSuspicion({
     is_suspicious: isSuspicious,
     suspicious_reasons: reasons,
     confidence_level: confidenceLevel,
-    suspicious_details: details.length > 0 ? details.join('; ') : null
+    suspicious_details: details.length > 0 ? details.join('; ') : null,
+    distance_to_center_meters: distanceToCenter
   };
 }
 
@@ -387,5 +458,6 @@ module.exports = {
   parseExifMetadata,
   formatExifDate,
   extractJpegDimensions,
+  calculateHaversineDistance,
   evaluatePhotoSuspicion
 };
