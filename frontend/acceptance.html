@@ -351,6 +351,9 @@
         <a href="/payment.html" class="btn-secondary" style="text-decoration: none;">
           💰 Đề nghị thanh toán & Tạm giữ (S-45)
         </a>
+        <button class="btn-secondary" id="btnOpenDossierModal" onclick="openExportDossierModal()" style="border-color: #2563eb; color: #1d4ed8; background: #eff6ff; font-weight: 700;">
+          📂 Xuất Hồ Sơ Nghiệm Thu (PDF) [S-50]
+        </button>
         <button class="btn-secondary" onclick="reloadAcceptanceList()">
           🔄 Làm mới dữ liệu
         </button>
@@ -544,6 +547,92 @@
       </div>
       <div class="modal-footer" id="detailModalFooter">
         <button type="button" class="btn-secondary" onclick="closeDetailModal()">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: XUẤT HỒ SƠ NGHIỆM THU THEO HẠNG MỤC (S-50) -->
+  <div class="modal-overlay" id="exportDossierModal">
+    <div class="modal-card" style="max-width: 900px;">
+      <div class="modal-header">
+        <h3>📂 Xuất Hồ Sơ Nghiệm Thu Hạng Mục Ra Tệp PDF (S-50)</h3>
+        <button class="btn-close-modal" onclick="closeExportDossierModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #1e40af;">
+          💡 <strong>Tính năng S-50:</strong> Chọn hạng mục WBS để tổng hợp toàn bộ các đợt nghiệm thu <strong>Đã Phê Duyệt (Approved)</strong>, tính khối lượng luỹ kế và xuất hồ sơ kèm ảnh hiện trường có toạ độ GPS ra tệp PDF hoàn công.
+        </div>
+
+        <div class="form-group" style="margin-top: 10px;">
+          <label style="font-weight: 700; font-size: 13px;">Chọn Hạng Mục WBS Cần Xuất Hồ Sơ *</label>
+          <select id="selectDossierWorkItem" class="form-control" onchange="onDossierWorkItemChanged()" style="font-weight: 600;">
+            <option value="">-- Chọn hạng mục WBS --</option>
+          </select>
+        </div>
+
+        <!-- Trạng thái tải dữ liệu -->
+        <div id="dossierLoadingIndicator" style="display: none; text-align: center; padding: 30px; color: var(--brand-blue); font-weight: 700;">
+          ⏳ Đang tổng hợp số liệu và kiểm tra các đợt nghiệm thu đã duyệt...
+        </div>
+
+        <!-- Thông báo lỗi nếu có -->
+        <div id="dossierErrorAlert" style="display: none; background: #fee2e2; border: 1px solid #f87171; color: #991b1b; padding: 12px 16px; border-radius: 8px; font-size: 13px;"></div>
+
+        <!-- Trạng thái rỗng nếu chưa có đợt duyệt nào -->
+        <div id="dossierEmptyState" style="display: none; text-align: center; padding: 36px 20px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 10px;">
+          <div style="font-size: 32px; margin-bottom: 8px;">📑</div>
+          <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">Chưa Có Đợt Nghiệm Thu Nào Được Phê Duyệt</h4>
+          <p style="font-size: 13px; color: #64748b; max-width: 500px; margin: 0 auto;">
+            Hạng mục này hiện chưa có đợt nghiệm thu nào có trạng thái "Đã phê duyệt" (Approved). Các phiếu nháp hoặc bị từ chối sẽ không được đưa vào hồ sơ.
+          </p>
+        </div>
+
+        <!-- Container xem trước hồ sơ -->
+        <div id="dossierPreviewContainer" style="display: none; flex-direction: column; gap: 14px;">
+          <div style="background: #f8fafc; border: 1px solid var(--border-card); border-radius: 10px; padding: 14px 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+            <div>
+              <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Mã hạng mục</div>
+              <div id="previewWorkItemCode" style="font-size: 14px; font-weight: 800; color: #0f172a; font-family: monospace;">—</div>
+            </div>
+            <div>
+              <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Khối lượng hợp đồng</div>
+              <div id="previewContractQty" style="font-size: 14px; font-weight: 800; color: #0f172a;">—</div>
+            </div>
+            <div>
+              <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Số đợt đã duyệt</div>
+              <div id="previewPeriodCount" style="font-size: 14px; font-weight: 800; color: #1d4ed8;">0 đợt</div>
+            </div>
+            <div>
+              <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Luỹ kế đã duyệt</div>
+              <div id="previewFinalCumulative" style="font-size: 14px; font-weight: 800; color: #047857;">0.00</div>
+            </div>
+          </div>
+
+          <h4 style="font-size: 13.5px; font-weight: 800; color: #0f172a;">📋 Danh sách các đợt nghiệm thu đưa vào hồ sơ</h4>
+          <div class="items-table-box">
+            <table>
+              <thead>
+                <tr>
+                  <th>Đợt</th>
+                  <th>Mã phiếu</th>
+                  <th>Khoảng thời gian</th>
+                  <th style="text-align: right;">Khối lượng đợt</th>
+                  <th style="text-align: right;">Khối lượng luỹ kế</th>
+                  <th>Người duyệt</th>
+                  <th>Ảnh hiện trường</th>
+                </tr>
+              </thead>
+              <tbody id="dossierPreviewPeriodsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeExportDossierModal()">Đóng</button>
+        <button type="button" class="btn-primary" id="btnDownloadPdf" onclick="downloadDossierPdf()" disabled>
+          📥 Tải Tệp PDF Hồ Sơ Nghiệm Thu
+        </button>
       </div>
     </div>
   </div>
@@ -1151,6 +1240,171 @@
         }
       } catch (err) {
         showToast(`Lỗi: ${err.message}`, false);
+      }
+    }
+
+    // 6. XUẤT HỒ SƠ NGHIỆM THU THEO HẠNG MỤC (S-50)
+    let currentDossierData = null;
+
+    async function openExportDossierModal() {
+      document.getElementById('exportDossierModal').style.display = 'flex';
+      document.getElementById('dossierLoadingIndicator').style.display = 'none';
+      document.getElementById('dossierErrorAlert').style.display = 'none';
+      document.getElementById('dossierEmptyState').style.display = 'none';
+      document.getElementById('dossierPreviewContainer').style.display = 'none';
+      document.getElementById('btnDownloadPdf').disabled = true;
+      currentDossierData = null;
+
+      await loadWorkItemsForDossier();
+    }
+
+    function closeExportDossierModal() {
+      document.getElementById('exportDossierModal').style.display = 'none';
+    }
+
+    async function loadWorkItemsForDossier() {
+      const selectEl = document.getElementById('selectDossierWorkItem');
+      selectEl.innerHTML = '<option value="">-- Đang tải danh sách hạng mục WBS... --</option>';
+
+      try {
+        const res = await fetch(`/api/projects/${projectId}/work-items`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        const data = await res.json();
+        const items = data.data || [];
+        if (items.length === 0) {
+          selectEl.innerHTML = '<option value="">-- Dự án chưa có hạng mục WBS nào --</option>';
+          return;
+        }
+
+        selectEl.innerHTML = '<option value="">-- Chọn một hạng mục WBS để xuất hồ sơ --</option>' +
+          items.map(it => `<option value="${it.id}">[${it.code || `HM-${it.id}`}] ${it.name} (${it.khoi_luong_hop_dong || it.quantity || 0} ${it.unit || 'm3'})</option>`).join('');
+      } catch (err) {
+        selectEl.innerHTML = '<option value="">-- Lỗi tải danh sách hạng mục --</option>';
+        showToast('Lỗi tải danh sách hạng mục WBS: ' + err.message, false);
+      }
+    }
+
+    async function onDossierWorkItemChanged() {
+      const selectEl = document.getElementById('selectDossierWorkItem');
+      const workItemId = selectEl.value;
+
+      const loadingEl = document.getElementById('dossierLoadingIndicator');
+      const errorEl = document.getElementById('dossierErrorAlert');
+      const emptyEl = document.getElementById('dossierEmptyState');
+      const previewEl = document.getElementById('dossierPreviewContainer');
+      const btnPdf = document.getElementById('btnDownloadPdf');
+
+      errorEl.style.display = 'none';
+      emptyEl.style.display = 'none';
+      previewEl.style.display = 'none';
+      btnPdf.disabled = true;
+      currentDossierData = null;
+
+      if (!workItemId) return;
+
+      loadingEl.style.display = 'block';
+
+      try {
+        const res = await fetch(`/api/projects/${projectId}/work-items/${workItemId}/acceptance-dossier`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        const json = await res.json();
+        loadingEl.style.display = 'none';
+
+        if (!res.ok || !json.success) {
+          errorEl.innerText = json.message || 'Không thể tổng hợp hồ sơ nghiệm thu';
+          errorEl.style.display = 'block';
+          return;
+        }
+
+        currentDossierData = json.data;
+        const periods = currentDossierData.periods || [];
+
+        if (periods.length === 0) {
+          emptyEl.style.display = 'block';
+          btnPdf.disabled = false;
+          return;
+        }
+
+        // Hiển thị preview
+        document.getElementById('previewWorkItemCode').innerText = currentDossierData.work_item?.code || `HM-${workItemId}`;
+        const contractQty = currentDossierData.work_item?.contract_quantity;
+        document.getElementById('previewContractQty').innerText = contractQty !== null && contractQty !== undefined
+          ? `${contractQty} ${currentDossierData.work_item?.unit || 'm3'}`
+          : '—';
+        document.getElementById('previewPeriodCount').innerText = `${periods.length} đợt đã duyệt`;
+        document.getElementById('previewFinalCumulative').innerText = `${currentDossierData.final_cumulative_quantity} ${currentDossierData.work_item?.unit || 'm3'}`;
+
+        const tbody = document.getElementById('dossierPreviewPeriodsBody');
+        tbody.innerHTML = periods.map(p => `
+          <tr>
+            <td style="font-weight: 700; color: #1d4ed8;">Đợt ${p.period_number}</td>
+            <td style="font-family: monospace; font-weight: 600;">${p.sheet_code}</td>
+            <td>${p.from_date || '—'} → ${p.to_date || '—'}</td>
+            <td style="text-align: right; font-weight: 700;">${p.period_quantity}</td>
+            <td style="text-align: right; font-weight: 800; color: #047857;">${p.cumulative_quantity}</td>
+            <td>${p.approved_by_name || 'Ban QLDA'}</td>
+            <td>${p.photos ? `${p.photos.length} ảnh` : '0 ảnh'}</td>
+          </tr>
+        `).join('');
+
+        previewEl.style.display = 'flex';
+        btnPdf.disabled = false;
+      } catch (err) {
+        loadingEl.style.display = 'none';
+        errorEl.innerText = `Lỗi kết nối máy chủ: ${err.message}`;
+        errorEl.style.display = 'block';
+      }
+    }
+
+    async function downloadDossierPdf() {
+      const selectEl = document.getElementById('selectDossierWorkItem');
+      const workItemId = selectEl.value;
+      if (!workItemId) {
+        showToast('Vui lòng chọn hạng mục WBS cần xuất PDF', false);
+        return;
+      }
+
+      const btn = document.getElementById('btnDownloadPdf');
+      const oldText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Đang tạo tệp PDF...';
+
+      try {
+        const token = getToken();
+        const res = await fetch(`/api/projects/${projectId}/work-items/${workItemId}/acceptance-dossier/pdf`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) {
+          let errText = 'Lỗi tải tệp PDF';
+          try {
+            const errJson = await res.json();
+            errText = errJson.message || errText;
+          } catch (_) {}
+          showToast(errText, false);
+          return;
+        }
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        const code = currentDossierData?.work_item?.code || `HM_${workItemId}`;
+        a.download = `Ho_so_nghiem_thu_${code}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+
+        showToast('Đã tải xuống hồ sơ nghiệm thu PDF thành công!');
+      } catch (err) {
+        showToast(`Lỗi xuất PDF: ${err.message}`, false);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = oldText;
       }
     }
   </script>

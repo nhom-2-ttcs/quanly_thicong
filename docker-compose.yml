@@ -36,5 +36,19 @@ services:
       db:
         condition: service_healthy
 
+  staging-monitor:
+    build: .
+    container_name: quanly_thicong_monitor
+    restart: always
+    command: ["node", "scripts/monitor_staging.js"]
+    environment:
+      - MONITOR_TARGET_URL=http://backend:5000/api/health/readiness
+      - MONITOR_INTERVAL_SECONDS=30
+      - MONITOR_ALERT_THRESHOLD_SECONDS=300
+      - ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL:-}
+      - ALERT_WEBHOOK_TIMEOUT_MS=5000
+    depends_on:
+      - backend
+
 volumes:
   db_data:

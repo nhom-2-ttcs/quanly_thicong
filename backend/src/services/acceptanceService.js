@@ -878,6 +878,218 @@ class AcceptanceService {
       message: 'Đã xóa phiếu nghiệm thu thành công'
     };
   }
+
+  /**
+   * S-50 / SCRUM-E10: Tổng hợp toàn bộ hồ sơ nghiệm thu của một hạng mục WBS
+   * Chỉ lấy các đợt đã duyệt (status = 'approved'), loại bỏ draft, rejected và dữ liệu dự án khác.
+   */
+  async getWorkItemAcceptanceDossier(projectId, workItemId) {
+    const pId = Number(projectId);
+    const wId = Number(workItemId);
+
+    // 1. Kiểm tra dự án tồn tại
+    let project = null;
+    if (this.isConnected) {
+      try {
+        const [pRows] = await this.pool.query('SELECT * FROM projects WHERE id = ?', [pId]);
+        if (pRows && pRows.length > 0) project = pRows[0];
+      } catch (_) {}
+    }
+    if (!project) {
+      const inMemP = (store.inMemoryProjects || []).find(p => Number(p.id) === pId);
+      if (inMemP) project = inMemP;
+      else if (store.getProjectById) project = store.getProjectById(pId);
+    }
+    if (!project) {
+      const err = new Error(`Dự án với ID ${pId} không tồn tại`);
+      err.status = 404;
+      throw err;
+    }
+
+    // 2. Kiểm tra hạng mục WBS thuộc dự án
+    let workItem = null;
+    if (this.isConnected) {
+      try {
+        const [wRows] = await this.pool.query(
+          'SELECT * FROM work_items WHERE id = ? AND project_id = ?',
+          [wId, pId]
+        );
+        if (wRows && wRows.length > 0) workItem = wRows[0];
+      } catch (_) {}
+    }
+    if (!workItem) {
+      const inMemW = (store.inMemoryWorkItems || []).find(w => Number(w.id) === wId && Number(w.project_id) === pId);
+      if (inMemW) workItem = inMemW;
+      else {
+        // Fallback kiểm tra trong tasks
+        const inMemTask = (store.inMemoryTasks || []).find(t => Number(t.work_item_id || t.id) === wId && Number(t.project_id) === pId);
+        if (inMemTask) {
+          workItem = {
+            id: wId,
+            project_id: pId,
+            code: inMemTask.code || `CV-${wId}`,
+            name: inMemTask.name,
+            unit: 'm3',
+            khoi_luong_hop_dong: inMemTask.quantity || null
+          };
+        }
+      }
+    }
+    if (!workItem) {
+      const err = new Error(`Hạng mục công việc ID ${wId} không thuộc dự án ${pId} hoặc không tồn tại`);
+      err.status = 404;
+      throw err;
+    }
+
+    // 3. Lấy tất cả các phiếu nghiệm thu ĐÃ PHÊ DUYỆT (status = 'approved') của dự án
+    let approvedSheets = [];
+    if (this.isConnected) {
+      try {
+        const [sRows] = await this.pool.query(
+          `SELECT s.*, u.full_name as creator_name, app.full_name as approver_name
+           FROM acceptance_sheets s
+           LEFT JOIN users u ON s.created_by = u.id
+           LEFT JOIN users app ON s.approved_by = app.id
+           WHERE s.project_id = ? AND s.status = 'approved'
+           ORDER BY s.period_number ASC, s.id ASC`,
+          [pId]
+        );
+        approvedSheets = sRows || [];
+      } catch (_) {
+        approvedSheets = [];
+      }
+    }
+    if (approvedSheets.length === 0) {
+      const allSheets = store.getAcceptanceSheets ? store.getAcceptanceSheets(pId) : (store.inMemoryAcceptanceSheets || []).filter(s => Number(s.project_id) === pId);
+      approvedSheets = allSheets
+        .filter(s => s.status === 'approved')
+        .sort((a, b) => (a.period_number || 1) - (b.period_number || 1));
+    }
+
+    // 4. Lấy chi tiết các đợt có chứa hạng mục này
+    const periods = [];
+    let latestCumulative = 0;
+    let totalPeriodQty = 0;
+
+    for (const sheet of approvedSheets) {
+      let sheetItem = null;
+      if (this.isConnected) {
+        try {
+          const [iRows] = await this.pool.query(
+            `SELECT * FROM acceptance_sheet_items
+             WHERE sheet_id = ? AND (work_item_id = ? OR (work_item_id IS NULL AND LOWER(TRIM(item_name)) = LOWER(TRIM(?))))
+             LIMIT 1`,
+            [sheet.id, wId, workItem.name]
+          );
+          if (iRows && iRows.length > 0) sheetItem = iRows[0];
+        } catch (_) {}
+      }
+      if (!sheetItem) {
+        sheetItem = (store.inMemoryAcceptanceSheetItems || []).find(
+          i => i.sheet_id === sheet.id && (Number(i.work_item_id) === wId || (i.item_name && i.item_name.trim().toLowerCase() === workItem.name.trim().toLowerCase()))
+        );
+      }
+
+      if (!sheetItem) continue; // Phiếu này không nghiệm thu hạng mục này -> bỏ qua
+
+      const pQty = Number(sheetItem.period_quantity || 0);
+      const cQty = Number(sheetItem.cumulative_quantity || 0);
+      totalPeriodQty += pQty;
+      latestCumulative = cQty;
+
+      // Lấy ảnh hiện trường của đợt này
+      let sheetPhotos = [];
+      if (this.isConnected) {
+        try {
+          const [pRows] = await this.pool.query(
+            'SELECT * FROM acceptance_sheet_photos WHERE sheet_id = ? ORDER BY id ASC',
+            [sheet.id]
+          );
+          sheetPhotos = pRows || [];
+        } catch (_) {}
+      } else {
+        sheetPhotos = (store.inMemoryAcceptanceSheetPhotos || []).filter(p => p.sheet_id === sheet.id);
+      }
+
+      const mappedPhotos = (sheetPhotos || []).map(ph => {
+        const hasMeta = Boolean(ph.has_metadata || ph.taken_at || ph.latitude);
+        let metaNote = 'Không có siêu dữ liệu';
+        if (ph.taken_at && ph.latitude) {
+          metaNote = `Thời điểm: ${ph.taken_at} | Tọa độ GPS: ${Number(ph.latitude).toFixed(5)}, ${Number(ph.longitude || 0).toFixed(5)}`;
+        } else if (ph.taken_at) {
+          metaNote = `Thời điểm: ${ph.taken_at} | Chưa có tọa độ GPS`;
+        } else if (ph.latitude) {
+          metaNote = `Tọa độ GPS: ${Number(ph.latitude).toFixed(5)}, ${Number(ph.longitude || 0).toFixed(5)} | Chưa có thời điểm chụp`;
+        }
+
+        return {
+          id: ph.id,
+          sheet_id: sheet.id,
+          file_name: ph.file_name,
+          file_path: ph.file_path || `/uploads/acceptance/${ph.file_name}`,
+          url: ph.file_path || `/uploads/acceptance/${ph.file_name}`,
+          caption: ph.caption || null,
+          taken_at: ph.taken_at || null,
+          latitude: ph.latitude !== null && ph.latitude !== undefined ? Number(ph.latitude) : null,
+          longitude: ph.longitude !== null && ph.longitude !== undefined ? Number(ph.longitude) : null,
+          has_metadata: hasMeta,
+          metadata_note: metaNote
+        };
+      });
+
+      let creatorName = sheet.creator_name;
+      let approverName = sheet.approver_name;
+      if (!creatorName && sheet.created_by) {
+        const u = (store.inMemoryUsers || []).find(user => user.id === sheet.created_by);
+        if (u) creatorName = u.full_name || u.email;
+      }
+      if (!approverName && sheet.approved_by) {
+        const appUser = (store.inMemoryUsers || []).find(user => user.id === sheet.approved_by);
+        if (appUser) approverName = appUser.full_name || appUser.email;
+      }
+
+      periods.push({
+        sheet_id: sheet.id,
+        sheet_code: sheet.sheet_code,
+        sheet_name: sheet.name,
+        period_number: sheet.period_number,
+        from_date: sheet.from_date,
+        to_date: sheet.to_date,
+        previous_approved_quantity: Number(sheetItem.previous_approved_quantity || 0),
+        period_quantity: pQty,
+        cumulative_quantity: cQty,
+        unit: sheetItem.unit || workItem.unit || 'm3',
+        notes: sheetItem.notes || sheet.notes || null,
+        created_by_name: creatorName || 'Kỹ sư giám sát',
+        approved_by_name: approverName || 'Chỉ huy trưởng / Ban QLDA',
+        approved_at: sheet.approved_at || null,
+        photos: mappedPhotos
+      });
+    }
+
+    return {
+      project: {
+        id: project.id,
+        code: project.code || `DA-${project.id}`,
+        name: project.name,
+        description: project.description || null
+      },
+      work_item: {
+        id: workItem.id,
+        code: workItem.code || `CV-${workItem.id}`,
+        name: workItem.name,
+        unit: workItem.unit || 'm3',
+        contract_quantity: workItem.khoi_luong_hop_dong !== undefined && workItem.khoi_luong_hop_dong !== null
+          ? Number(workItem.khoi_luong_hop_dong)
+          : (workItem.quantity !== undefined ? Number(workItem.quantity) : null),
+        unit_price: workItem.don_gia_hop_dong ? Number(workItem.don_gia_hop_dong) : 0
+      },
+      total_approved_periods: periods.length,
+      final_cumulative_quantity: Number(latestCumulative.toFixed(2)),
+      total_period_quantity: Number(totalPeriodQty.toFixed(2)),
+      periods
+    };
+  }
 }
 
 module.exports = AcceptanceService;

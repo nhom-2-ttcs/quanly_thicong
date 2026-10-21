@@ -1415,7 +1415,7 @@ function getLatestApprovedAcceptanceSheet(projectId) {
 }
 
 function saveAcceptanceSheet(sheetData) {
-  const newId = inMemoryAcceptanceSheets.length > 0 ? Math.max(...inMemoryAcceptanceSheets.map(s => s.id)) + 1 : 1;
+  const newId = sheetData.id ? Number(sheetData.id) : (inMemoryAcceptanceSheets.length > 0 ? Math.max(...inMemoryAcceptanceSheets.map(s => s.id)) + 1 : 1);
   const now = new Date().toISOString();
   const sheet = {
     id: newId,

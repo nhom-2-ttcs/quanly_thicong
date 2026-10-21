@@ -1,5 +1,6 @@
 const express = require('express');
 const AcceptanceService = require('../services/acceptanceService');
+const dossierPdfService = require('../services/dossierPdfService');
 const { checkViewerForbidden, checkProjectReadAccess, checkProjectManagerAccess } = require('../utils/rbac');
 
 module.exports = (db) => {
@@ -140,6 +141,48 @@ module.exports = (db) => {
     try {
       const result = await acceptanceService.deleteAcceptanceSheet(projectId, sheetId);
       res.json(result);
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
+  // 8. S-50: Lấy dữ liệu hồ sơ nghiệm thu theo hạng mục WBS (chỉ gồm các đợt đã duyệt)
+  router.get('/projects/:projectId/work-items/:itemId/acceptance-dossier', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const itemId = Number(req.params.itemId);
+    if (!Number.isInteger(projectId) || projectId <= 0 || !Number.isInteger(itemId) || itemId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId hoặc itemId không hợp lệ.' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    try {
+      const dossier = await acceptanceService.getWorkItemAcceptanceDossier(projectId, itemId);
+      res.json({ success: true, data: dossier });
+    } catch (err) {
+      res.status(err.status || 500).json({ success: false, message: err.message });
+    }
+  });
+
+  // 9. S-50: Xuất hồ sơ nghiệm thu PDF của hạng mục WBS (Tải trực tiếp tệp PDF)
+  router.get('/projects/:projectId/work-items/:itemId/acceptance-dossier/pdf', async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    const itemId = Number(req.params.itemId);
+    if (!Number.isInteger(projectId) || projectId <= 0 || !Number.isInteger(itemId) || itemId <= 0) {
+      return res.status(400).json({ success: false, message: 'projectId hoặc itemId không hợp lệ.' });
+    }
+    if (checkProjectReadAccess(req, res, projectId)) return;
+
+    try {
+      const dossier = await acceptanceService.getWorkItemAcceptanceDossier(projectId, itemId);
+      const pdfBuffer = await dossierPdfService.generateDossierPdf(dossier);
+
+      const itemCode = (dossier.work_item?.code || `HM_${itemId}`).replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `Ho_so_nghiem_thu_${itemCode}.pdf`;
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.end(pdfBuffer);
     } catch (err) {
       res.status(err.status || 500).json({ success: false, message: err.message });
     }

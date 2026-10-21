@@ -73,6 +73,70 @@ app.get('/api/db-check', async (req, res) => {
   }
 });
 
+// API kiểm tra độ sẵn sàng của hệ thống và CSDL (S-51 / SCRUM-E01 / T-118)
+app.get('/api/health/readiness', async (req, res) => {
+  const timeoutMs = Number(process.env.DB_PROBE_TIMEOUT_MS) || 3000;
+
+  // 1. Kiểm tra kết nối cơ sở dữ liệu nếu có cấu hình pool
+  if (db && db.isConnected && db.pool) {
+    try {
+      const probeQuery = db.pool.query('SELECT 1 AS readiness_probe');
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Database probe query timed out')), timeoutMs)
+      );
+      await Promise.race([probeQuery, timeoutPromise]);
+
+      return res.status(200).json({
+        status: 'ready',
+        uptime: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString(),
+        checks: {
+          app: 'ok',
+          db: 'ok'
+        }
+      });
+    } catch (_) {
+      // Bảo mật: Tuyệt đối không lộ mật khẩu, chuỗi kết nối hay stack trace
+      return res.status(503).json({
+        status: 'unhealthy',
+        uptime: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString(),
+        checks: {
+          app: 'ok',
+          db: 'error'
+        },
+        message: 'Cơ sở dữ liệu không phản hồi hoặc truy vấn kiểm tra bị quá thời gian.'
+      });
+    }
+  }
+
+  // 2. Nếu có cấu hình DB_HOST nhưng chưa kết nối được
+  if (process.env.DB_HOST && process.env.DB_HOST !== 'localhost' && process.env.DB_HOST !== '127.0.0.1') {
+    return res.status(503).json({
+      status: 'unhealthy',
+      uptime: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+      checks: {
+        app: 'ok',
+        db: 'disconnected'
+      },
+      message: 'Hệ thống đang chờ kết nối đến dịch vụ cơ sở dữ liệu.'
+    });
+  }
+
+  // 3. Chạy chế độ in-memory standalone
+  return res.status(200).json({
+    status: 'ready',
+    mode: 'standalone',
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+    checks: {
+      app: 'ok',
+      db: 'in_memory'
+    }
+  });
+});
+
 // ==========================================
 // CÁC ENDPOINT CHO SPRINT S-02 (SCRUM-19)
 // ==========================================
