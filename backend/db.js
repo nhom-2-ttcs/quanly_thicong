@@ -1133,7 +1133,25 @@ async function initDbSchema(maxRetries = (isDockerOrCi ? 25 : 1), delayMs = (isD
       `);
     } catch (_) {}
 
-    console.log(`[DB] Đã đồng bộ ${inMemoryUsers.length} tài khoản người dùng, schema calendars (S-17), milestones (T-43), alerts (T-44), site_diaries (T-50/51), photos & EXIF (S-40), project_teams (S-25), acceptance_sheets (S-36), limit checks (S-37), photo anti-fraud (S-42) và payment retention (S-45) sẵn sàng.`);
+    // S-48 (SCRUM-224): Bổ sung các cột dự toán (S-46), thực chi (S-47) và khối lượng thu được vào work_items
+    try {
+      const [cols] = await pool.query(`
+        SELECT COLUMN_NAME FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'work_items' AND COLUMN_NAME = 'thuc_chi'
+      `);
+      if (!cols || cols.length === 0) {
+        await pool.query(`
+          ALTER TABLE work_items
+          ADD COLUMN khoi_luong_du_toan DECIMAL(15, 4) DEFAULT 0.0000,
+          ADD COLUMN don_gia_du_toan DECIMAL(18, 2) DEFAULT 0.00,
+          ADD COLUMN thanh_tien_du_toan DECIMAL(18, 2) DEFAULT 0.00,
+          ADD COLUMN thuc_chi DECIMAL(18, 2) DEFAULT 0.00,
+          ADD COLUMN khoi_luong_thu_duoc DECIMAL(15, 4) DEFAULT 0.0000
+        `);
+      }
+    } catch (_) {}
+
+    console.log(`[DB] Đã đồng bộ ${inMemoryUsers.length} tài khoản người dùng, schema calendars (S-17), milestones (T-43), alerts (T-44), site_diaries (T-50/51), photos & EXIF (S-40), project_teams (S-25), acceptance_sheets (S-36), limit checks (S-37), photo anti-fraud (S-42), payment retention (S-45) và budget variance (S-48) sẵn sàng.`);
     return;
   } catch (err) {
     if (attempt < maxRetries) {

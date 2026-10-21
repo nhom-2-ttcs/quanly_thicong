@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S-48: So Sánh Dự Toán, Thực Chi & Cảnh Báo | Hệ Thống Quản Lý Thi Công</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --brand-blue: #1d4ed8;
+      --brand-dark: #0f172a;
+      --brand-surface: #f8fafc;
+      --border-card: #e2e8f0;
+      --border-outer: #cbd5e1;
+      --text-title: #0f172a;
+      --text-body: #334155;
+      --text-muted: #64748b;
+      --danger-bg: #fef2f2;
+      --danger-border: #fca5a5;
+      --danger-text: #b91c1c;
+      --warning-bg: #fffbeb;
+      --warning-border: #fde68a;
+      --warning-text: #b45309;
+      --success-bg: #f0fdf4;
+      --success-border: #bbf7d0;
+      --success-text: #15803d;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f1f5f9;
+      color: var(--text-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Topbar */
+    .topbar {
+      background: #ffffff;
+      border-bottom: 1.5px solid var(--border-card);
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #0284c7 0%, #1d4ed8 100%);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+      font-size: 20px;
+      color: #fff;
+    }
+    .brand-info h1 {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-title);
+      line-height: 1.2;
+    }
+    .brand-info span {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--brand-blue);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .nav-dock {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border-card);
+    }
+    .nav-item {
+      padding: 7px 13px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-decoration: none;
+      border-radius: 7px;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-item:hover { color: var(--text-title); background: #ffffff; }
+    .nav-item.active { background: #ffffff; color: var(--brand-blue); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 12px 5px 6px;
+      background: #f8fafc;
+      border: 1.5px solid var(--border-card);
+      border-radius: 9999px;
+    }
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0284c7, #1d4ed8);
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .user-meta { display: flex; flex-direction: column; text-align: left; }
+    .user-name { font-size: 12px; font-weight: 700; color: var(--text-title); line-height: 1.2; }
+    .user-role { font-size: 10px; color: var(--text-muted); font-weight: 600; }
+    .btn-logout {
+      border: none;
+      background: #fee2e2;
+      color: #dc2626;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-left: 6px;
+    }
+
+    /* Main Container */
+    .main-container {
+      max-width: 1480px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Page Header */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      background: #ffffff;
+      padding: 20px 24px;
+      border-radius: 14px;
+      border: 1px solid var(--border-card);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    }
+    .page-title-box h2 {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-title);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge-story {
+      font-size: 11px;
+      font-weight: 800;
+      background: #e0e7ff;
+      color: #3730a3;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+    .page-title-box p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 5px;
+      line-height: 1.5;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .project-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f8fafc;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-outer);
+    }
+    .project-selector label { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+    .project-selector select {
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-title);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: #ffffff;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      box-shadow: 0 2px 6px rgba(29, 78, 216, 0.25);
+    }
+    .btn-primary:hover { background: #1e40af; transform: translateY(-1px); }
+
+    .btn-sample {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #ffffff;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+    }
+    .btn-sample:hover { background: #047857; transform: translateY(-1px); }
+
+    .btn-secondary {
+      background: #ffffff;
+      color: var(--text-body);
+      border: 1.5px solid var(--border-card);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .btn-secondary:hover { background: #f8fafc; border-color: var(--border-outer); }
+
+    /* Alert Banner (Khi có cảnh báo) */
+    .alert-banner {
+      background: linear-gradient(135deg, #fffbeb, #fef3c7);
+      border: 1.5px solid #fcd34d;
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.12);
+    }
+    .alert-banner.safe {
+      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+      border-color: #86efac;
+    }
+    .alert-banner-content {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .alert-banner-icon {
+      font-size: 26px;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .alert-banner-text h4 {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: #92400e;
+    }
+    .alert-banner.safe .alert-banner-text h4 { color: #166534; }
+    .alert-banner-text p {
+      font-size: 12.5px;
+      color: #78350f;
+      margin-top: 3px;
+    }
+    .alert-banner.safe .alert-banner-text p { color: #14532d; }
+
+    /* KPI Metrics Cards */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+    }
+    .metric-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 18px 20px;
+      border: 1px solid var(--border-card);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 4px; height: 100%;
+      background: #cbd5e1;
+    }
+    .metric-card.card-blue::before { background: #2563eb; }
+    .metric-card.card-orange::before { background: #ea580c; }
+    .metric-card.card-green::before { background: #16a34a; }
+    .metric-card.card-danger::before { background: #dc2626; }
+
+    .metric-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .metric-val {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-title);
+      margin-top: 2px;
+    }
+    .metric-sub {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Filter Toolbar */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: #ffffff;
+      padding: 12px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--border-card);
+    }
+    .filter-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .filter-btn {
+      padding: 6px 14px;
+      font-size: 12.5px;
+      font-weight: 700;
+      border: 1px solid var(--border-card);
+      background: #f8fafc;
+      color: var(--text-body);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { background: #e2e8f0; }
+    .filter-btn.active {
+      background: #1d4ed8;
+      color: #ffffff;
+      border-color: #1d4ed8;
+    }
+
+    .tree-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Table Container */
+    .table-container {
+      background: #ffffff;
+      border-radius: 12px;
+      border: 1px solid var(--border-card);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+    thead th {
+      background: #f8fafc;
+      color: var(--text-title);
+      font-weight: 800;
+      padding: 12px 14px;
+      border-bottom: 2px solid var(--border-card);
+      white-space: nowrap;
+      font-size: 12px;
+      letter-spacing: 0.3px;
+    }
+    tbody td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-card);
+      vertical-align: middle;
+    }
+    tbody tr:hover { background: #f8fafc; }
+
+    /* Cảnh báo highlight */
+    tr.row-warning {
+      background: #fffbeb !important;
+      border-left: 4px solid #f59e0b;
+    }
+    tr.row-warning:hover {
+      background: #fef3c7 !important;
+    }
+    tr.row-parent {
+      background: #f8fafc;
+      font-weight: 700;
+    }
+    tr.row-parent td {
+      border-top: 1px solid #cbd5e1;
+    }
+
+    .badge-code {
+      display: inline-block;
+      font-family: monospace;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 6px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      color: #334155;
+    }
+    .badge-code.parent {
+      background: #dbeafe;
+      color: #1e40af;
+      font-weight: 800;
+    }
+
+    .node-title-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-toggle-tree {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid var(--border-card);
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      cursor: pointer;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    /* Progress bar */
+    .mini-progress-box {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 100px;
+    }
+    .mini-progress-track {
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .mini-progress-bar {
+      height: 100%;
+      background: #2563eb;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .mini-progress-bar.danger { background: #dc2626; }
+    .mini-progress-bar.warning { background: #f59e0b; }
+    .mini-progress-bar.success { background: #16a34a; }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .status-badge.alert {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+    }
+    .status-badge.safe {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+    .status-badge.normal {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+
+    .btn-edit-item {
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #ffffff;
+      border: 1px solid var(--border-outer);
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-edit-item:hover {
+      background: #1d4ed8;
+      color: #ffffff;
+      border-color: #1d4ed8;
+    }
+
+    /* Modal Form */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+    .modal-card {
+      background: #ffffff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 580px;
+      border: 1px solid var(--border-card);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border-card);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-header h3 { font-size: 16px; font-weight: 800; color: var(--text-title); }
+    .modal-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-title);
+    }
+    .form-group input {
+      padding: 9px 12px;
+      border: 1.5px solid var(--border-outer);
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-family: inherit;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--brand-blue);
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-card);
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* Toast Notification */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1000;
+    }
+    .toast {
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      animation: fadeIn 0.2s ease;
+    }
+    .toast-success { background: #059669; }
+    .toast-error { background: #dc2626; }
+    .toast-warning { background: #d97706; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="brand-group">
+      <div class="brand-icon">📊</div>
+      <div class="brand-info">
+        <h1>NỀN TẢNG ĐIỀU HÀNH THI CÔNG</h1>
+        <span>So Sánh & Cảnh Báo Dự Toán (S-48)</span>
+      </div>
+    </div>
+
+    <nav class="nav-dock">
+      <a href="/index.html" class="nav-item">🏠 Tổng quan</a>
+      <a href="/wbs.html" class="nav-item">🌳 WBS</a>
+      <a href="/acceptance.html" class="nav-item">📋 Nghiệm thu đợt</a>
+      <a href="/payment.html" class="nav-item">💰 Đề nghị thanh toán</a>
+      <a href="/budget.html" class="nav-item active">📊 So sánh & Cảnh báo</a>
+      <a href="/teams.html" class="nav-item">👷 Đội thi công</a>
+    </nav>
+
+    <div class="user-pill">
+      <div class="user-avatar" id="display-user-avatar">QL</div>
+      <div class="user-meta">
+        <span class="user-name" id="display-user-name">Ban Quản Lý</span>
+        <span class="user-role" id="display-user-role">Quản trị viên hệ thống</span>
+      </div>
+      <button class="btn-logout" onclick="logout()">Đăng xuất</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="page-title-box">
+        <h2>
+          📊 So Sánh Dự Toán & Thực Chi Theo Cây WBS
+          <span class="badge-story">S-48 / SCRUM-224</span>
+        </h2>
+        <p>
+          T-113: Nhận dự toán (S-46), thực chi (S-47), tính dồn cây cha (không cộng chéo cấp) • 
+          T-114: Đánh dấu cảnh báo khi <strong>Chi phí &gt; 80% dự toán</strong> nhưng <strong>Khối lượng thu được &lt; 80%</strong>.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <div class="project-selector">
+          <label for="project-select">Dự án:</label>
+          <select id="project-select" onchange="onProjectChange(this.value)">
+            <option value="1">Dự án 1 (Trụ sở điều hành)</option>
+            <option value="88">Dự án Kiểm thử S-48 (Mock 88)</option>
+          </select>
+        </div>
+
+        <button class="btn-sample" onclick="seedSampleDataset()" id="btn-seed-sample" title="Nạp bộ dữ liệu mẫu tính toán phản hồi chuẩn">
+          🧪 Nạp bộ dữ liệu mẫu S-48
+        </button>
+
+        <button class="btn-secondary" onclick="loadBudgetVarianceReport()" title="Tải lại bảng tính">
+          🔄 Làm mới
+        </button>
+      </div>
+    </div>
+
+    <!-- Alert Banner (Trạng thái cảnh báo tổng thể) -->
+    <div class="alert-banner" id="alert-banner" style="display: none;">
+      <div class="alert-banner-content">
+        <div class="alert-banner-icon" id="banner-icon">⚠️</div>
+        <div class="alert-banner-text">
+          <h4 id="banner-title">Phát hiện hạng mục vượt ngưỡng chi phí & chậm tiến độ</h4>
+          <p id="banner-desc">Hệ thống đánh dấu các hạng mục chi phí đã vượt 80% dự toán nhưng khối lượng thu được chưa đạt 80%.</p>
+        </div>
+      </div>
+      <button class="btn-secondary" onclick="filterBy('warning')">Xem các mục bị cảnh báo</button>
+    </div>
+
+    <!-- KPI Metrics -->
+    <div class="metrics-grid">
+      <div class="metric-card card-blue">
+        <div class="metric-label">
+          <span>Tổng Dự Toán (S-46)</span>
+          <span>📊</span>
+        </div>
+        <div class="metric-val" id="metric-total-budget">0 đ</div>
+        <div class="metric-sub">Kế hoạch ngân sách đã phê duyệt</div>
+      </div>
+
+      <div class="metric-card card-orange">
+        <div class="metric-label">
+          <span>Tổng Thực Chi (S-47)</span>
+          <span>💸</span>
+        </div>
+        <div class="metric-val" id="metric-total-actual">0 đ</div>
+        <div class="metric-sub" id="metric-cost-percent">Tỷ lệ giải ngân: 0%</div>
+      </div>
+
+      <div class="metric-card card-green">
+        <div class="metric-label">
+          <span>Sản Lượng Hoàn Thành (EV)</span>
+          <span>📈</span>
+        </div>
+        <div class="metric-val" id="metric-total-earned">0 đ</div>
+        <div class="metric-sub" id="metric-qty-percent">Tiến độ khối lượng: 0%</div>
+      </div>
+
+      <div class="metric-card card-danger">
+        <div class="metric-label">
+          <span>Hạng Mục Cảnh Báo (T-114)</span>
+          <span>⚠️</span>
+        </div>
+        <div class="metric-val" id="metric-warning-count" style="color: #dc2626;">0</div>
+        <div class="metric-sub">Chi phí &gt;80% &amp; Khối lượng &lt;80%</div>
+      </div>
+    </div>
+
+    <!-- Filter & Toolbar -->
+    <div class="filter-bar">
+      <div class="filter-tabs">
+        <button class="filter-btn active" id="tab-all" onclick="filterBy('all')">Tất cả (<span id="count-all">0</span>)</button>
+        <button class="filter-btn" id="tab-warning" onclick="filterBy('warning')" style="color: #b45309; font-weight: 800;">
+          ⚠️ Chỉ mục cảnh báo (<span id="count-warning">0</span>)
+        </button>
+        <button class="filter-btn" id="tab-leaf" onclick="filterBy('leaf')">Chỉ hạng mục lá (<span id="count-leaf">0</span>)</button>
+        <button class="filter-btn" id="tab-parent" onclick="filterBy('parent')">Chỉ hạng mục cha / cây</button>
+      </div>
+
+      <div class="tree-actions">
+        <button class="btn-secondary" onclick="expandAllTree()">Mở rộng tất cả</button>
+        <button class="btn-secondary" onclick="collapseAllTree()">Thu gọn cây</button>
+      </div>
+    </div>
+
+    <!-- Tree Table -->
+    <div class="table-container">
+      <table id="budget-table">
+        <thead>
+          <tr>
+            <th style="width: 110px;">Mã WBS</th>
+            <th style="min-width: 260px;">Hạng mục công việc</th>
+            <th style="width: 70px;">ĐVT</th>
+            <th style="width: 100px; text-align: right;">KL Dự toán</th>
+            <th style="width: 110px; text-align: right;">Đơn giá dự toán</th>
+            <th style="width: 130px; text-align: right;">Tổng Dự Toán (đ)</th>
+            <th style="width: 130px; text-align: right;">Thực Chi (đ)</th>
+            <th style="width: 100px; text-align: right;">KL Thu được</th>
+            <th style="width: 110px; text-align: center;">% Chi phí</th>
+            <th style="width: 110px; text-align: center;">% Khối lượng</th>
+            <th style="width: 170px; text-align: center;">Trạng thái Cảnh báo</th>
+            <th style="width: 90px; text-align: center;">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr>
+            <td colspan="12" style="text-align: center; padding: 40px; color: var(--text-muted);">
+              Đang tải dữ liệu so sánh dự toán và thực chi...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!-- Modal Chỉnh sửa Dự toán & Thực chi Hạng mục Lá -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-title">✏️ Cập nhật Dự toán & Thực chi</h3>
+        <button style="border:none; background:transparent; font-size: 20px; cursor: pointer;" onclick="closeEditModal()">✕</button>
+      </div>
+
+      <form id="edit-form" onsubmit="saveItemData(event)">
+        <div class="modal-body">
+          <input type="hidden" id="edit-item-id">
+
+          <div class="form-group">
+            <label>Tên hạng mục:</label>
+            <input type="text" id="edit-item-name" disabled style="background: #f1f5f9; font-weight: 700;">
+          </div>
+
+          <div style="background: #e0e7ff; padding: 10px 14px; border-radius: 8px; font-size: 12px; color: #3730a3; font-weight: 700;">
+            📦 DỰ TOÁN KẾ HOẠCH (S-46)
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="input-budget-qty">Khối lượng dự toán:</label>
+              <input type="number" step="0.0001" min="0" id="input-budget-qty" required oninput="calcBudgetTotal()">
+            </div>
+            <div class="form-group">
+              <label for="input-budget-price">Đơn giá dự toán (VNĐ):</label>
+              <input type="number" step="1" min="0" id="input-budget-price" required oninput="calcBudgetTotal()">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="input-budget-total">Thành tiền dự toán tính toán:</label>
+            <input type="number" step="1" min="0" id="input-budget-total" readonly style="background: #f8fafc; font-weight: 700;">
+          </div>
+
+          <div style="background: #fef3c7; padding: 10px 14px; border-radius: 8px; font-size: 12px; color: #92400e; font-weight: 700; margin-top: 6px;">
+            💸 THỰC HIỆN CHI & SẢN LƯỢNG THU ĐƯỢC (S-47)
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="input-actual-cost">Chi phí thực tế (Thực chi - VNĐ):</label>
+              <input type="number" step="1" min="0" id="input-actual-cost" required>
+            </div>
+            <div class="form-group">
+              <label for="input-actual-qty">Khối lượng thu được (thực tế):</label>
+              <input type="number" step="0.0001" min="0" id="input-actual-qty" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeEditModal()">Hủy bỏ</button>
+          <button type="submit" class="btn-primary" id="btn-save-item">💾 Lưu thay đổi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- Shared App Navbar Script -->
+  <script src="/js/app-navbar.js"></script>
+
+  <script>
+    let currentProjectId = 1;
+    let rawTreeData = [];
+    let rawFlatData = [];
+    let currentFilter = 'all';
+    let collapsedNodes = new Set();
+
+    // Khởi tạo
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const pParam = urlParams.get('projectId');
+      if (pParam) {
+        currentProjectId = Number(pParam) || 1;
+        document.getElementById('project-select').value = String(currentProjectId);
+      }
+      loadBudgetVarianceReport();
+    });
+
+    function showToast(msg, type = 'success') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = `toast toast-${type}`;
+      t.innerText = msg;
+      c.appendChild(t);
+      setTimeout(() => { t.remove(); }, 3500);
+    }
+
+    function fmtMoney(num) {
+      if (num === null || num === undefined || isNaN(num)) return '0 đ';
+      return new Intl.NumberFormat('vi-VN').format(Math.round(num)) + ' đ';
+    }
+
+    function fmtQty(num) {
+      if (num === null || num === undefined || isNaN(num)) return '0';
+      return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 }).format(num);
+    }
+
+    function onProjectChange(val) {
+      currentProjectId = Number(val) || 1;
+      const url = new URL(window.location);
+      url.searchParams.set('projectId', currentProjectId);
+      window.history.pushState({}, '', url);
+      loadBudgetVarianceReport();
+    }
+
+    async function loadBudgetVarianceReport() {
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; padding: 40px; color: var(--text-muted);">Đang tải dữ liệu...</td></tr>`;
+
+      try {
+        const token = localStorage.getItem('quanly_token');
+        const res = await fetch(`/api/projects/${currentProjectId}/budget-variance`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+
+        if (!res.ok) {
+          throw new Error(`Lỗi tải dữ liệu (Mã lỗi ${res.status})`);
+        }
+
+        const data = await res.json();
+        if (!data.success) {
+          throw new Error(data.message || 'Không thể tải báo cáo dự toán.');
+        }
+
+        rawTreeData = data.tree || [];
+        rawFlatData = data.flatList || [];
+        renderSummary(data.summary || {});
+        renderTable();
+
+      } catch (err) {
+        console.error(err);
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="12" style="text-align: center; padding: 40px; color: #dc2626;">
+              ⚠️ ${err.message}<br>
+              <button class="btn-sample" style="margin-top: 12px;" onclick="seedSampleDataset()">🧪 Nạp dữ liệu mẫu S-48 ngay</button>
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    function renderSummary(summary) {
+      document.getElementById('metric-total-budget').innerText = fmtMoney(summary.total_budget || 0);
+      document.getElementById('metric-total-actual').innerText = fmtMoney(summary.total_actual_cost || 0);
+      document.getElementById('metric-cost-percent').innerText = `Tỷ lệ chi phí: ${(summary.overall_cost_percentage || 0).toFixed(1)}%`;
+      document.getElementById('metric-total-earned').innerText = fmtMoney(summary.total_earned_value || 0);
+      document.getElementById('metric-qty-percent').innerText = `Tiến độ sản lượng: ${(summary.overall_quantity_percentage || 0).toFixed(1)}%`;
+      document.getElementById('metric-warning-count').innerText = summary.warning_items_count || 0;
+
+      document.getElementById('count-all').innerText = summary.total_items || 0;
+      document.getElementById('count-warning').innerText = summary.warning_items_count || 0;
+      document.getElementById('count-leaf').innerText = summary.leaf_items_count || 0;
+
+      const banner = document.getElementById('alert-banner');
+      if (summary.has_warnings) {
+        banner.style.display = 'flex';
+        banner.classList.remove('safe');
+        document.getElementById('banner-icon').innerText = '⚠️';
+        document.getElementById('banner-title').innerText = `Cảnh báo: Có ${summary.warning_items_count} hạng mục chi phí vượt 80% dự toán nhưng khối lượng chưa đạt 80%`;
+        document.getElementById('banner-desc').innerText = 'Ban quản lý cần kiểm tra, rà soát hồ sơ thanh toán và kế hoạch giải ngân trước khi ký chốt.';
+      } else {
+        banner.style.display = 'flex';
+        banner.classList.add('safe');
+        document.getElementById('banner-icon').innerText = '✅';
+        document.getElementById('banner-title').innerText = 'Toàn bộ hạng mục an toàn, không có bội chi vượt ngưỡng 80%';
+        document.getElementById('banner-desc').innerText = 'Tất cả các hạng mục có chi phí giải ngân tương xứng với khối lượng nghiệm thu hoàn thành.';
+      }
+    }
+
+    function filterBy(tab) {
+      currentFilter = tab;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`tab-${tab}`);
+      if (activeBtn) activeBtn.classList.add('active');
+      renderTable();
+    }
+
+    function toggleNodeCollapse(nodeId) {
+      if (collapsedNodes.has(nodeId)) {
+        collapsedNodes.delete(nodeId);
+      } else {
+        collapsedNodes.add(nodeId);
+      }
+      renderTable();
+    }
+
+    function expandAllTree() {
+      collapsedNodes.clear();
+      renderTable();
+    }
+
+    function collapseAllTree() {
+      rawFlatData.forEach(item => {
+        if (!item.is_leaf) collapsedNodes.add(item.id);
+      });
+      renderTable();
+    }
+
+    function isNodeHiddenByParent(node) {
+      let curr = node;
+      while (curr && curr.parent_id) {
+        if (collapsedNodes.has(curr.parent_id)) return true;
+        curr = rawFlatData.find(i => i.id === curr.parent_id);
+      }
+      return false;
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = '';
+
+      let itemsToRender = rawFlatData.filter(item => {
+        if (currentFilter === 'warning') return item.is_warning;
+        if (currentFilter === 'leaf') return item.is_leaf;
+        if (currentFilter === 'parent') return !item.is_leaf;
+        return true;
+      });
+
+      // Lọc các node con bị cha thu gọn khi xem dạng cây (filter === 'all')
+      if (currentFilter === 'all') {
+        itemsToRender = itemsToRender.filter(item => !isNodeHiddenByParent(item));
+      }
+
+      if (itemsToRender.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="12" style="text-align: center; padding: 40px; color: var(--text-muted);">
+              Không có hạng mục nào phù hợp với bộ lọc "${currentFilter}".
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      itemsToRender.forEach(item => {
+        const tr = document.createElement('tr');
+        if (item.is_warning) tr.classList.add('row-warning');
+        if (!item.is_leaf) tr.classList.add('row-parent');
+
+        const indentPx = Math.max(0, item.level) * 24;
+        const hasChildren = item.children && item.children.length > 0;
+        const isCollapsed = collapsedNodes.has(item.id);
+
+        let toggleBtnHtml = `<span style="width: 20px; display: inline-block;"></span>`;
+        if (hasChildren && currentFilter === 'all') {
+          toggleBtnHtml = `<button class="btn-toggle-tree" onclick="toggleNodeCollapse(${item.id})">${isCollapsed ? '+' : '−'}</button>`;
+        }
+
+        // Tỷ lệ % & thanh tiến độ
+        const costPct = Number(item.cost_percentage || 0);
+        const qtyPct = Number(item.quantity_percentage || 0);
+
+        let costBarClass = 'success';
+        if (costPct > 80) costBarClass = 'danger';
+        else if (costPct > 60) costBarClass = 'warning';
+
+        let qtyBarClass = 'success';
+        if (qtyPct < 80) qtyBarClass = 'warning';
+
+        // Badge cảnh báo AC T-114
+        let badgeHtml = '';
+        if (item.is_warning) {
+          badgeHtml = `
+            <span class="status-badge alert" title="${item.warning_reason || 'Chi phí vượt 80% dự toán nhưng khối lượng thu được dưới 80%'}">
+              ⚠️ CẢNH BÁO BỘI CHI
+            </span>
+          `;
+        } else if (costPct > 80 && qtyPct >= 80) {
+          badgeHtml = `
+            <span class="status-badge safe" title="Chi phí >80% nhưng khối lượng đã đạt >= 80% (Hợp lý)">
+              ✅ ĐẠT TIẾN ĐỘ
+            </span>
+          `;
+        } else {
+          badgeHtml = `
+            <span class="status-badge normal">
+              ℹ️ BÌNH THƯỜNG
+            </span>
+          `;
+        }
+
+        tr.innerHTML = `
+          <td>
+            <span class="badge-code ${item.is_leaf ? '' : 'parent'}">${item.code || `HM-${item.id}`}</span>
+          </td>
+          <td>
+            <div class="node-title-cell" style="padding-left: ${indentPx}px;">
+              ${toggleBtnHtml}
+              <span style="font-weight: ${item.is_leaf ? '600' : '800'}; color: ${item.is_leaf ? 'var(--text-body)' : 'var(--text-title)'};">
+                ${escapeHtml(item.name)}
+              </span>
+            </div>
+          </td>
+          <td>${escapeHtml(item.unit || 'm3')}</td>
+          <td style="text-align: right;">${item.is_leaf ? fmtQty(item.budget_qty) : '—'}</td>
+          <td style="text-align: right;">${item.is_leaf ? fmtMoney(item.unit_price) : '—'}</td>
+          <td style="text-align: right; font-weight: 700;">${fmtMoney(item.budget_cost)}</td>
+          <td style="text-align: right; font-weight: 700; color: ${costPct > 80 ? '#dc2626' : 'inherit'};">
+            ${fmtMoney(item.actual_cost)}
+          </td>
+          <td style="text-align: right;">${item.is_leaf ? fmtQty(item.actual_qty) : fmtMoney(item.earned_value)}</td>
+          <td style="text-align: center;">
+            <div class="mini-progress-box">
+              <span style="font-size: 11px; font-weight: 700; color: ${costPct > 80 ? '#dc2626' : 'var(--text-title)'};">
+                ${costPct.toFixed(1)}%
+              </span>
+              <div class="mini-progress-track">
+                <div class="mini-progress-bar ${costBarClass}" style="width: ${Math.min(100, costPct)}%;"></div>
+              </div>
+            </div>
+          </td>
+          <td style="text-align: center;">
+            <div class="mini-progress-box">
+              <span style="font-size: 11px; font-weight: 700; color: ${qtyPct < 80 && costPct > 80 ? '#d97706' : 'var(--text-title)'};">
+                ${qtyPct.toFixed(1)}%
+              </span>
+              <div class="mini-progress-track">
+                <div class="mini-progress-bar ${qtyBarClass}" style="width: ${Math.min(100, qtyPct)}%;"></div>
+              </div>
+            </div>
+          </td>
+          <td style="text-align: center;">
+            ${badgeHtml}
+          </td>
+          <td style="text-align: center;">
+            ${item.is_leaf ? `
+              <button class="btn-edit-item" onclick="openEditModal(${item.id})" title="Nhập dự toán (S-46) và thực chi (S-47)">
+                ✏️ Sửa
+              </button>
+            ` : `<span style="font-size: 11px; color: var(--text-muted);">Cộng dồn</span>`}
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Modal Edit
+    function openEditModal(itemId) {
+      const item = rawFlatData.find(i => i.id === itemId);
+      if (!item) return;
+
+      document.getElementById('edit-item-id').value = item.id;
+      document.getElementById('edit-item-name').value = `[${item.code}] ${item.name} (${item.unit || 'm3'})`;
+      document.getElementById('input-budget-qty').value = item.budget_qty || 0;
+      document.getElementById('input-budget-price').value = item.unit_price || 0;
+      document.getElementById('input-budget-total').value = item.budget_cost || 0;
+      document.getElementById('input-actual-cost').value = item.actual_cost || 0;
+      document.getElementById('input-actual-qty').value = item.actual_qty || 0;
+
+      document.getElementById('edit-modal').style.display = 'flex';
+      calcBudgetTotal();
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').style.display = 'none';
+    }
+
+    function calcBudgetTotal() {
+      const q = parseFloat(document.getElementById('input-budget-qty').value) || 0;
+      const p = parseFloat(document.getElementById('input-budget-price').value) || 0;
+      document.getElementById('input-budget-total').value = Math.round(q * p);
+    }
+
+    async function saveItemData(e) {
+      e.preventDefault();
+      const itemId = Number(document.getElementById('edit-item-id').value);
+      const bQty = parseFloat(document.getElementById('input-budget-qty').value);
+      const bPrice = parseFloat(document.getElementById('input-budget-price').value);
+      const bTotal = parseFloat(document.getElementById('input-budget-total').value);
+      const aCost = parseFloat(document.getElementById('input-actual-cost').value);
+      const aQty = parseFloat(document.getElementById('input-actual-qty').value);
+
+      const token = localStorage.getItem('quanly_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
+
+      try {
+        // 1. Cập nhật dự toán (S-46)
+        const budgetRes = await fetch(`/api/work-items/${itemId}/budget`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({
+            khoi_luong_du_toan: bQty,
+            don_gia_du_toan: bPrice,
+            thanh_tien_du_toan: bTotal
+          })
+        });
+        if (!budgetRes.ok) {
+          const err = await budgetRes.json();
+          throw new Error(err.message || 'Lỗi khi cập nhật dự toán.');
+        }
+
+        // 2. Cập nhật thực chi (S-47)
+        const expenseRes = await fetch(`/api/work-items/${itemId}/actual-expense`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({
+            thuc_chi: aCost,
+            khoi_luong_thu_duoc: aQty
+          })
+        });
+        if (!expenseRes.ok) {
+          const err = await expenseRes.json();
+          throw new Error(err.message || 'Lỗi khi cập nhật thực chi.');
+        }
+
+        showToast('Cập nhật dự toán và thực chi thành công!', 'success');
+        closeEditModal();
+        loadBudgetVarianceReport();
+
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // Seed bộ dữ liệu mẫu S-48
+    async function seedSampleDataset() {
+      const btn = document.getElementById('btn-seed-sample');
+      btn.disabled = true;
+      btn.innerText = '⏳ Đang nạp mẫu...';
+
+      try {
+        const token = localStorage.getItem('quanly_token');
+        const res = await fetch(`/api/projects/${currentProjectId}/budget-variance/seed-sample`, {
+          method: 'POST',
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || 'Không thể nạp dữ liệu mẫu.');
+        }
+
+        const data = await res.json();
+        showToast('Đã nạp thành công bộ dữ liệu mẫu kiểm thử S-48!', 'success');
+        loadBudgetVarianceReport();
+
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🧪 Nạp bộ dữ liệu mẫu S-48';
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('quanly_token');
+      localStorage.removeItem('quanly_user');
+      window.location.href = '/login.html';
+    }
+  </script>
+</body>
+</html>

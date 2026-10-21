@@ -127,6 +127,11 @@ app.get('/payment', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/payment.html'));
 });
 
+app.get('/budget', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/budget.html'));
+});
+
+
 // Middleware xác thực token phiên
 const { authenticate } = require('./src/utils/rbac');
 app.use(authenticate);
@@ -172,6 +177,11 @@ app.use("/api", paymentRoutes(db));
 // S-39 / SCRUM-168: Nhật ký thao tác trên phiếu chỉ ghi thêm (Append-Only Audit Logs)
 const auditLogRoutes = require("./src/routes/auditLogRoutes");
 app.use("/api", auditLogRoutes(db));
+
+// S-48 / SCRUM-224: So sánh và cảnh báo dự toán - thực chi theo cây WBS (T-113, T-114)
+const budgetVarianceRoutes = require("./src/routes/budgetVarianceRoutes");
+app.use("/api", budgetVarianceRoutes(db));
+
 
 // ==========================================
 // CÁC ENDPOINT CHO SAO LƯU & KHÔI PHỤC CSDL (S-20, T-46, T-47)

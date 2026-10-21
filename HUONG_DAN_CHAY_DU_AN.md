@@ -83,6 +83,9 @@ docker-compose up -d --build
 | 👷‍♂️ **Đội thi công & Giao việc** | [http://localhost:5000/teams.html](http://localhost:5000/teams.html) | Giao việc cho đội thi công, kiểm soát định mức và cảnh báo quá tải (S-25) |
 | 📅 **Lịch làm việc & Ngày nghỉ** | [http://localhost:5000/calendar.html](http://localhost:5000/calendar.html) | Cấu hình chế độ 5/6 ngày, khai báo ngày lễ trừ trùng (S-17) |
 | 🌧️ **Nhật ký & Ngày mưa** | [http://localhost:5000/diary.html](http://localhost:5000/diary.html) | Ghi nhật ký thi công, đính kèm ảnh hiện trường, khóa sổ nhật ký (S-24) |
+| 📋 **Nghiệm thu khối lượng đợt** | [http://localhost:5000/acceptance.html](http://localhost:5000/acceptance.html) | Lập phiếu nghiệm thu theo đợt, tính khối lượng phát sinh (S-36) |
+| 💰 **Đề nghị thanh toán** | [http://localhost:5000/payment.html](http://localhost:5000/payment.html) | Sinh đề nghị thanh toán từ phiếu nghiệm thu, khấu trừ tiền tạm giữ (S-43, S-45) |
+| 📊 **So sánh dự toán & Cảnh báo** | [http://localhost:5000/budget.html](http://localhost:5000/budget.html) | So sánh dự toán, thực chi theo cây WBS, cảnh báo chi phí >80% & khối lượng <80% (S-48 / SCRUM-224) |
 | 🩺 **Kiểm tra trạng thái API** | [http://localhost:5000/api/health](http://localhost:5000/api/health) | API kiểm tra sức khỏe máy chủ backend |
 
 *(Lưu ý: Nếu chạy bằng Docker Compose, đổi cổng `5000` thành `8081` đối với frontend và `5001` đối với backend)*.
